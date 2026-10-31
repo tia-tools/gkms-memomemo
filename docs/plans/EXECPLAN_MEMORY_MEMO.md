@@ -10,7 +10,7 @@ After this plan, a player opens `https://gkms-memomemo.tia.run` on a phone or PC
 
 To see it working: open the page, add a row 成就+ in センス → 好調, add a %%F memory with Vo diamond, Da diamond, Vi rainbow, and observe the row showing 3.5% / 3.5% / 20 with diamond, diamond and rainbow textures, the %F% and F%% groups showing 未所持, and the 早見表 showing one ✓ and two dashed squares for that row. Reload the page and observe that it is all still there.
 
-The work is tracked on the project's board (`tia-tools` project 7, see `CLAUDE.md` § Tasks), one issue per branch: Milestone 2 is #3. Milestones 0 and the plan review went in before any issue existed (pull requests #1 and #2).
+The work is tracked on the project's board (`tia-tools` project 7, see `CLAUDE.md` § Tasks), one issue per branch: Milestone 2 is #3. Milestone 0 and the plan review went in before any issue existed (pull requests #1 and #2).
 
 ## Progress
 
