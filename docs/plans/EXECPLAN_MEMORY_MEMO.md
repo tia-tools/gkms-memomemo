@@ -568,3 +568,5 @@ Revision note, 2026-11-01: D54 records the user's rule that of the N cards only 
 Revision note, 2026-11-01: Milestone 4 marked merged (#13); D54's rationale now records that gakumas-supportcards keeps its full card list by the user's choice, and supportcards#71 was withdrawn.
 
 Revision note, 2026-11-01: the user's rulings after Milestone 4 recorded: D27 and D48 rewritten in place (an emptied extra group stays; 項目 n回 labels, and the words 項目 and 回数 in Context and Orientation), D55 withdraws the row sort with D15, D36, D44, D45, D47 and D50's undo, D56 adds the card step's rarity filter; Progress and Validation and Acceptance follow.
+
+Revision note, 2026-11-01: `docs/adr/0002` supersedes ADR 0001 and, with it, the icon delivery of D21, D35 and D42: the page will draw game-style icons built in this repository from the user's screenshots, on supportcards' art, as this app's own sprite sheets (issue #10, `docs/plans/EXECPLAN_GAME_STYLE_ICONS.md`). The data file (D22) is unchanged.

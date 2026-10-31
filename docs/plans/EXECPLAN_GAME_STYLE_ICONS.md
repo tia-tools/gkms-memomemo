@@ -1,0 +1,215 @@
+# Draw skill cards as the game draws them, from the player's screenshots
+
+This ExecPlan is a living document. The sections `Progress`, `Surprises & Discoveries`, `Decision Log`, and `Outcomes & Retrospective` must be kept up to date as work proceeds. It is maintained in accordance with `docs/PLANS.md` at the repository root.
+
+## Purpose / Big Picture
+
+「学マス　メモリーメモ帳」 (`gkms-memomemo.tia.run`, this repository) draws every skill card as its bare illustration today. In the game a card's icon is much more: a frame coloured by rarity and shaped by type, the parameter value in the top-left corner, the 元気 (stamina-shield) value in the top-right, the cost at the bottom-right, small effect badges along the left edge, a red ＋ for an upgraded card, and an A or M at the bottom for アクティブ or メンタル. Players recognise cards by that whole picture, not by the art alone, and the base card and its ＋ look different only through it.
+
+After this plan, every card the page offers is drawn the way the game draws it: in the rows, in the card picker, in the 早見表 (the quick-reference table), and as the H.I.F. ability's icon, which uses its base card's picture. The art under the frame still follows the page's 「カードの絵柄」 setting, the P-idol whose version of the illustration the player chose, because the frame and values are painted onto each idol's art. A card the page has no game-style icon for yet (a card the game added after the last screenshots) is drawn as an empty frame of its rarity and type with its name inside, and the user hears about it: a daily check opens an issue on this repository and posts to their Discord.
+
+To see it working: run the page (`bun run dev`), open the センス tab, add a row with 立ち位置チェック+ and see a gold hexagonal frame with 40, 15, the red ＋ and -3 around 花海咲季's art; switch 「カードの絵柄」 to 篠澤広 and see the same frame around her art; compare with the game's P図鑑 (the in-game card encyclopedia), which draws it the same way.
+
+The work is issue #10 on the project's board (`tia-tools` project 7, see `CLAUDE.md` § Tasks). The decision to build the icons here is `docs/adr/0002-game-style-icons-are-built-here-from-screenshots-on-supportcards-art.md`.
+
+## Progress
+
+- [x] (2026-10-31 18:55Z) #10 claimed on `feat/game-style-icons`; the user settled the open design points (composite sheets, `tia-assets` under this app's prefix, Python, a blank-frame placeholder, stale icons kept until retaken, new cards reported by issue and nudge); ADR 0002 written, superseding ADR 0001; this plan drafted.
+- [ ] Milestone 1: identify every screenshot's card and lift the game's overlay off its art.
+- [ ] Milestone 2: paint the overlays onto every idol's art; build the sprite sheets, the placeholder frames, the index and the stamps locally.
+- [ ] Milestone 3: the page draws this app's sheets (a cell per level, the H.I.F. icon from the base cell, the placeholder); the Worker and the dev server serve them.
+- [ ] Milestone 4: upload the sheets to `tia-assets` and commit the index.
+- [ ] Milestone 5: the daily check for new and changed cards, with an issue and a Discord message.
+
+## Surprises & Discoveries
+
+- Observation: the approach works on one card. In the trial on 立ち位置チェック+ (before this plan, recorded in issue #10), the icon is a 146 × 146 square at (27, 132) in the 720 × 1280 screenshot, border included; the art is the whole square master drawn as a 137.75 px square at (3.75, 4.25) inside it; the game lays a faint veil over the art (screenshot ≈ 0.84 × art + 30 per channel); the art matched 篠澤広's variant; and the overlay lifted off it, laid back on the same art, differs from the screenshot by 2.8 levels (of 255) on average. Laid on 花海咲季's, 藤田ことね's and 葛城リーリヤ's art it reads as the game's icon, except for a one-pixel tint of the original idol's art along the frame's window.
+  Evidence: the trial's scratch scripts (`align.py`, `refine.py`, `extract.py`; not kept in the repository), whose fit was `{"box": [27, 132, 173, 278], "size": 137.75, "x0": 3.75, "y0": 4.25, "idol": "shro"}`.
+
+- Observation: the screenshots cover exactly the cards the page offers. The input set has 349 screenshots: base 1 N, 51 R, 78 SR and 45 SSR; enhanced 51 R, 78 SR and 45 SSR. The page offers 175 cards at level 0 and 174 at level 1 (the data file's 181 and 180, less the six N cards of D54 at both levels; 表現の基本 has no ＋), which is the same 349.
+  Evidence: `ls temp/skill_cards/*/* | wc -l` per folder, and the fixture `src/data/fixtures/skillcards.v1.json` counted by rarity, type and level on 2026-11-01: N 7 + 6, R 51 + 51, SR 78 + 78, SSR 45 + 45.
+
+- Observation: no two card ids share an art asset in the data file, so a card is identified by its art alone, and its level by the folder.
+  Evidence: the fixture's 361 entries name 181 distinct `art.asset` values, one per card id.
+
+- Observation: today's sprite sheets from gakumas-supportcards hold 68 cells each at about 120 KB (39 sheets, 4.6 MB). The game-style sheets hold a cell per level, about twice as many, so about 300 KB each and 12 MB in all is the estimate to check in Milestone 2.
+  Evidence: the supportcards worktree's local `scripts/images/out/sheet112/`: `sense-hski-60cb780d.webp` 68 cells, 121,830 bytes.
+
+- Observation: the game table this plan's fingerprints read, `ProduceCard.yaml`, is 40 MB, and Bun 1.4.3 parses YAML itself (`Bun.YAML.parse`), as `infra/workflows.test.ts` already does.
+  Evidence: `curl -sS -o ProduceCard.yaml https://raw.githubusercontent.com/vertesan/gakumasu-diff/main/ProduceCard.yaml`, 40,845,533 bytes, 2026-11-01.
+
+## Decision Log
+
+The decisions are numbered I1, I2, … so they cannot be confused with the D numbers of `docs/plans/EXECPLAN_MEMORY_MEMO.md`, which this plan cites.
+
+- Decision: I1 — the icon pipeline lives in this repository, not in gakumas-supportcards. It reads supportcards' art masters but nothing of it is run or changed there.
+  Rationale: the user's decision in issue #10. The screenshots are taken by hand and kept on the user's machine, so the pipeline runs there and has no place in supportcards' daily job. Recorded in ADR 0002.
+  Date/Author: 2026-11-01, user.
+
+- Decision: I2 — the pipeline paints each card's lifted overlay onto every idol's art and builds sprite sheets per plan and idol, holding a cell per card and level (base and ＋). The H.I.F. ability's icon is its card's base cell. The page draws one background per icon, as it does now, and no longer reads supportcards' sheets.
+  Rationale: the user's choice over laying one idol-independent overlay sheet over supportcards' sheets with CSS. Painting at build time resamples the 256 px master once, straight into the frame's window, so the window's edge is exact; layering would place the art under the frame at fractional pixels in the browser and could leave a seam, and would tie the page to another repository's sheet layout. The cost is bigger sheets (I3).
+  Date/Author: 2026-11-01, user.
+
+- Decision: I3 — the sheets are stored in the shared R2 bucket `tia-assets` under this app's own prefix, `gkms-memomemo/sheet112/<plan>-<idol id>-<first 8 hex digits of the sheet's SHA-256>.webp`, uploaded from the user's machine with their wrangler login; the upload refuses any key outside `gkms-memomemo/`. This app's Worker serves those names, immutable. The index naming the cells is not uploaded: it is committed as `src/icons/index.v1.json` and bundled into the page.
+  Rationale: the user chose the bucket over committing the sheets, which would add about 12 MB of binaries to git history per full build and several MB per new card. Committing the index (the agent's choice) ships it with the page that reads it, so the page and the index cannot disagree about the format, the daily check reads it from the checkout without the site being deployed, and the order "upload the sheets, then commit the index" guarantees that the index never names a sheet the bucket lacks.
+  Date/Author: 2026-11-01, user (bucket); agent (committed index).
+
+- Decision: I4 — the pipeline is Python under `scripts/icons/`, managed with `uv`, using Pillow and numpy, with pytest; the tests run in `check.yml`.
+  Rationale: the user's choice. numpy suits the per-pixel arithmetic of lifting and painting, the trial was written this way, and gakumas-supportcards' `scripts/images/` uses the same tools.
+  Date/Author: 2026-11-01, user.
+
+- Decision: I5 — a card with no game-style icon is drawn as the empty frame of its rarity and type with the card's name inside. The eight frames (N, R, SR, SSR, each アクティブ and メンタル) are cut once from the user's `temp/image.png`, their windows blanked, and committed as one small static file, `public/icons/frames112.webp`. A card whose id is not in the data file at all (D31 of the memo plan) keeps today's grey box with its name.
+  Rationale: the user's choice of look. A static file is served free by the Worker's assets binding (a request that does not run the Worker costs nothing on the Free plan), and at about eight cells it is small enough to commit.
+  Date/Author: 2026-11-01, user (the look); agent (the file).
+
+- Decision: I6 — when a game update changes a card the page has an icon for, the old icon stays until the user retakes its screenshot and rebuilds; the daily check reports it.
+  Rationale: the user's choice. Replacing it by the placeholder at once would need an R2 write token stored in this repository's CI.
+  Date/Author: 2026-11-01, user.
+
+- Decision: I7 — a daily workflow lists the offered cards that have no cell in the committed index (new cards) and those whose fingerprint changed (stale), keeps one open issue on this repository listing them, and posts to the user's Discord through nudge (`Taka499/nudge`'s `notify` action, which `tia-tools/gakumas-supportcards` already uses) whenever that list changes.
+  Rationale: the user's ask: "When there's a new card detected, an issue need to be created and sent to my discord via nudge." Posting only on a change keeps a card that waits for a screenshot from pinging every day.
+  Date/Author: 2026-11-01, user (the ask); agent (one issue, notify on change).
+
+- Decision: I8 — which cards exist and which the page offers comes from the page's own TypeScript (`src/data/load.ts` and `offered` in `src/app/catalog.ts`), exported to the Python pipeline as JSON by `scripts/icons/offered.ts`. Python never re-implements the pool rules (D8, D54 of the memo plan).
+  Rationale: one rule in one place; a second copy in Python would drift the first time the rule changes.
+  Date/Author: 2026-11-01, agent.
+
+- Decision: I9 — a cell's fingerprint is the first 8 hex digits of the SHA-256 of the card's `ProduceCard.yaml` row at its level, as JSON with sorted keys, without the fields listed in `scripts/icons/fingerprint.ts` as not drawn on the icon. It is stamped into `scripts/icons/stamps.json` when the cell's screenshot is new or changed, and kept as it was when the same screenshot is built again, so rebuilding old screenshots after a game update cannot mark them fresh. Fingerprints are computed only in TypeScript.
+  Rationale: the data file does not carry what the icon shows (cost, values, effects), so the check needs the game table; hashing the whole row errs towards a false "stale" (a retake that changes nothing) rather than a missed change. One implementation keeps the stamp and the check from disagreeing.
+  Date/Author: 2026-11-01, agent.
+
+- Decision: I10 — the pipeline reads supportcards' lossless masters from a local directory, `--masters`, by default `../gakumas-supportcards/scripts/images/out/master` (or `$SUPPORTCARDS_DIR/scripts/images/out/master`, the convention `vite.config.ts` already uses). Where it is missing, supportcards' `uv run extract.py --only skillcard` fills it from the game.
+  Rationale: masters are private in the bucket (`master/`, never served), so reading them remotely would mean about 2,000 `wrangler r2 object get` calls; the extracted library already exists on the machine that has the screenshots.
+  Date/Author: 2026-11-01, agent.
+
+- Decision: I11 — this app's Worker stops serving supportcards' `sheet112/` sheets and index once the page draws this app's sheets (Milestone 3).
+  Rationale: the page no longer reads them (I2), and every path the Worker serves is one more to keep correct.
+  Date/Author: 2026-11-01, agent.
+
+- Decision: I12 — the screenshots stay out of git: `/temp/` is ignored, and the pipeline takes the input directory as an argument, by default `temp/skill_cards`, laid out `<base|enhanced>/<N|R|SR|SSR>/*.png`.
+  Rationale: issue #10 ("Inputs, kept out of git"); the folder is 220 MB, and ignoring it means a careless `git add` cannot commit it.
+  Date/Author: 2026-11-01, agent.
+
+## Outcomes & Retrospective
+
+Nothing yet; the plan has not started.
+
+## Context and Orientation
+
+The repository `~/Developer/gkms-memomemo` (GitHub `tia-tools/gkms-memomemo`) is a Preact page built by Vite with Bun, plus a Cloudflare Worker. Its main plan is `docs/plans/EXECPLAN_MEMORY_MEMO.md`; this plan changes only how skill card icons are made and drawn. What a reader needs from that plan is summarised here.
+
+Terms, in plain language:
+
+A skill card is a card played in the game's lessons and contests. It has a rarity (N, R, SR, SSR), a type (アクティブ, drawn in a hexagonal window, or メンタル, drawn in a round window), a plan (センス, ロジック, アノマリー, or free, meaning usable in any plan), and two levels the page cares about: the base card (level 0) and the upgraded ＋ card (level 1). In the data a card is one id at several levels (`p_card-01-act-1_001` at `upgrade` 0 and 1). For the SR and SSR cards and a few R cards the game draws a different illustration per P-idol (a playable idol; there are 13); the others have one illustration. A card's art asset is named in the data file as `art.asset` (`img_general_skillcard_act-1_001`), with `art.perIdol` saying whether there is one per idol, in which case each is `<asset>-<idol id>` (`img_general_skillcard_act-2_059-hski`).
+
+The data file is gakumas-supportcards' `https://gakumas-supportcards.tia.run/data/skillcards.v1.json`. This app's Worker passes it through at `/data/skillcards.json`, and a copy is committed as `src/data/fixtures/skillcards.v1.json` for tests. Its types are `src/data/contract.ts` and its reader is `src/data/load.ts` (`parseSkillCardData`). It lists the playable idols in the game's order (`idols`, the first being 花海咲季, `hski`, the default of 「カードの絵柄」) and the card pool (`cards`), and `offered(card)` in `src/app/catalog.ts` says which of them the page offers: every card except the N cards other than 表現の基本 (`p_card-00-men-0_003`), the memo plan's D54.
+
+A master is gakumas-supportcards' lossless copy of a card's art as the game stores it: a 256 × 256 WebP with transparent rounded corners, named like the asset (`img_general_skillcard_act-2_059-hski.webp`). supportcards' image pipeline (`scripts/images/` there) extracts them from the game's servers into a local `scripts/images/out/master/` and uploads them to the private `master/` prefix of the R2 bucket `tia-assets` (Cloudflare's object storage, shared by every `tia.run` app). On this machine the extracted library is in the supportcards worktree `~/.mulmoterminal/worktrees/gakumas-supportcards-26d5484a/65-publish-skillcards-v1-json-the-skill-car/scripts/images/out/master` (2,226 skill card masters on 2026-11-01); the main supportcards checkout has none.
+
+The P図鑑 is the game's card encyclopedia. Selecting a card there draws its icon large, always at the same place on screen. The user took one screenshot per offered card and level, 720 × 1280 pixels, in `temp/skill_cards/<base|enhanced>/<N|R|SR|SSR>/gakumas_<date>_<time>.png` (349 files; not in git). `temp/image.png` (2560 × 1440) shows ten icons from another game screen with no values on them, one per rarity and type (N, R, SR, SSR and Legend, each hexagonal and round); this plan cuts the placeholder frames from it.
+
+The overlay is everything the game draws over the art: the frame around the window, the values, the badges, the ＋ and the A or M. The window is the hexagon or circle through which the art shows. The veil is a faint whitening the game lays over the art inside the window (screenshot ≈ 0.84 × art + 30 per channel in the trial). Lifting the overlay means recovering, for each pixel of the 146 × 146 icon, the overlay's colour and its opacity (alpha), knowing the art that was under it. Painting means the reverse with another idol's art: place the master under the frame, apply the veil, and lay the overlay on top.
+
+A sprite sheet is one image holding many icons in a grid of equal cells, so the page loads one file instead of one per icon; on the Workers Free plan every request that runs the Worker counts toward the account's 100,000 a day, which every `tia.run` app shares (the memo plan's D42). The page draws an icon as a CSS background showing one cell of a sheet (`spriteStyle` in `src/app/sheets.ts`). Today the sheets are supportcards' (`sheet112/<plan>-<idol>-<hash>.webp`, one per plan and idol, a cell per card id, plain art), listed by an index the page fetches at `/img/sheet112/index.v1.json`. After this plan they are this app's own, with a cell per card and level, game-style.
+
+The Worker is `infra/worker/`: `worker.ts` routes, `img.ts` serves images from the bucket binding `IMAGES` (only names matching its pattern; everything else is a 404), `data.ts` passes the data file through, `wrangler.toml` configures it, and `infra/worker/README.md` documents routes and deployment. `vite.config.ts` makes the dev server answer the Worker's routes from local files. The site is not deployed yet (the memo plan's Milestone 7).
+
+nudge (`~/Developer/nudge`, GitHub `Taka499/nudge`) is the user's small service that lets a GitHub Actions job post to the user's private Discord channel with no secret in the repository: a job with `id-token: write` runs `Taka499/nudge/actions/notify@<commit>` with `endpoint: https://nudge.tia.run`, a `title`, a `body` and a `url`. The instance serves repositories by owner, and `tia-tools` is served (gakumas-supportcards' `update-data.yml` uses it, pinned at `d9f7f1ac185050506d526532a0e24861564422cf # v1.1.0`; nudge's README shows `792cf13fdc57244eba070e459ef8285e27aeb2fc # v1.2.0`).
+
+The game tables are YAML dumps of the game's master data at `https://raw.githubusercontent.com/vertesan/gakumasu-diff/main/<Table>.yaml`. `ProduceCard.yaml` has one row per card and level (`id`, `upgradeCount`, `rarity`, `category`, `stamina`, `costType`, `costValue`, `playEffects`, `produceDescriptions`, …), from which everything drawn on the icon follows.
+
+## Plan of Work
+
+Milestone 1 builds the first half of the pipeline and proves it on all 349 screenshots: which card each one shows, and the overlay lifted off it. Create `scripts/icons/` as a uv project (`pyproject.toml` with `pillow` and `numpy`, `pytest` in a dev group, `package = false`, Python 3.12, and `uv.lock`), and `scripts/icons/offered.ts`, which reads a data file (by default the fixture) through `parseSkillCardData` and prints, as JSON, every card `offered` accepts with its id, level, name, plan, rarity, type and art. The Python modules keep rules pure and I/O in the command. `geometry.py` holds the constants the trial measured (the icon box, the art's placement, the veil) and the exact window shapes: a coverage mask, per pixel of the 146 × 146 box, of how much of the pixel lies inside the hexagon or the circle, whose centre and size are fitted in this milestone from the screenshots and written down as constants. `shots.py` lists the input folder into shots (path, level from `base` or `enhanced`, rarity from the folder, and the first 8 hex digits of the file's SHA-256) and crops the icon box. `art.py` loads a master, composites it on white, and places it in the box at the art's placement. `identify.py` scores a shot against a placed art with a residual that ignores the overlay (the median of the per-pixel difference inside the window after the veil, so badges count as outliers), takes as candidates every offered card of the folder's rarity in every variant the masters hold, and returns the best card and idol with the margin over the best other card; a shot whose margin is under a threshold is reported, not guessed. `lift.py` computes the overlay: outside the window the alpha is 1 minus the window's coverage; inside it, where the screenshot differs from the veiled art by more than a threshold, the overlay is opaque, ramping between two thresholds; the colour of a partly opaque pixel is solved from the screenshot by taking the known veiled art out of it (colour = (screenshot − (1 − alpha) × veiled art) / alpha), which removes the original idol's tint at the window's edge and around badges. The veil itself is not part of the overlay: painting applies it to the new art. The command `uv run lift.py` runs all of it, writes `out/lifted/<card id>_<level>.png` (the overlay, RGBA) and `out/identified.json` (each shot's card, level, idol, residual, margin and recomposition error), and a contact sheet `out/check/` showing for each card the screenshot, the overlay and the overlay painted back on the same art; it exits 1 when a shot cannot be identified, when two shots give the same card and level, or when an offered card and level has no shot. The tests (`test_*.py`) build synthetic icons from synthetic art and a known overlay and check that identification picks the right art, that lifting recovers the overlay where the art is known, that the window masks have the right area, and that the folder layout is read. `check.yml` gains a job that sets up uv and runs `uv run --frozen pytest` in `scripts/icons`, and `infra/workflows.test.ts` pins it. Acceptance: every shot identified with a clear margin, the 349 cells equal to the offered set, a recomposition error near the trial's 2.8, and a look at the contact sheet showing no fringe.
+
+Milestone 2 builds the second half locally. `paint.py` places a master, applies the veil inside the window and lays an overlay on it, then scales the 146 px result to the 112 px cell with a high-quality filter. `frames.py` cuts the eight placeholder frames from `temp/image.png` (their boxes measured there and written down as constants), blanks each window to the veil's colour over white, scales them to 112 px and writes `out/frames112.webp`, one row of eight cells in the order N-active, N-mental, R-active, R-mental, SR-active, SR-mental, SSR-active, SSR-mental. `sheets.py` builds, for each plan and each idol in the data file's order, a sheet of every cell the plan's tab offers (the plan's cards and the free ones, both levels where a shot exists, in the cards' game `order` and then by level) in that idol's art where the card has one per idol and in its single art otherwise, ten columns wide, encoded as lossy WebP at a quality chosen so a sheet stays near 300 KB (record the sizes), named by its hash, and writes `out/gkms-memomemo/sheet112/…` and `out/index.v1.json` (format in Interfaces and Dependencies) and `out/cells.json`, which maps each cell to its shot's hash. `scripts/icons/fingerprint.ts` computes I9's fingerprint from `ProduceCard.yaml`, and `scripts/icons/stamp.ts` merges `out/cells.json` into `scripts/icons/stamps.json`, giving a cell the current fingerprint when its shot is new or changed and keeping the old one otherwise; both have Bun tests. Acceptance: 39 sheets, each with the plan's offered cells, a look at a few cells per rarity and type next to the screenshots, the sizes recorded, and `stamps.json` holding all 349 cells.
+
+Milestone 3 switches the page. `src/icons/index.v1.json` is the committed index (the local build's `out/index.v1.json`, copied by Milestone 4's upload, and by hand in this milestone so the page can be tried against the local build). `src/app/sheets.ts` reads it (a pure reader, run on the committed file by a test, refusing a file name the Worker would not serve) and finds a card's cell by plan, `<card id>:<level>` and idol, falling back to the default idol and then to none, as today. `src/app/Icon.tsx` draws the cell, or the placeholder: the frame of the card's rarity and type from `/icons/frames112.webp` with the card's name over its window in small type. The H.I.F. ability's icon asks for its card at level 0. `App.tsx` stops fetching the sheet index. `infra/worker/img.ts` serves only `gkms-memomemo/sheet112/<plan>-<idol id>-<8 hex>.webp`, immutable (I11), and its tests and `infra/worker/README.md` follow. `vite.config.ts` serves `/img/gkms-memomemo/…` from `scripts/icons/out/` when the local build has the file. Acceptance: `bun test`, `bun run type-check`, `bun run lint` and `bun run build` exit 0, each new rule seen to fail its test when broken; in Chrome on the dev server, at 390 px and on a desktop window, rows, pickers, the 早見表 and the H.I.F. icons show game-style icons, switching 「カードの絵柄」 changes the art under the frames, and a card removed from the local index shows the placeholder. The user then judges the icon size on a phone (40 px in a row today), which the issue flagged as barely legible; a change of size is the user's ruling, recorded here.
+
+Milestone 4 publishes. `scripts/icons/upload.py` uploads each sheet named by `out/index.v1.json` that the committed `src/icons/index.v1.json` does not name (or every sheet with `--all`) with `bunx wrangler r2 object put tia-assets/<key> --file <path> --remote --content-type image/webp --cache-control "public, max-age=31536000, immutable"`, retrying a failed put twice, refusing any key that does not start with `gkms-memomemo/sheet112/`, and only after every sheet is stored copies `out/index.v1.json` to `src/icons/index.v1.json`. Then the index, the stamps and the frames are committed. Acceptance: for one sheet, `bunx wrangler r2 object get tia-assets/<key> --file "$TMPDIR/check.webp" --remote` gives a file whose `md5 -q` equals the local one, and the committed index names only stored sheets. Live checks wait for the site's first deployment (the memo plan's Milestone 7).
+
+Milestone 5 watches for new and changed cards. `scripts/icons/check.ts` reads the live data file, the committed index and stamps, and `ProduceCard.yaml`, and writes a report: the offered cards and levels with no cell, and the cells whose fingerprint differs from their stamp, each with its name and folder (`base/SR` …) so the user knows what to capture; its rules are pure functions with Bun tests. `.github/workflows/icons.yml` runs it daily after supportcards' data update (which runs at 11:30 UTC) and on demand: a job with `contents: read` and `issues: write` runs the check and, through `gh`, keeps one open issue titled "Screenshots needed for game-style icons" whose body is the report with a hidden marker holding a hash of the list; it opens the issue when the list becomes non-empty, edits it when the list changes, and closes it with a comment when the list is empty, and sets the job output `changed`. A second job, with only `id-token: write`, runs nudge's `notify` when `changed` is true, with the issue's URL. `infra/workflows.test.ts` pins its shape. Acceptance: run by hand (`workflow_dispatch`) once with a card removed from a test copy of the index (or with the real list when a card is missing), see the issue opened and the Discord message arrive, run again and see neither repeated, and see the bun tests of the rules fail when a rule is broken.
+
+## Concrete Steps
+
+From the repository root `~/Developer/gkms-memomemo`, once Milestone 1 has created the uv project:
+
+    cd scripts/icons
+    uv sync
+    bun ../../scripts/icons/offered.ts > out/offered.json        # the cards the page offers, from the fixture
+    uv run lift.py --shots ../../temp/skill_cards --masters <masters dir> --cards out/offered.json
+    uv run pytest
+
+Where the masters are: by default `../gakumas-supportcards/scripts/images/out/master`; on this machine today the supportcards worktree named in Context and Orientation. To fill a missing library, in a supportcards checkout: `cd scripts/images && ./fetch-vendor.sh && uv sync && uv run extract.py --only skillcard`.
+
+Milestones 2 to 4 add, in `scripts/icons`:
+
+    uv run build.py --shots ../../temp/skill_cards --masters <masters dir> --cards out/offered.json --frames ../../temp/image.png
+    bun stamp.ts
+    uv run upload.py --dry-run          # which sheets would go to tia-assets
+    uv run upload.py                    # upload them, then copy the index into src/icons/
+
+The page's checks, each judged by its exit status:
+
+    bun test
+    bun run type-check
+    bun run lint
+    bun run build
+
+Exact transcripts are added here as each milestone runs.
+
+## Validation and Acceptance
+
+The plan is complete when, on the dev server and later on `https://gkms-memomemo.tia.run`: every offered card in the センス, ロジック and アノマリー tabs is drawn with its game frame, values and badges, the ＋ card differently from its base card; switching 「カードの絵柄」 changes the art inside every frame of a per-idol card and leaves single-art cards as they are; each H.I.F. ability's icon is its card's base icon; a card missing from the index is drawn as the empty frame of its rarity and type with its name; the Worker answers `/img/gkms-memomemo/sheet112/<a sheet the index names>` with 200 and `image/webp`, and `/img/sheet112/index.v1.json` with 404; the daily workflow, run by hand while a card is missing, opens one issue and posts one Discord message, and run again posts nothing new. `bun test` covers the page's new reader and placeholder and the check's rules, and `uv run pytest` the pipeline's rules, each rule seen to fail its test when broken.
+
+## Idempotence and Recovery
+
+Every pipeline step can be rerun: `lift.py` and `build.py` rewrite `scripts/icons/out/` (ignored by git) from the inputs; a sheet's name is its hash, so rebuilding identical pixels gives the same name, and uploading a name again stores the same bytes. The upload copies the index only after every sheet is stored, so a run that dies halfway leaves the committed index naming only stored sheets; run it again to finish. Sheets the index no longer names stay in the bucket, harmless, since nothing names them. `stamps.json` keeps a cell's fingerprint as long as its screenshot is unchanged, so rebuilding is safe after a game update. The upload never writes outside `gkms-memomemo/`, so supportcards' objects cannot be touched. The daily workflow keeps one issue and only edits it, so rerunning it cannot open duplicates.
+
+## Artifacts and Notes
+
+The trial's fit and output are in Surprises & Discoveries. Evidence from each milestone is added here.
+
+## Interfaces and Dependencies
+
+New dependencies: Python 3.12 managed by `uv`, with `pillow` and `numpy`, and `pytest` for development, all under `scripts/icons/` (I4). The page gains no runtime dependency. CI gains `astral-sh/setup-uv`, pinned by commit hash like every action here. The daily workflow uses `Taka499/nudge/actions/notify`, pinned by commit hash.
+
+`scripts/icons/offered.ts` prints a JSON array of:
+
+    { "id": "p_card-01-act-1_001", "upgrade": 0, "name": "ファンサ", "plan": "sense", "rarity": "R", "type": "active",
+      "order": "…", "asset": "img_general_skillcard_act-1_001", "perIdol": false }
+
+and the playable idols as `{ "idols": ["hski", …], "cards": [ … ] }` around it.
+
+`src/icons/index.v1.json`, committed, bundled into the page:
+
+    {
+      "formatVersion": 1,
+      "cell": 112,
+      "columns": 10,
+      "plans": [
+        { "plan": "sense",
+          "cells": ["p_card-01-act-1_001:0", "p_card-01-act-1_001:1", …],
+          "sheets": [{ "idol": "hski", "file": "gkms-memomemo/sheet112/sense-hski-1a2b3c4d.webp" }, …] },
+        …
+      ]
+    }
+
+Every sheet of a plan has the same cells, in the order `cells` lists them, row by row, `columns` to a row; a cell is `<card id>:<level>`. A sheet's `file` is its bucket key, served at `/img/<file>`.
+
+`scripts/icons/stamps.json`, committed:
+
+    { "formatVersion": 1, "cells": { "p_card-01-act-1_001:0": { "shot": "1a2b3c4d", "fingerprint": "5e6f7a8b" }, … } }
+
+`public/icons/frames112.webp`, committed: one row of eight 112 × 112 cells, N-active, N-mental, R-active, R-mental, SR-active, SR-mental, SSR-active, SSR-mental.
+
+In `src/app/sheets.ts`, at the end of Milestone 3:
+
+    export interface IconIndex { cell: number; columns: number; plans: readonly PlanSheets[] }
+    export function parseIconIndex(json: unknown): IconIndex;           // throws at the first bad value
+    export function iconCell(index: IconIndex, plan: PlanId, card: { id: string; upgrade: number },
+                             idol: string, defaultIdol: string): IconCell | null;
+    export function spriteStyle(cell: IconCell, size: string): Record<string, string>;   // unchanged
+    export function frameStyle(rarity: Rarity, type: CardType, size: string): Record<string, string>;
+
+Revision note, 2026-11-01: first draft, written after claiming #10 and the user's answers on the open points of the issue, before any code.
