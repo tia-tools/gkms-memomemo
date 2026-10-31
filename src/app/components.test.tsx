@@ -8,7 +8,7 @@ import { newBuild } from "../memo/build.ts";
 import { addMemory, addRow, isRefusal, type Edited } from "../memo/edit.ts";
 import { emptyMemo, type Memo, type Memory } from "../memo/types.ts";
 import { cardNamed, kindLabelled } from "../test-support/skillcards.ts";
-import { addRowThroughPopover, byLabel, byText, CATALOG, dialog, must, pick, section, showPage, tap } from "../test-support/page.tsx";
+import { addRowThroughPopover, byLabel, byText, CATALOG, dialog, must, pick, section, showPage, tap, type } from "../test-support/page.tsx";
 
 const HIF = must(CATALOG.tabAbilities("sense")[0], "a センス ability");
 const DDR: Memory = ["diamond", "diamond", "rainbow"];
@@ -149,6 +149,18 @@ describe("the card step's rarity filter (D56)", () => {
     await toggle("SSR");
     await toggle("R");
     expect(shown()).toEqual(offeredNames());
+  });
+
+  test("works with the search: a name and a rarity together", async () => {
+    await showPage(root);
+    await tap(byText(section(root, "好調"), "button", "＋ カードを追加"));
+    await type(byLabel(dialog(root), "カード名"), "ファンサ");
+    expect(shown()).toEqual(["ファンサ", "ファンサ+"]);
+    await toggle("SSR");
+    expect(shown()).toEqual([]);
+    await toggle("SSR");
+    await toggle("R");
+    expect(shown()).toEqual(["ファンサ", "ファンサ+"]);
   });
 
   test("N shows 表現の基本 alone, the one N card that can be a produce memory (D54)", async () => {
