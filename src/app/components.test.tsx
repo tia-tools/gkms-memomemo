@@ -129,6 +129,36 @@ describe("the row popover", () => {
   });
 });
 
+describe("the card step's rarity filter (D58)", () => {
+  const shown = () => [...dialog(root).querySelectorAll("button[aria-pressed] span:last-child")].map((el) => el.textContent);
+  const offeredNames = (...rarities: string[]) =>
+    CATALOG.tabCards("sense")
+      .filter((c) => rarities.length === 0 || rarities.includes(c.rarity))
+      .map((c) => c.name);
+  const toggle = (rarity: string) => tap(byText(byLabel(dialog(root), "レアリティ"), "button", rarity));
+
+  test("shows only the rarities switched on, several at once, and every card again when none is on", async () => {
+    await showPage(root);
+    await tap(byText(section(root, "好調"), "button", "＋ カードを追加"));
+    expect(shown()).toEqual(offeredNames());
+    await toggle("SSR");
+    expect(shown()).toEqual(offeredNames("SSR"));
+    expect(shown().length).toBeGreaterThan(0);
+    await toggle("R");
+    expect(shown()).toEqual(offeredNames("SSR", "R"));
+    await toggle("SSR");
+    await toggle("R");
+    expect(shown()).toEqual(offeredNames());
+  });
+
+  test("N shows 表現の基本 alone, the one N card that can be a produce memory (D54)", async () => {
+    await showPage(root);
+    await tap(byText(section(root, "好調"), "button", "＋ カードを追加"));
+    await toggle("N");
+    expect(shown()).toEqual(["表現の基本"]);
+  });
+});
+
 describe("the row menu", () => {
   test("deleting a row takes two taps and its armed state says how many memories go with it", async () => {
     await showPage(root, withJoju());
