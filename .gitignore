@@ -1,0 +1,14 @@
+# dependencies (bun install)
+node_modules
+
+# build output
+dist
+
+# OS
+.DS_Store
+
+# MulmoTerminal's per-directory settings (header colour); local to this machine
+.mulmoterminal.json
+
+# The cf CLI's per-directory cache (the account it last used); local to this machine
+.cloudflare/
