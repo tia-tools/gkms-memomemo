@@ -73,7 +73,7 @@ export interface Build {
 
 export interface ExtraGroup {
   pattern: ExtraPattern;
-  /** Never empty: a group goes when its last memory does (D27). */
+  /** May be empty: a group whose last memory is deleted stays, as 未所持, until removed by hand (D27). */
   memories: readonly Memory[];
 }
 

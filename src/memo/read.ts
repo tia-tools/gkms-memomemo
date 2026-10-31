@@ -4,8 +4,8 @@
  * does not match refuses all of it with the path of the first bad value, so a memo is never
  * imported in part. Ids are checked for the shape of the game's ids only: a well-formed id the data
  * file does not have is kept (D31). Beyond the types, it refuses what the edits never make
- * (edit.ts): two rows with one id, an extra group with no memory or a pattern repeated, more than
- * two extra groups, and one build twice in a tab (D13).
+ * (edit.ts): two rows with one id, an extra group's pattern repeated, more than two extra groups,
+ * and one build twice in a tab (D13). An extra group with no memory is kept (D27).
  */
 
 import { boolean, child, integer, list, object, oneOf, type Read, ReadError, req, string } from "../lib/read.ts";
@@ -105,9 +105,8 @@ const memory: Read<Memory> = (value, path) => {
 
 const extraGroup: Read<ExtraGroup> = (value, path) => {
   const f = object(value, path);
-  const memories = req(f, "memories", list(memory), path);
-  if (memories.length === 0) throw new ReadError(`${child(path, "memories")}: expected at least one memory`);
-  return { pattern: req(f, "pattern", oneOf(EXTRA_PATTERNS), path), memories };
+  // An empty group is a group whose memories were all deleted; it stays until removed by hand (D27).
+  return { pattern: req(f, "pattern", oneOf(EXTRA_PATTERNS), path), memories: req(f, "memories", list(memory), path) };
 };
 
 const extras: Read<ExtraGroup[]> = (value, path) => {

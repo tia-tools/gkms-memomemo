@@ -1,13 +1,13 @@
 import type { ComponentChildren } from "preact";
 import { useMemo, useState } from "preact/hooks";
-import type { SkillCard } from "../data/contract.ts";
+import type { SkillCard, SkillCardRarity } from "../data/contract.ts";
 import { type BuildProblem, type CardRules, isBuildProblem, kaimakuRule, kaimakuSwitch, stepLimit, withCustomization } from "../memo/build.ts";
 import type { Build, PlanId } from "../memo/types.ts";
 import { type HifEntry, stepText } from "./catalog.ts";
 import { chosenStep, pickStep, stepOpen, switchKaimaku } from "./customize.ts";
 import { CardIcon } from "./Icon.tsx";
 import { usePage } from "./page.ts";
-import { search } from "./picker.ts";
+import { byRarity, FILTER_RARITIES, search, toggled } from "./picker.ts";
 
 /** A choice that shows whether it is chosen. */
 export function Choice({ pressed, disabled, onClick, children }: { pressed: boolean; disabled?: boolean; onClick: () => void; children: ComponentChildren }) {
@@ -55,14 +55,29 @@ function IconGrid<T>({ entries, keyOf, nameOf, artOf, chosen, plan, onPick }: {
   );
 }
 
-/** Step 1: the skill card, the plan's cards then the free ones (D8, D19). */
+/** The card step's rarity toggles (D56); with none on, every rarity shows. */
+function RarityFilter({ on, onToggle }: { on: ReadonlySet<SkillCardRarity>; onToggle: (rarity: SkillCardRarity) => void }) {
+  return (
+    <div class="flex gap-1" role="group" aria-label="レアリティ">
+      {FILTER_RARITIES.map((rarity) => (
+        <Choice key={rarity} pressed={on.has(rarity)} onClick={() => onToggle(rarity)}>
+          {rarity}
+        </Choice>
+      ))}
+    </div>
+  );
+}
+
+/** Step 1: the skill card, the plan's cards then the free ones (D8, D19), by name and by rarity (D56). */
 export function CardStep({ plan, chosen, onPick }: { plan: PlanId; chosen: SkillCard | undefined; onPick: (card: SkillCard) => void }) {
   const { catalog } = usePage();
   const [query, setQuery] = useState("");
-  const cards = useMemo(() => search(catalog.tabCards(plan), query, (c) => c.name), [catalog, plan, query]);
+  const [rarities, setRarities] = useState<ReadonlySet<SkillCardRarity>>(new Set());
+  const cards = useMemo(() => byRarity(search(catalog.tabCards(plan), query, (c) => c.name), rarities), [catalog, plan, query, rarities]);
   return (
     <>
       <SearchBox value={query} onInput={setQuery} label="カード名" />
+      <RarityFilter on={rarities} onToggle={(rarity) => setRarities(toggled(rarities, rarity))} />
       <IconGrid entries={cards} keyOf={(c) => `${c.id}:${c.upgrade}`} nameOf={(c) => c.name} artOf={(c) => c.art} chosen={(c) => c === chosen} plan={plan} onPick={onPick} />
     </>
   );
@@ -98,7 +113,7 @@ function KaimakuSwitch({ build, card, onBuild }: { build: Build; card: CardRules
     <label class="flex items-center gap-2">
       <input type="checkbox" checked={build.kaimaku} disabled={state !== "switchable"} onChange={() => onBuild(switchKaimaku(build, card))} />
       開幕時獲得
-      {state === "blocked" && <span class="text-xs text-slate-500">{cap === 0 ? "カスタマイズなしのときだけ" : `カスタマイズ${cap}段階までのときだけ`}</span>}
+      {state === "blocked" && <span class="text-xs text-slate-500">{cap === 0 ? "カスタマイズなしのときだけ" : `カスタマイズ${cap}回までのときだけ`}</span>}
     </label>
   );
 }
@@ -130,7 +145,7 @@ export function CustomizeStep({ card, build, onBuild, onNext }: { card: SkillCar
           </div>
         ))}
       </div>
-      {card.customization.kinds.length > 0 && <p class="text-xs text-slate-500">合計{stepLimit(card)}段階まで</p>}
+      {card.customization.kinds.length > 0 && <p class="text-xs text-slate-500">合計{stepLimit(card)}回まで</p>}
       <KaimakuSwitch build={build} card={card} onBuild={onBuild} />
       <button type="button" class="self-end rounded bg-slate-800 px-4 py-1.5 text-white" onClick={onNext}>
         次へ

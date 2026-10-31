@@ -60,20 +60,33 @@ export function makeCatalog(data: SkillCardDataFile): Catalog {
 }
 
 /**
- * How one step of a kind is written (D7's 好調+1, D48): the step's label from the file, with the
- * game's line break taken out, and the step's number after it when the label is a generic one
- * ending in + or - (好調+1, パラメータ+2, コスト値-1), since the steps of a kind share that label. A step
- * with its own description (好調追加, 成長追加) is written as it is.
+ * How one chosen customization is written (D48): its 項目's label for that 回数 from the file, with
+ * the game's line break taken out, then the 回数 (好調追加 1回, パラメータ+ 2回, 成長+ 2回). Every
+ * customization is a 回数, whatever its label; 項目 and 回数 are the game's words for a kind and a step.
  */
 export function stepText(kind: CustomizationKind, step: number): string {
-  const label = (kind.steps.find((s) => s.step === step)?.label ?? "").replaceAll("\n", "");
-  return label.endsWith("+") || label.endsWith("-") ? `${label}${step}` : label;
+  const { label, times } = stepLabel(kind, step);
+  return `${label} ${times}`;
 }
 
-/** A row's customization as short labels in the card's kind order; a kind or step the card lacks reads 不明. */
-export function customizationTexts(card: SkillCard | undefined, chosen: readonly ChosenStep[]): string[] {
+/**
+ * One chosen customization as two parts, its 項目's label and its 回数 (1回), so that a narrow
+ * column can wrap the label but never split the 回数 (D51).
+ */
+export interface ChosenLabel {
+  label: string;
+  /** Empty for a customization the card lacks, which reads 不明. */
+  times: string;
+}
+
+export function stepLabel(kind: CustomizationKind, step: number): ChosenLabel {
+  return { label: (kind.steps.find((s) => s.step === step)?.label ?? "").replaceAll("\n", ""), times: `${step}回` };
+}
+
+/** A row's customization in the card's kind order; a kind or step the card lacks reads 不明. */
+export function customizationLabels(card: SkillCard | undefined, chosen: readonly ChosenStep[]): ChosenLabel[] {
   const kinds = card?.customization.kinds ?? [];
-  const known = kinds.flatMap((kind) => chosen.filter((c) => c.kind === kind.id && kind.steps.some((s) => s.step === c.step)).map((c) => stepText(kind, c.step)));
+  const known = kinds.flatMap((kind) => chosen.filter((c) => c.kind === kind.id && kind.steps.some((s) => s.step === c.step)).map((c) => stepLabel(kind, c.step)));
   const unknown = chosen.length - known.length;
-  return unknown > 0 ? [...known, ...Array<string>(unknown).fill("不明")] : known;
+  return unknown > 0 ? [...known, ...Array.from({ length: unknown }, () => ({ label: "不明", times: "" }))] : known;
 }

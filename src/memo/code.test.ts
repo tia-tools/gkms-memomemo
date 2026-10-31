@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { CODE_PREFIX, decodeMemo, encodeMemo, isCodeRefusal, MAX_CODE_LENGTH, MAX_MEMO_BYTES } from "./code.ts";
-import { addMemory, addRow, type Edited, isRefusal } from "./edit.ts";
+import { addExtraGroup, addMemory, addRow, deleteMemory, type Edited, isRefusal } from "./edit.ts";
 import { emptyMemo, type Memo } from "./types.ts";
 
 const HIF = "memory_ability-p_memory_skill-common-hatsuboshi_idol_festival-p_trigger-start_audition-for_hif_memory-exam_status_enchant-exam_turn_timer-exam_status_enchant-01-001-001";
@@ -35,6 +35,12 @@ describe("encodeMemo and decodeMemo", () => {
 
   test("decodes what Node's own base64url writes, so the encoding is standard", async () => {
     expect(await decodeMemo(await textCode(JSON.stringify(memo())))).toStrictEqual(memo());
+  });
+
+  test("an emptied extra group comes back, empty and in its place (D27)", async () => {
+    const emptied = deleteMemory(ok(addExtraGroup(memo(), "r1", "%%%", ["rainbow", "rainbow", "rainbow"])), "r1", "%%%", 0);
+    expect(emptied.sections["sense.kocho"][0]?.extras).toEqual([{ pattern: "%%%", memories: [] }]);
+    expect(await decodeMemo(await encodeMemo(emptied))).toStrictEqual(emptied);
   });
 
   test("ignores white space around a pasted code", async () => {

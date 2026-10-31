@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { PLAN_IDS } from "../memo/types.ts";
 import { cardNamed, kindLabelled, SKILL_CARDS } from "../test-support/skillcards.ts";
-import { customizationTexts, makeCatalog, stepText } from "./catalog.ts";
+import { customizationLabels, makeCatalog, stepText } from "./catalog.ts";
 
 const CATALOG = makeCatalog(SKILL_CARDS);
 
@@ -70,45 +70,47 @@ describe("makeCatalog", () => {
 });
 
 describe("stepText", () => {
-  test("a generic label ending in + carries its step, one step or several", () => {
+  test("every customization carries its 回数: a shared label at each of its steps", () => {
     const { kind } = kindOf("ファンサ+", "パラメータ+");
-    expect([1, 2, 3].map((s) => stepText(kind, s))).toEqual(["パラメータ+1", "パラメータ+2", "パラメータ+3"]);
-    expect(stepText(kindOf("成就+", "好調+").kind, 1)).toBe("好調+1");
+    expect([1, 2, 3].map((s) => stepText(kind, s))).toEqual(["パラメータ+ 1回", "パラメータ+ 2回", "パラメータ+ 3回"]);
+    expect(stepText(kindOf("成就+", "好調+").kind, 1)).toBe("好調+ 1回");
   });
 
-  test("a label ending in - carries its step too", () => {
-    expect(stepText(kindOf("成就+", "コスト値-").kind, 1)).toBe("コスト値-1");
+  test("a label ending in - carries its 回数 too", () => {
+    expect(stepText(kindOf("成就+", "コスト値-").kind, 1)).toBe("コスト値- 1回");
   });
 
-  test("a step's own description is written as it is", () => {
-    expect(stepText(kindOf("ファンサ+", "好調追加").kind, 1)).toBe("好調追加");
+  test("a step's own description carries its 回数 as well (D48: any customization is a 回数)", () => {
+    expect(stepText(kindOf("ファンサ+", "好調追加").kind, 1)).toBe("好調追加 1回");
     const { kind } = kindOf("巻き返し+", "成長追加");
-    expect([1, 2].map((s) => stepText(kind, s))).toEqual(["成長追加", "成長+2"]);
+    expect([1, 2].map((s) => stepText(kind, s))).toEqual(["成長追加 1回", "成長+ 2回"]);
   });
 
   test("the game's line break is taken out", () => {
-    expect(stepText(kindOf("準備運動+", "パラメータ\n上昇回数+").kind, 1)).toBe("パラメータ上昇回数+1");
+    expect(stepText(kindOf("準備運動+", "パラメータ\n上昇回数+").kind, 1)).toBe("パラメータ上昇回数+ 1回");
   });
 });
 
-describe("customizationTexts", () => {
+describe("customizationLabels", () => {
+  const texts = (...args: Parameters<typeof customizationLabels>) => customizationLabels(...args).map((l) => [l.label, l.times]);
+
   test("lists the chosen steps in the card's kind order, whatever order they were chosen in", () => {
     const card = cardNamed("ファンサ+");
     const chosen = [
       { kind: kindLabelled(card, "パラメータ+"), step: 1 },
       { kind: kindLabelled(card, "好調追加"), step: 1 },
     ];
-    expect(customizationTexts(card, chosen)).toEqual(["好調追加", "パラメータ+1"]);
+    expect(texts(card, chosen)).toEqual([["好調追加", "1回"], ["パラメータ+", "1回"]]);
   });
 
   test("no customization is no label", () => {
-    expect(customizationTexts(cardNamed("ファンサ+"), [])).toEqual([]);
+    expect(texts(cardNamed("ファンサ+"), [])).toEqual([]);
   });
 
   test("a kind or step the card lacks, or an unknown card, reads 不明 rather than disappearing", () => {
     const card = cardNamed("ファンサ+");
-    expect(customizationTexts(card, [{ kind: "p_card_custom-gone", step: 1 }])).toEqual(["不明"]);
-    expect(customizationTexts(card, [{ kind: kindLabelled(card, "好調追加"), step: 2 }])).toEqual(["不明"]);
-    expect(customizationTexts(undefined, [{ kind: "p_card_custom-x", step: 1 }])).toEqual(["不明"]);
+    expect(texts(card, [{ kind: "p_card_custom-gone", step: 1 }])).toEqual([["不明", ""]]);
+    expect(texts(card, [{ kind: kindLabelled(card, "好調追加"), step: 2 }])).toEqual([["不明", ""]]);
+    expect(texts(undefined, [{ kind: "p_card_custom-x", step: 1 }])).toEqual([["不明", ""]]);
   });
 });

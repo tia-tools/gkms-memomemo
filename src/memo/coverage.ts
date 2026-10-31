@@ -11,13 +11,13 @@ export interface RowCoverage {
   fixed: Record<FixedPattern, number>;
   /** The fixed patterns with no memory, in display order. */
   missing: FixedPattern[];
-  /** The row's extra groups' patterns, in the row's order (the 早見表's grey tags). */
+  /** The patterns of the row's extra groups that hold a memory, in the row's order (the 早見表's grey tags); an emptied group owns nothing (D27). */
   extras: ExtraPattern[];
 }
 
 export function rowCoverage(row: Row): RowCoverage {
   const fixed = { "%%F": row.fixed["%%F"].length, "%F%": row.fixed["%F%"].length, "F%%": row.fixed["F%%"].length };
-  return { fixed, missing: FIXED_PATTERNS.filter((p) => fixed[p] === 0), extras: row.extras.map((g) => g.pattern) };
+  return { fixed, missing: FIXED_PATTERNS.filter((p) => fixed[p] === 0), extras: row.extras.filter((g) => g.memories.length > 0).map((g) => g.pattern) };
 }
 
 /** True when a fixed pattern has no memory: the rows 「未所持がある行だけ表示」 keeps. */

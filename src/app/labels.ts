@@ -5,7 +5,6 @@
  */
 
 import type { Refusal } from "../memo/edit.ts";
-import type { SortKey } from "../memo/sort.ts";
 import type { Pattern, PlanId, SectionId, Tier } from "../memo/types.ts";
 import { kindsOf } from "../memo/values.ts";
 
@@ -38,8 +37,6 @@ export function columnLabels(pattern: Pattern): [string, string, string] {
 
 /** A quality's name, for assistive technology: on screen its texture says it (D52). */
 export const TIER_LABELS: Record<Tier, string> = { diamond: "ダイヤ", rainbow: "虹" };
-
-export const SORT_LABELS: Record<SortKey, string> = { rarity: "レアリティ", type: "アクティブ/メンタル", buff: "バフの種類" };
 
 /** Why an edit was refused, as the page says it. */
 export function refusalText(refusal: Refusal): string {

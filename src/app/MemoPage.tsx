@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useState } from "preact/hooks";
 import { hasGaps } from "../memo/coverage.ts";
 import { findRow } from "../memo/edit.ts";
 import { emptyMemo, type Memo, PLAN_IDS, planOf, type PlanId, sectionsOf } from "../memo/types.ts";
@@ -10,34 +10,8 @@ import { SectionView } from "./Section.tsx";
 import { Settings } from "./Settings.tsx";
 import type { SheetIndex } from "./sheets.ts";
 
-/** How long the undo of a sort is offered, and how long a jumped-to row stays highlighted. */
-export const UNDO_MS = 6000;
+/** How long a jumped-to row stays highlighted. */
 export const HIGHLIGHT_MS = 2000;
-
-interface Undo {
-  text: string;
-  before: Memo;
-  after: Memo;
-}
-
-/** The brief undo (D15): offered only while the memo is still what the change made. */
-function UndoToast({ undo, memo, onUndo, onDone }: { undo: Undo; memo: Memo; onUndo: () => void; onDone: () => void }) {
-  useEffect(() => {
-    const timer = setTimeout(onDone, UNDO_MS);
-    return () => clearTimeout(timer);
-  }, [undo, onDone]);
-  if (memo !== undo.after) return null;
-  return (
-    <div role="status" class="fixed inset-x-0 bottom-4 z-30 flex justify-center px-3">
-      <div class="flex items-center gap-3 rounded-full bg-slate-800 px-4 py-2 text-sm text-white shadow-lg">
-        <span>{undo.text}</span>
-        <button type="button" class="font-bold text-amber-300" onClick={onUndo}>
-          元に戻す
-        </button>
-      </div>
-    </div>
-  );
-}
 
 function Tabs({ tab, onTab }: { tab: PlanId; onTab: (plan: PlanId) => void }) {
   return (
@@ -81,7 +55,6 @@ export function MemoPage({ catalog, sheets, initial }: { catalog: Catalog; sheet
   const [idol, setIdol] = useState(defaultIdol);
   const [counting, setCounting] = useState(true);
   const [gapsOnly, setGapsOnly] = useState(false);
-  const [undo, setUndo] = useState<Undo | null>(null);
   const [highlighted, highlight] = useHighlight();
   const page = useMemo<Page>(() => {
     const jumpTo = (rowId: string) => {
@@ -91,10 +64,8 @@ export function MemoPage({ catalog, sheets, initial }: { catalog: Catalog; sheet
       if (!hasGaps(place.row)) setGapsOnly(false);
       highlight(rowId);
     };
-    const offerUndo = (text: string, before: Memo, after: Memo) => setUndo({ text, before, after });
-    return { catalog, sheets, idol, defaultIdol, memo, setMemo, jumpTo, highlighted, offerUndo };
+    return { catalog, sheets, idol, defaultIdol, memo, setMemo, jumpTo, highlighted };
   }, [catalog, sheets, idol, defaultIdol, memo, highlighted, highlight]);
-  const endUndo = useCallback(() => setUndo(null), []);
   return (
     <PageContext.Provider value={page}>
       <Tabs tab={tab} onTab={setTab} />
@@ -109,7 +80,6 @@ export function MemoPage({ catalog, sheets, initial }: { catalog: Catalog; sheet
         ))}
       </div>
       <Settings idols={catalog.data.idols} idol={idol} onIdol={setIdol} counting={counting} onCounting={setCounting} />
-      {undo && <UndoToast undo={undo} memo={memo} onUndo={() => (setMemo(undo.before), setUndo(null))} onDone={endUndo} />}
     </PageContext.Provider>
   );
 }

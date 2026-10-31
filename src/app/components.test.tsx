@@ -8,7 +8,7 @@ import { newBuild } from "../memo/build.ts";
 import { addMemory, addRow, isRefusal, type Edited } from "../memo/edit.ts";
 import { emptyMemo, type Memo, type Memory } from "../memo/types.ts";
 import { cardNamed, kindLabelled } from "../test-support/skillcards.ts";
-import { addRowThroughPopover, byLabel, byText, CATALOG, dialog, must, pick, section, showPage, tap } from "../test-support/page.tsx";
+import { addRowThroughPopover, byLabel, byText, CATALOG, dialog, must, pick, section, showPage, tap, type } from "../test-support/page.tsx";
 
 const HIF = must(CATALOG.tabAbilities("sense")[0], "a センス ability");
 const DDR: Memory = ["diamond", "diamond", "rainbow"];
@@ -122,10 +122,52 @@ describe("the row popover", () => {
     await tap(must([...dialog(root).querySelectorAll<HTMLElement>("button")].find((b) => b.textContent === "前途洋々+"), "前途洋々+"));
     const kaimaku = must(dialog(root).querySelector<HTMLInputElement>('input[type="checkbox"]'), "開幕時獲得");
     expect([kaimaku.checked, kaimaku.disabled]).toEqual([true, false]);
-    const step = must([...dialog(root).querySelectorAll<HTMLElement>("button[aria-pressed]")].find((b) => b.textContent?.endsWith("1") === true), "a step");
+    const step = must([...dialog(root).querySelectorAll<HTMLElement>("button[aria-pressed]")].find((b) => b.textContent?.endsWith(" 1回") === true), "a step");
     await tap(step);
     const after = must(dialog(root).querySelector<HTMLInputElement>('input[type="checkbox"]'), "開幕時獲得");
     expect([after.checked, after.disabled]).toEqual([false, true]);
+  });
+});
+
+describe("the card step's rarity filter (D56)", () => {
+  const shown = () => [...dialog(root).querySelectorAll("button[aria-pressed] span:last-child")].map((el) => el.textContent);
+  const offeredNames = (...rarities: string[]) =>
+    CATALOG.tabCards("sense")
+      .filter((c) => rarities.length === 0 || rarities.includes(c.rarity))
+      .map((c) => c.name);
+  const toggle = (rarity: string) => tap(byText(byLabel(dialog(root), "レアリティ"), "button", rarity));
+
+  test("shows only the rarities switched on, several at once, and every card again when none is on", async () => {
+    await showPage(root);
+    await tap(byText(section(root, "好調"), "button", "＋ カードを追加"));
+    expect(shown()).toEqual(offeredNames());
+    await toggle("SSR");
+    expect(shown()).toEqual(offeredNames("SSR"));
+    expect(shown().length).toBeGreaterThan(0);
+    await toggle("R");
+    expect(shown()).toEqual(offeredNames("SSR", "R"));
+    await toggle("SSR");
+    await toggle("R");
+    expect(shown()).toEqual(offeredNames());
+  });
+
+  test("works with the search: a name and a rarity together", async () => {
+    await showPage(root);
+    await tap(byText(section(root, "好調"), "button", "＋ カードを追加"));
+    await type(byLabel(dialog(root), "カード名"), "ファンサ");
+    expect(shown()).toEqual(["ファンサ", "ファンサ+"]);
+    await toggle("SSR");
+    expect(shown()).toEqual([]);
+    await toggle("SSR");
+    await toggle("R");
+    expect(shown()).toEqual(["ファンサ", "ファンサ+"]);
+  });
+
+  test("N shows 表現の基本 alone, the one N card that can be a produce memory (D54)", async () => {
+    await showPage(root);
+    await tap(byText(section(root, "好調"), "button", "＋ カードを追加"));
+    await toggle("N");
+    expect(shown()).toEqual(["表現の基本"]);
   });
 });
 
@@ -158,11 +200,13 @@ describe("changing a row whose build the rules reject (saved before the data cha
     await tap(byText(dialog(root), "button", "変更"));
     await tap(byText(dialog(root), "button", "この内容で保存"));
     expect(byText(root, '[role="alert"]', "このカードでは選べない組み合わせです。カスタマイズを選び直してください")).toBeTruthy();
-    expect(section(root, "好調").textContent).toContain("パラメータ+3");
+    expect(section(root, "好調").textContent).toContain("パラメータ+ 3回");
+    // The 回数 is kept on one line in the card column, however the label wraps (D51).
+    expect(must(section(root, "好調").querySelector("span.whitespace-nowrap"), "the 回数").textContent).toBe("3回");
     await tap(byText(dialog(root), "button", "なし"));
     expect(root.querySelector('[role="alert"]')).toBeNull();
     await tap(byText(dialog(root), "button", "この内容で保存"));
-    expect(section(root, "好調").textContent).not.toContain("パラメータ+3");
+    expect(section(root, "好調").textContent).not.toContain("パラメータ+ 3回");
   });
 
   test("a 開幕時獲得 the card cannot have is switched off, so the row can be saved and customized", async () => {
@@ -172,12 +216,12 @@ describe("changing a row whose build the rules reject (saved before the data cha
     await tap(byLabel(section(root, "好調"), "行のメニュー"));
     await tap(byText(dialog(root), "button", "変更"));
     await tap(byText(dialog(root), "button", "2 カスタマイズ"));
-    await tap(byText(dialog(root), "button", "好調+1"));
-    expect(byText(dialog(root), "button", "好調+1").getAttribute("aria-pressed")).toBe("true");
+    await tap(byText(dialog(root), "button", "好調+ 1回"));
+    expect(byText(dialog(root), "button", "好調+ 1回").getAttribute("aria-pressed")).toBe("true");
     await tap(byText(dialog(root), "button", "この内容で保存"));
     expect(root.querySelector('[role="alert"]')).toBeNull();
     expect(section(root, "好調").textContent).not.toContain("開幕時獲得");
-    expect(section(root, "好調").textContent).toContain("好調+1");
+    expect(section(root, "好調").textContent).toContain("好調+ 1回");
   });
 });
 
