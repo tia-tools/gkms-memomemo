@@ -13,6 +13,16 @@ function useEscape(onClose: () => void): void {
   }, [onClose]);
 }
 
+/** Renders the component again whenever the window is resized or the phone turned. */
+function useRenderOnResize(): void {
+  const [, setResizes] = useState(0);
+  useEffect(() => {
+    const onResize = (): void => setResizes((n) => n + 1);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+}
+
 /**
  * An in-place popover, not a bottom sheet (D18, D19): rendered inside its anchor's `relative` box,
  * below it, and moved sideways as little as keeps it on screen. A tap outside it or Escape closes it.
@@ -20,7 +30,9 @@ function useEscape(onClose: () => void): void {
 export function Popover({ label, onClose, children }: { label: string; onClose: () => void; children: ComponentChildren }) {
   const panel = useRef<HTMLDivElement>(null);
   const [left, setLeft] = useState(0);
-  // Measured after every render, since a popover's steps change its width; set only when it moved.
+  useRenderOnResize();
+  // Measured after every render, since a popover's steps change its width, and a resize or a turn
+  // of the phone renders it again; set only when it moved.
   useLayoutEffect(() => {
     const anchor = panel.current?.parentElement;
     if (!panel.current || !anchor) return;

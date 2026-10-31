@@ -41,6 +41,13 @@ describe("placeAmongAll", () => {
   test("with no other row shown, it lands at the end", () => {
     expect(placeAmongAll(["hidden"], [], 0)).toBe(1);
   });
+
+  test("only the dragged row moves: every other row keeps its order", () => {
+    // h1, a, h2, b with h1 and h2 hidden; b dragged above a.
+    const rest = ["h1", "a", "h2"];
+    const at = placeAmongAll(rest, ["a"], 0);
+    expect(rest.toSpliced(at, 0, "b")).toEqual(["h1", "b", "a", "h2"]);
+  });
 });
 
 describe("popoverOffset", () => {

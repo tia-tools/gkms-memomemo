@@ -14,8 +14,9 @@ export function dropIndex(pointerY: number, midpoints: readonly number[]): numbe
 
 /**
  * The drop place among all the section's other rows, from the place among those shown: before the
- * shown row at `shownIndex`, or just after the last shown row when it is past them, so rows hidden
- * by 「未所持がある行だけ表示」 keep their places relative to the rows around them.
+ * shown row at `shownIndex`, or just after the last shown row when it is past them. Only the
+ * dragged row moves: every other row, shown or hidden by 「未所持がある行だけ表示」, keeps its order
+ * (D50), rather than hidden rows keeping their indices, which would make shown rows jump across them.
  */
 export function placeAmongAll(others: readonly string[], shownOthers: readonly string[], shownIndex: number): number {
   const before = shownOthers[shownIndex];

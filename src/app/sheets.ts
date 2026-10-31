@@ -6,8 +6,8 @@
  * icon the index lacks is null, and the page draws the card's name instead.
  */
 
-import { imageKey, INDEX_KEY } from "../../infra/worker/img.ts";
-import { fail, integer, isFields, list, object, oneOf, type Read, ReadError, req, string } from "../lib/read.ts";
+import { imageKey, INDEX_KEY, SHEETS } from "../../infra/worker/img.ts";
+import { child, fail, integer, isFields, list, object, oneOf, type Read, ReadError, req, string } from "../lib/read.ts";
 import { PLAN_IDS, type PlanId } from "../memo/types.ts";
 
 export const SHEET_INDEX_ROUTE = `/img/${INDEX_KEY}`;
@@ -50,15 +50,14 @@ const positive: Read<number> = (value, path) => {
   return n > 0 ? n : fail(path, "a positive integer");
 };
 
+/** A sheet, whose file must be named for its own plan and idol, so an icon never comes from another's art. */
 const sheet: Read<Sheet> = (value, path) => {
   const f = object(value, path);
-  return {
-    plan: req(f, "plan", oneOf(PLAN_IDS), path),
-    idol: req(f, "idol", string, path),
-    file: req(f, "file", sheetFile, path),
-    columns: req(f, "columns", positive, path),
-    assets: req(f, "assets", list(string), path),
-  };
+  const plan = req(f, "plan", oneOf(PLAN_IDS), path);
+  const idol = req(f, "idol", string, path);
+  const file = req(f, "file", sheetFile, path);
+  if (!file.startsWith(`${SHEETS}/${plan}-${idol}-`)) fail(child(path, "file"), `the sheet of ${plan} and ${idol}`);
+  return { plan, idol, file, columns: req(f, "columns", positive, path), assets: req(f, "assets", list(string), path) };
 };
 
 /** The index, checked whole; throws `SheetIndexError` at the first value that does not match. */

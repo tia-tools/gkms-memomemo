@@ -7,7 +7,7 @@ import { act } from "preact/test-utils";
 import { newBuild } from "../memo/build.ts";
 import { addMemory, addRow, type Edited, isRefusal } from "../memo/edit.ts";
 import { emptyMemo, FIXED_PATTERNS, type Memo, type Memory } from "../memo/types.ts";
-import { byLabel, byText, CATALOG, dialog, must, section, showPage, tap } from "../test-support/page.tsx";
+import { byLabel, byText, CATALOG, dialog, must, pick, section, showPage, tap } from "../test-support/page.tsx";
 import { cardNamed } from "../test-support/skillcards.ts";
 
 const HIF = must(CATALOG.tabAbilities("sense")[0], "a センス ability").ability.id;
@@ -123,5 +123,64 @@ describe("art and unknown rows", () => {
     expect(kocho.textContent).toContain("不明なカード");
     expect(byLabel(kocho, "%%F 3.5 / 3.5 / 20")).toBeTruthy();
     expect(byLabel(kocho, "行のメニュー")).toBeTruthy();
+  });
+});
+
+describe("dragging", () => {
+  const handleOf = (rowId: string) => byLabel(must(document.getElementById(`row-${rowId}`), rowId), "並べ替えのハンドル");
+  const pointer = (el: HTMLElement, type: string, clientY: number) =>
+    act(() => {
+      el.dispatchEvent(new PointerEvent(type, { bubbles: true, pointerId: 1, clientY }));
+    });
+
+  test("a release lands where the pointer is, even with no move drawn before it", async () => {
+    // happy-dom lays nothing out: every row's middle is at 0, so a release at 10 is below them all.
+    await showPage(root, TWO_ROWS);
+    await pointer(handleOf("r1"), "pointerdown", 0);
+    await pointer(handleOf("r1"), "pointerup", 10);
+    expect(rowOrder("好調")).toEqual(["r2", "r1"]);
+  });
+
+  test("a tap on the handle moves nothing and keeps the sort's undo offered", async () => {
+    await showPage(root, TWO_ROWS);
+    await tap(byText(section(root, "好調"), "button", "並べ替え"));
+    await tap(byText(dialog(root), "button", "レアリティ順"));
+    await pointer(handleOf("r2"), "pointerdown", 0);
+    await pointer(handleOf("r2"), "pointerup", 0);
+    expect(rowOrder("好調")).toEqual(["r2", "r1"]);
+    expect(root.querySelector('[role="status"]')).not.toBeNull();
+  });
+});
+
+describe("unknown rows (D31)", () => {
+  const unknownCard = { card: "p_card-01-act-9_999", upgrade: 1, customization: [], kaimaku: false, hif: HIF };
+
+  test("an ability the data lacks is drawn as unknown, the card as it is", async () => {
+    const card = cardNamed("成就+");
+    await showPage(root, ok(addRow(emptyMemo(), "sense.kocho", "r1", { ...newBuild(card.id, card, HIF), hif: "memory_ability-gone" })));
+    expect(byLabel(section(root, "好調"), "不明なHIF")).toBeTruthy();
+    expect(section(root, "好調").textContent).toContain("成就+");
+  });
+
+  test("a row whose card the data lacks can be deleted, two taps", async () => {
+    await showPage(root, ok(addRow(emptyMemo(), "sense.kocho", "r9", unknownCard)));
+    await tap(byLabel(section(root, "好調"), "行のメニュー"));
+    await tap(byText(dialog(root), "button", "行を削除"));
+    await tap(byText(dialog(root), "button", "もう一度押すと削除"));
+    expect(rowOrder("好調")).toEqual([]);
+  });
+
+  test("a row whose card the data lacks can be changed to a known card, keeping its memories", async () => {
+    await showPage(root, addMemory(ok(addRow(emptyMemo(), "sense.kocho", "r9", unknownCard)), "r9", "%%F", DDR));
+    await tap(byLabel(section(root, "好調"), "行のメニュー"));
+    await tap(byText(dialog(root), "button", "変更"));
+    await pick(root, "成就+");
+    await tap(byText(dialog(root), "button", "次へ"));
+    await pick(root, CATALOG.tabAbilities("sense")[1]?.card.name ?? "");
+    expect(rowOrder("好調")).toEqual(["r9"]);
+    const row = must(document.getElementById("row-r9"), "row r9");
+    expect(row.textContent).toContain("成就+");
+    expect(row.textContent).not.toContain("不明なカード");
+    expect(byLabel(row, "%%F 3.5 / 3.5 / 20")).toBeTruthy();
   });
 });

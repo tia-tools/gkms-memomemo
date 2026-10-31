@@ -21,7 +21,7 @@ export interface ImageBucket {
 }
 
 /** The sheets' prefix, named for their cell width (decision D35). */
-const SHEETS = "sheet112";
+export const SHEETS = "sheet112";
 
 /**
  * Only two kinds of object are ever looked up. A sheet, `sheet112/<plan>-<idol id>-<8 hex>.webp`,

@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { type BuildProblem, isBuildProblem, newBuild } from "../memo/build.ts";
 import type { Build } from "../memo/types.ts";
 import { cardNamed, kindLabelled } from "../test-support/skillcards.ts";
-import { chosenStep, nothingToCustomize, pickStep, stepOpen, switchKaimaku } from "./customize.ts";
+import { chosenStep, fitKaimaku, nothingToCustomize, pickStep, stepOpen, switchKaimaku } from "./customize.ts";
 
 /** ファンサ+ (R + card, limit 3, so 2 in a memory; 開幕時獲得 allows 2 steps), 前途洋々+ (SR +, 開幕時獲得 allows none). */
 const FANSA = cardNamed("ファンサ+");
@@ -74,6 +74,22 @@ describe("switchKaimaku", () => {
     const zento = newBuild(ZENTO.id, ZENTO, HIF);
     const customized = built(pickStep(zento, ZENTO.customization.kinds[0]?.id ?? "", 1, ZENTO));
     expect(switchKaimaku(customized, ZENTO).kaimaku).toBe(false);
+  });
+});
+
+describe("fitKaimaku", () => {
+  test("switches 開幕時獲得 off on a card that cannot have it, and on where it is always on", () => {
+    const ssr = cardNamed("成就+");
+    expect(fitKaimaku({ ...newBuild(ssr.id, ssr, HIF), kaimaku: true }, ssr).kaimaku).toBe(false);
+    const base = cardNamed("ファンサ");
+    expect(fitKaimaku({ ...newBuild(base.id, base, HIF), kaimaku: false }, base).kaimaku).toBe(true);
+  });
+
+  test("leaves a switchable 開幕時獲得 as the player set it, and the same build when nothing changes", () => {
+    const off = { ...fansa(), kaimaku: false };
+    expect(fitKaimaku(off, FANSA)).toBe(off);
+    const on = fansa();
+    expect(fitKaimaku(on, FANSA)).toBe(on);
   });
 });
 

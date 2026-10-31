@@ -16,8 +16,11 @@ type HandleEvent = JSX.TargetedPointerEvent<HTMLButtonElement>;
 
 /**
  * Dragging a row by its handle within its section (D14), with pointer events so it works by touch:
- * the handle captures the pointer, each move measures the other rows' middles, and the release
- * moves the row there. Rows hidden by 「未所持がある行だけ表示」 keep their places.
+ * the handle captures the pointer, each move measures the other rows' middles to draw the drop
+ * line, and the release measures them again at its own position, so a release that comes before
+ * the last move was drawn still lands where the finger is. Only the dragged row moves (D50), and a
+ * drop where it already was leaves the memo as it is, so a pending undo stays offered. Losing the
+ * pointer capture ends the drag.
  */
 export function useRowDrag(rows: readonly Row[], shown: readonly Row[]) {
   const { memo, setMemo } = usePage();
@@ -33,7 +36,8 @@ export function useRowDrag(rows: readonly Row[], shown: readonly Row[]) {
   const drop = (id: string, over: number) => {
     const others = rows.filter((r) => r.id !== id).map((r) => r.id);
     const shownOthers = shown.filter((r) => r.id !== id).map((r) => r.id);
-    setMemo(reorderRow(memo, id, placeAmongAll(others, shownOthers, over)));
+    const to = placeAmongAll(others, shownOthers, over);
+    if (to !== rows.findIndex((r) => r.id === id)) setMemo(reorderRow(memo, id, to));
   };
   const handle = (row: Row, shownIndex: number): HandleProps => ({
     onPointerDown: (e: HandleEvent) => {
@@ -43,11 +47,12 @@ export function useRowDrag(rows: readonly Row[], shown: readonly Row[]) {
     onPointerMove: (e: HandleEvent) => {
       if (drag?.id === row.id) setDrag({ id: row.id, over: dropIndex(e.clientY, middlesExcept(row.id)) });
     },
-    onPointerUp: () => {
-      if (drag?.id === row.id) drop(row.id, drag.over);
+    onPointerUp: (e: HandleEvent) => {
+      if (drag?.id === row.id) drop(row.id, dropIndex(e.clientY, middlesExcept(row.id)));
       setDrag(null);
     },
     onPointerCancel: () => setDrag(null),
+    onLostPointerCapture: () => setDrag(null),
   });
   return { list, drag, handle };
 }

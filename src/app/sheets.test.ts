@@ -36,6 +36,12 @@ describe("parseSheetIndex", () => {
     }
   });
 
+  test("refuses a sheet whose file is named for another plan or idol", () => {
+    for (const file of ["sheet112/logic-hski-60cb780d.webp", "sheet112/sense-ttmr-60cb780d.webp"]) {
+      expect(() => parseSheetIndex(withSheet({ file }))).toThrow(new SheetIndexError("sheets[0].file: expected the sheet of sense and hski"));
+    }
+  });
+
   test("refuses an unknown plan and a column count below one", () => {
     expect(() => parseSheetIndex(withSheet({ plan: "free" }))).toThrow("sheets[0].plan");
     expect(() => parseSheetIndex(withSheet({ columns: 0 }))).toThrow("sheets[0].columns: expected a positive integer");

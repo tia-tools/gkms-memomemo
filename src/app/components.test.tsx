@@ -7,7 +7,7 @@ import { act } from "preact/test-utils";
 import { newBuild } from "../memo/build.ts";
 import { addMemory, addRow, isRefusal, type Edited } from "../memo/edit.ts";
 import { emptyMemo, type Memo, type Memory } from "../memo/types.ts";
-import { cardNamed } from "../test-support/skillcards.ts";
+import { cardNamed, kindLabelled } from "../test-support/skillcards.ts";
 import { addRowThroughPopover, byLabel, byText, CATALOG, dialog, must, section, showPage, tap } from "../test-support/page.tsx";
 
 const HIF = must(CATALOG.tabAbilities("sense")[0], "a センス ability");
@@ -145,5 +145,61 @@ describe("the row menu", () => {
     await tap(byText(dialog(root), "button", "共通"));
     expect(section(root, "共通").textContent).toContain("成就+");
     expect(section(root, "好調").textContent).not.toContain("成就+");
+  });
+});
+
+describe("changing a row whose build the rules reject (saved before the data changed)", () => {
+  const FANSA = cardNamed("ファンサ+");
+
+  test("is not saved as it is: the customization step opens again, and a valid choice saves", async () => {
+    const over = { ...newBuild(FANSA.id, FANSA, HIF.ability.id), customization: [{ kind: kindLabelled(FANSA, "パラメータ+"), step: 3 }] };
+    await showPage(root, ok(addRow(emptyMemo(), "sense.kocho", "r1", over)));
+    await tap(byLabel(section(root, "好調"), "行のメニュー"));
+    await tap(byText(dialog(root), "button", "変更"));
+    await tap(byText(dialog(root), "button", "この内容で保存"));
+    expect(byText(root, '[role="alert"]', "このカードでは選べない組み合わせです。カスタマイズを選び直してください")).toBeTruthy();
+    expect(section(root, "好調").textContent).toContain("パラメータ+3");
+    await tap(byText(dialog(root), "button", "なし"));
+    expect(root.querySelector('[role="alert"]')).toBeNull();
+    await tap(byText(dialog(root), "button", "この内容で保存"));
+    expect(section(root, "好調").textContent).not.toContain("パラメータ+3");
+  });
+
+  test("a 開幕時獲得 the card cannot have is switched off, so the row can be saved and customized", async () => {
+    const joju = cardNamed("成就+");
+    await showPage(root, ok(addRow(emptyMemo(), "sense.kocho", "r1", { ...newBuild(joju.id, joju, HIF.ability.id), kaimaku: true })));
+    expect(section(root, "好調").textContent).toContain("開幕時獲得");
+    await tap(byLabel(section(root, "好調"), "行のメニュー"));
+    await tap(byText(dialog(root), "button", "変更"));
+    await tap(byText(dialog(root), "button", "2 カスタマイズ"));
+    await tap(byText(dialog(root), "button", "好調+1"));
+    expect(byText(dialog(root), "button", "好調+1").getAttribute("aria-pressed")).toBe("true");
+    await tap(byText(dialog(root), "button", "この内容で保存"));
+    expect(root.querySelector('[role="alert"]')).toBeNull();
+    expect(section(root, "好調").textContent).not.toContain("開幕時獲得");
+    expect(section(root, "好調").textContent).toContain("好調+1");
+  });
+});
+
+describe("the popover", () => {
+  test("moves again to stay on screen after the window is resized or the phone turned", async () => {
+    await showPage(root, withJoju());
+    await tap(byLabel(section(root, "好調"), "%F% 未所持"));
+    const panel = dialog(root);
+    const anchor = must(panel.parentElement, "the anchor");
+    // happy-dom lays nothing out: an anchor at 0 and a panel of no width start at the 8 px margin.
+    expect(panel.style.left).toBe("8px");
+    Object.defineProperty(anchor, "getBoundingClientRect", { value: () => new DOMRect(100, 0, 88, 26), configurable: true });
+    Object.defineProperty(panel, "offsetWidth", { value: 300, configurable: true });
+    Object.defineProperty(document.documentElement, "clientWidth", { value: 250, configurable: true });
+    try {
+      await act(() => {
+        window.dispatchEvent(new Event("resize"));
+      });
+      // Wider than the 250 px screen, from an anchor at 100: it starts at the left margin, 8 - 100.
+      expect(panel.style.left).toBe("-92px");
+    } finally {
+      Reflect.deleteProperty(document.documentElement, "clientWidth");
+    }
   });
 });

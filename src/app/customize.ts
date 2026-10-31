@@ -5,7 +5,7 @@
  * build the rules refuse.
  */
 
-import { type BuildProblem, type CardRules, isBuildProblem, kaimakuSwitch, withCustomization } from "../memo/build.ts";
+import { type BuildProblem, type CardRules, isBuildProblem, kaimakuRule, kaimakuSwitch, withCustomization } from "../memo/build.ts";
 import type { Build } from "../memo/types.ts";
 
 /** The step chosen for this kind, or null. */
@@ -32,6 +32,17 @@ export function stepOpen(build: Build, kind: string, step: number, card: CardRul
 /** The build with 開幕時獲得 switched, where the switch allows it (D40); otherwise as it was. */
 export function switchKaimaku(build: Build, card: CardRules): Build {
   return kaimakuSwitch(build, card) === "switchable" ? { ...build, kaimaku: !build.kaimaku } : build;
+}
+
+/**
+ * The build with 開幕時獲得 as the card allows it: off on a card that cannot have it, on where it is
+ * always on, as it was otherwise. A saved build can break the rules when the data changes (D31);
+ * without this, a 開幕時獲得 the card cannot have would make every tap in the step refused.
+ */
+export function fitKaimaku(build: Build, card: CardRules): Build {
+  const rule = kaimakuRule(card);
+  const kaimaku = rule === null ? false : rule.alwaysOn ? true : build.kaimaku;
+  return kaimaku === build.kaimaku ? build : { ...build, kaimaku };
 }
 
 /** Whether the step has nothing to choose, so the popover goes on past it: no kinds, and 開幕時獲得 fixed. */

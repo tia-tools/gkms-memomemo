@@ -11,7 +11,7 @@ import { ArmedButton, Popover } from "./Popover.tsx";
 import { RowPopover } from "./RowPopover.tsx";
 
 /** The pointer handlers of a row's drag handle (useRowDrag.ts). */
-export type HandleProps = Pick<JSX.HTMLAttributes<HTMLButtonElement>, "onPointerDown" | "onPointerMove" | "onPointerUp" | "onPointerCancel">;
+export type HandleProps = Pick<JSX.HTMLAttributes<HTMLButtonElement>, "onPointerDown" | "onPointerMove" | "onPointerUp" | "onPointerCancel" | "onLostPointerCapture">;
 
 /** How many memories the row holds, which its delete names (D19). */
 export function memoryCount(row: Row): number {
