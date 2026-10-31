@@ -15,6 +15,9 @@ To see it working: open the page, add a row 成就+ in センス → 好調, add
 - [x] (2026-10-30 21:40Z) Design interview (/grill-me) held with the user; decisions D1–D25 (the user's) and D26–D28 (the agent's defaults) recorded in the Decision Log; ADR 0001 written; repository scaffolded from `Taka499/project-template@b52b8df`.
 - [x] (2026-10-31 06:03Z) Plan reviewed against gakumas-supportcards, gkms-hif-final-stats and the upstream tables; the corrections and decisions D29–D32 folded in (see the revision note at the end).
 - [ ] Milestone 0: verify in the game data the facts the design rests on (card fields, H.I.F. abilities, customization limits, idol art variants, ability tiers, guide categories) and write the data requirements for gakumas-supportcards.
+  - [x] (2026-10-31 06:29Z) Game tables (`vertesan/gakumasu-diff` at `fc6afb8b5ba4`, 2026-10-28) and the asset manifest (version `205100:0075`) read; every question of the milestone answered or narrowed in Surprises & Discoveries; agent defaults D33–D36 recorded; requirements drafted in Interfaces and Dependencies with the open points marked.
+  - [ ] The user answers what the data cannot settle: whether a memory's card can be ++ or +++, whether Legend cards are in the pool, whether a card's customization limit counts kinds or steps, and the counting approach (D29, with the Cloudflare plan the account is on).
+  - [ ] Requirements finalized with those answers, and Milestone 6 rewritten to the counting decision.
 - [ ] Milestone 1 (in gakumas-supportcards): publish `/data/skillcards.v1.json` and the skill card icons in `tia-assets`.
 - [ ] Milestone 2: project skeleton — page, Worker, checks and workflows copied from gkms-hif-final-stats; the Worker proxies the data file and reads the icons.
 - [ ] Milestone 3: the memo model as pure TypeScript with tests.
@@ -61,6 +64,44 @@ To see it working: open the page, add a row 成就+ in センス → 好調, add
 
 - Observation: on Cloudflare's Workers Free plan, KV allows 1,000 writes a day, which the per-day cap of D12 would spend at one write per row created. During あさりゼミ a few dozen players each setting up 50 rows would pass it, and from then until 00:00 UTC every further write fails. D1 allows 100,000 rows written and 5 million rows read a day on the same plan, and refuses every query once a daily limit is reached. Workers Paid starts at $5 a month. Which plan the Cloudflare account holding `tia.run` is on was not checked.
   Evidence: Cloudflare documentation, read 2026-10-31. `https://developers.cloudflare.com/kv/platform/limits/`: Free "Writes to different keys: 1,000 writes per day", "Writes to same key: 1 per second". `https://developers.cloudflare.com/workers/platform/pricing/`: "Daily usage limits reset daily at 00:00 UTC. If you exceed any one of these limits, further operations of that type will fail with an error"; Workers Paid "a minimum charge of $5 USD per month". `https://developers.cloudflare.com/d1/platform/pricing/`: Free rows read "5 million / day", rows written "100,000 / day", "When your account hits the daily read and/or write limits, you will not be able to run queries against D1"; "Indexes will add an additional written row when writes include the indexed column".
+
+The observations below are Milestone 0's. Unless stated otherwise their evidence is the upstream tables at `vertesan/gakumasu-diff` commit `fc6afb8b5ba4` (2026-10-28), read on 2026-10-31 by scratch scripts outside the repository, and the game's asset manifest version `205100:0075`, fetched the same day through supportcards' pinned GkmasObjectManager.
+
+- Observation: a base card and its + are one `ProduceCard` id at two upgrade levels, not two cards, and the data has two more levels. `ProduceCard.yaml` has 1,801 rows for 472 ids, one row per `(id, upgradeCount)`: `upgradeCount` 0 is the base card, 1 the + card, and 2 and 3 exist for every card that has a + (443 ids), named ++ and +++. `assetId` and `isCharacterAsset` never differ between the levels of one id.
+  Evidence: `p_card-01-act-1_001  0:ファンサ  1:ファンサ+  2:ファンサ++  3:ファンサ+++`; 472 rows at level 0, 443 at each of 1, 2 and 3.
+
+- Observation: only an upgraded card can be customized. No level-0 row has a customization option (472 of 472); 248 of the 443 level-1 rows have some. Levels 1, 2 and 3 of one id carry the same options and limit for 439 of the 443 ids. A customization kind is one `ProduceCardCustomize` id (290 kinds), its steps are that id's rows, numbered by `customizeCount` (222 kinds with 1 step, 34 with 2, 34 with 3), and a card lists its kinds in `produceCardCustomizeIds` (2 or 3) with a limit `maxCustomizeCount` (1 to 3). Whether the limit counts kinds or steps is not in the data: 124 cards have limit 1 with two one-step kinds, which fits both readings, and ファンサ+ has limit 3 with kinds of 1, 1 and 3 steps, which the two readings treat differently.
+  Evidence: ファンサ+'s kinds, as `customizeCount:grow effect:producePoint` per step:
+
+      好調追加      1:g_effect-effect_add-e_effect-exam_parameter_buff-02:70
+      絶好調追加    1:g_effect-effect_add-e_effect-exam_parameter_buff_multiple_per_turn-02:70
+      (no text)     1:g_effect-lesson_add-6:40  2:g_effect-lesson_add-12:40  3:g_effect-lesson_add-30:70
+
+- Observation: a customization's Japanese label is in the data, in one of two places. 149 of the 392 step rows carry a `description` (23 distinct texts such as 好調追加, 絶好調追加, 強気+, 成長追加); for the rest, `ProduceDescriptionProduceCardGrowEffect.yaml` gives a label per grow-effect type in `produceCardCustomizeDescription`, such as `ParameterBuffTurnAdd=好調+`, `LessonAdd=パラメータ+`, `BlockAdd=元気+`. The generic `EffectAdd=効果追加` is never needed alone for the pool: of the 122 steps adding an effect, the 4 without a `description` belong to P-idol unique cards (絶対に負けない, それぞれの道, 入道雲と、きみ, よそ見はダメ♪). How the game prints the step next to the label (the design's 好調+1) has not been checked against a game screen.
+
+- Observation: no field marks a card as able to be a produce memory, so D8's rule is applied through the data's own tags. `ProduceCard.yaml` has no such field (its fields include `searchTag`, `originIdolCardId`, `originSupportCardId`, `isInitial`, `isInitialDeckProduceCard`, `libraryHidden`, `isLimited`, `isReward`, `isRestrict` and `viewStartTime`; `isLimited`, `isReward` and `isRestrict` are false on every row). P-idol unique cards are `searchTag: idol-unique` (680 rows), support-card event cards have `originSupportCardId` (236 rows), starter cards are `searchTag: starter` (136 rows, 表現の基本 being `p_card-00-men-0_003`), and the one trouble card is 眠気 (`category: ProduceCardCategory_Trouble`). Without those, the pool is 209 cards at level 0: 78 SR, 51 R, 45 SSR, 28 Legend and 7 N; 67 センス, 67 ロジック, 65 アノマリー, 10 free. 180 of them have a + (174 of those with customizations, 190 kinds in all); the 28 Legend cards have only level 0.
+  Evidence: the Legend rarity (`ProduceCardRarity_Legend`) is new to this design: 15 plan cards such as 舞台の支配者 (`p_card-01-act-100_003`), and 13 一番星 cards such as 好きを集める一番星 (`p_card-01-ido-100_039`), each with an `originPrimaStellaIdolCardId`. Whether either kind can be a produce memory is the user's to say.
+
+- Observation: a card's release is its `viewStartTime`, epoch milliseconds, or "0" for always; no card had one in the future on 2026-10-31. The release rule is therefore `viewStartTime <= now`, which supportcards' build applies so that art and data for a card appear together.
+  Evidence: 1,285 rows with "0", the rest dated, for example `1778896800000` (16 rows); 0 rows later than the time of reading.
+
+- Observation: each of the 115 H.I.F. abilities belongs to exactly one skill card, and that card is named only inside an id. Every one has a `ProduceSkill` with one effect, `p_effect-exam_status_enchant-enchant-p_ef-hif_memory-<card id>-enc02`; following the enchant chain through `ProduceExamStatusEnchant`, `ProduceExamEffect` and `ProduceCardSearch` reaches no field naming the card. The 115 card ids are distinct, all exist, and are all R (49) or SR (66) plan cards in the pool: 40 センス, 38 ロジック, 37 アノマリー, none free and none SSR. The skills' own `planType` is `ProducePlanType_Common` for all, so an ability's plan is its card's plan. The trigger is `p_trigger-start_audition-for_hif_memory` for all.
+  Evidence: `memory_ability-p_memory_skill-common-hatsuboshi_idol_festival-…-01-001-001` → skill effect `p_effect-exam_status_enchant-enchant-p_ef-hif_memory-p_card-01-men-1_034-enc02` → card `p_card-01-men-1_034` (ひと呼吸).
+
+- Observation: the eight `MemoryAbility.yaml` entries per stat ability kind are four rarities under two id families, and diamond = UR, rainbow = SSR holds for Vo, Da and Vi alike. Each kind (Vo%, Vo F, Da%, …) has R, SR, SSR and UR, each once as `ability-…` (for example `ability-p_cd-memory-vocal-1500-001-…-04-001`) and once as `memory_ability-…-04-001-001`, both pointing at one `ProduceSkill`. The rarity is on the `ProduceSkill` (`SkillRarity_R`, `_Sr`, `_Ssr`, `_Ur`); `MemoryAbility.rarity` is `SkillRarity_Unknown` on all 585 rows. The values are 1.4 / 2.1 / 2.8 / 3.5 % and +10 / +15 / +20 / +25 for every stat.
+  Evidence: `dance_growth_rate_addition-0028_0028` and `-0035_0035`, `visual_addition-0020_0020` and `-0025_0025`, and the same for vocal, each twice.
+
+- Observation: the guide categories cover a third of the pool. `ProduceGuideProduceCardCategoryGroup.yaml` has one group per sub-style (ParameterBuff 好調, LessonBuff 集中, CardPlayAggressive やる気, Review 好印象, Concentration 強気, FullPower 全力, the last two being アノマリー's), each twice (`_group_20`, `_group_35`); its categories carry labels such as 「やる気を増加するスキルカード」 and list recommended cards (11 distinct labels, with その他のスキルカード). 75 of the 209 pool cards are in at least one category, 6 of them under two labels; 134, such as ファンサ and 愛嬌, are in none. Every card instead has `effectGroupIds`, the game's effect taxonomy (for example `effect_group-visible-exam_parameter_buff-000`), usually several per card.
+
+- Observation: the game orders the P-idols in `Character.yaml` by `order`, so D20's "first idol" is 花海咲季 (`hski`, order 10). The 13 playable idols (`isPlayable: true`), in order: hski, ttmr, fktn, atbm, amao, kllj, kcna, ssmk, shro, jsna, hmsz, hume, hrnm. Card art also exists for 根緒亜紗里 (`nasr`), who is not playable.
+
+- Observation: a skill card's icon is the asset `<assetId>.unity3d` when `isCharacterAsset` is false, and `<assetId>-<character id>.unity3d` per idol when it is true, where `assetId` already reads `img_general_skillcard_…`. Every per-idol card in the pool has all 13 playable idols' variants, so D20's fallback is not needed today. The pool needs 1,901 icons: 141 cards × 13 (every SR and SSR, 3 R and 15 Legend) and 68 single images (48 R, 7 N, 13 一番星).
+  Evidence: the manifest lists 2,483 `img_general_skillcard_*` assets, for example `img_general_skillcard_act-2_009-hski.unity3d` … `-ttmr.unity3d` (14 suffixes with `nasr`) and `img_general_skillcard_men-0_003.unity3d` (表現の基本).
+
+- Observation: the manifest has no texture for the diamond and rainbow qualities. A search of its 49,144 names for rarity, frame, UR, SSR, rainbow, diamond, ability and memory found none; they are probably in a sprite atlas. It does have stat icons, `img_general_icon_produce-effect_bg-{vocal,dance,visual}` and `…_pict-{vocal,dance,visual}`, `…_pict-dancegrowthrate`. The cells therefore use the CSS stand-ins of Artifacts and Notes.
+
+- Observation, for D29: two more Cloudflare services could hold counts or caps. Workers Analytics Engine includes 100,000 data points written and 10,000 read queries a day on the Free plan, bills nothing at present, and keeps data for three months. The Workers Rate Limiting binding allows only 10- or 60-second periods, counts separately in each Cloudflare location and approximately, and its page states no plan or price.
+  Evidence: `https://developers.cloudflare.com/analytics/analytics-engine/pricing/` ("Currently, you will not be billed for your use of Workers Analytics Engine"), `…/analytics-engine/limits/` ("stored for three months"), `https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/` ("Must be either 10 or 60", "Rate limits are approximate and apply separately in each Cloudflare location"), read 2026-10-31.
 
 ## Decision Log
 
@@ -198,6 +239,22 @@ All decisions D1–D25 were made by the user in the /grill-me session of 2026-10
   Rationale: without the data file and the icons an offline page has nothing to draw rows with.
   Date/Author: 2026-10-31, agent's proposal at the plan review, accepted by the user.
 
+- Decision: D33 — a card is identified by its game id and its upgrade level together, `(ProduceCard id, upgradeCount)`; a build's card is that pair (Interfaces and Dependencies), and base and + are two cards of one id, as D7 means. A level-0 card always has customization "none", since the data gives it no options.
+  Rationale: the data keeps base and + under one id (Surprises & Discoveries), so the id alone cannot tell them apart.
+  Date/Author: 2026-10-31, agent, from the data in Milestone 0.
+
+- Decision: D34 — 「カードの絵柄」 offers the 13 playable P-idols in the game's order (`Character.order`), and its default, D20's "first idol", is 花海咲季 (`hski`). The variants drawn for 根緒亜紗里 (`nasr`), who is not playable, are not offered. D20's fallback to the default idol stays for a future card that lacks a variant.
+  Rationale: the game's own order needs no list kept here; every per-idol card in the pool has all 13 today.
+  Date/Author: 2026-10-31, agent, from the data in Milestone 0.
+
+- Decision: D35 — the icon rendition is `w112/` (112 pixels wide, twice the 56 px icon), each file named as the game names the asset with `.webp` in place of `.unity3d`: `w112/img_general_skillcard_<…>.webp` for a single image, `w112/img_general_skillcard_<…>-<character id>.webp` per idol, beside a lossless master under `master/` as supportcards' ADR 0003 prescribes. If Milestone 1 finds the textures narrower than 112 pixels, the rendition takes their width and its prefix is renamed to match before anything is published. The diamond and rainbow cells use the CSS stand-ins of Artifacts and Notes.
+  Rationale: one rendition serves both the 56 px card icon and the 24 px H.I.F. ability box on phone screens of twice the density; the game has no standalone tier texture (Surprises & Discoveries).
+  Date/Author: 2026-10-31, agent, from the data in Milestone 0.
+
+- Decision: D36 — D15's buff-type sort orders a section by the card's guide category label, the labels in the order they first appear in `ProduceGuideProduceCardCategory.yaml`. A card under two labels sorts by the first of them, and a card in no category sorts after all labelled cards, together with those labelled その他のスキルカード.
+  Rationale: the guide categories cover 75 of the 209 pool cards (Surprises & Discoveries); this keeps the user's choice of the game's own categories and gives every other card one place. Agent's default, to confirm with the user when Milestone 4 is shown; the alternative is the game's effect groups, which every card has but usually several of.
+  Date/Author: 2026-10-31, agent, from the data in Milestone 0.
+
 ## Outcomes & Retrospective
 
 Nothing yet; the plan has not started.
@@ -294,8 +351,13 @@ At the end of Milestone 3, `src/memo/types.ts` defines:
     export type ExtraPattern = Exclude<Pattern, FixedPattern>;
     export type Tier = "diamond" | "rainbow";
     export type Memory = readonly [Tier, Tier, Tier];       // Vo, Da, Vi
-    export interface CustomizationStep { kind: string; step: number }
-    export interface Build { card: string; customization: readonly CustomizationStep[]; hif: string }
+    export interface CustomizationStep { kind: string; step: number }   // ProduceCardCustomize id, its customizeCount
+    export interface Build {
+      card: string;                                         // ProduceCard id
+      upgrade: number;                                      // its upgradeCount: 0 base, 1 + (D33)
+      customization: readonly CustomizationStep[];          // empty for なし
+      hif: string;                                          // MemoryAbility id of the H.I.F. ability
+    }
     export interface Row {
       id: string;                                           // random, stable across edits
       build: Build;
@@ -310,8 +372,34 @@ At the end of Milestone 3, `src/memo/types.ts` defines:
 
 `src/memo/edit.ts` exposes pure functions from a `Memo` to a new `Memo` or a refusal, for example `addRow(memo, section, build): Memo | { refused: "duplicate"; section: SectionId }`. The data file's types live in `src/data/contract.ts`, copied verbatim from supportcards once Milestone 1 defines them; they are never edited here on their own.
 
-The data requirements for `skillcards.v1.json` are written here at the end of Milestone 0, together with the icon rendition (width, `w<width>/` prefix, file names per idol variant) and the requirement that supportcards' Worker serve it.
+### What gakumas-supportcards must provide (Milestone 1)
+
+This section is written so that a session in gakumas-supportcards can work from it alone. It is a draft: the points marked "open" wait for the user's answers in Milestone 0 (Progress), and it is final when none is left. The facts behind it, with their evidence, are in Surprises & Discoveries.
+
+The data file is `https://gakumas-supportcards.tia.run/data/skillcards.v1.json`, published under supportcards' ADR 0010 (the format version in the file and in its name; any change of shape bumps both). Like `cards.v1.json`, `bun run build` writes it from a committed module that `bun run generate` produces from the `vertesan/gakumasu-diff` tables `ProduceCard`, `ProduceCardCustomize`, `ProduceCardGrowEffect`, `ProduceDescriptionProduceCardGrowEffect`, `MemoryAbility`, `ProduceSkill`, `ProduceGuideProduceCardCategory` and `Character`. It holds:
+
+- `formatVersion`: 1.
+- `idols`: the playable P-idols (`Character.isPlayable`) in the game's order (`Character.order`), each `{ id, name }`, for example `{ "id": "hski", "name": "花海咲季" }`.
+- `cards`: every card in the pool, one entry per `(id, upgradeCount)`. The pool is every released card (`viewStartTime` "0" or not later than the build) at upgrade levels 0 and 1, except P-idol unique cards (`searchTag` `idol-unique`), support-card event cards (`originSupportCardId` set), starter cards (`searchTag` `starter`), and trouble cards (`category` `ProduceCardCategory_Trouble`). The one exception to the starter rule is 表現の基本 (`p_card-00-men-0_003`), whose level 0 is in the pool. Open: whether levels 2 and 3 (++ and +++) are in it, and whether Legend cards (`ProduceCardRarity_Legend`) are. Each entry has:
+  - `id` and `upgrade` (`upgradeCount`), and `name` as the game writes it at that level (成就+);
+  - `plan`: `sense`, `logic`, `anomaly` or `free` (from `ProducePlanType_Plan1`, `Plan2`, `Plan3` and `Common`);
+  - `rarity`: `N`, `R`, `SR`, `SSR` or `Legend`, and `type`: `active` or `mental`;
+  - `order`: the game's `order` string, for sorting in the game's order;
+  - `guideLabels`: the labels of the guide categories whose `produceCardIds` hold the card's id, in the order the categories are listed, without repeats, possibly empty;
+  - `art`: `{ asset, perIdol }`, with `asset` the card's `assetId` (`img_general_skillcard_act-3_029`) and `perIdol` its `isCharacterAsset`;
+  - `customization`: `{ limit, kinds }`, with `limit` the card's `maxCustomizeCount` and `kinds` its `produceCardCustomizeIds` in order, each `{ id, steps }`, and each step `{ step, label }`: `step` its `customizeCount`, and `label` its `description` if set, else the `produceCardCustomizeDescription` of its first grow effect's type in `ProduceDescriptionProduceCardGrowEffect`. Level 0 has `{ limit: 0, kinds: [] }`.
+- `hifAbilities`: every H.I.F. ability (`MemoryAbility` rows with `produceGroupIds` `[produce_group-003]`) whose card is released, each `{ id, card }`. `id` is the `MemoryAbility` id, and `card` the `ProduceCard` id found in its skill's effect id, `p_effect-exam_status_enchant-enchant-p_ef-hif_memory-<card id>-enc02`; no structured field names it. The generator fails, naming the ability, when an id does not match that form or names a card that is not in the pool. An ability's plan is its card's plan.
+
+The images are skill card icons in the shared R2 bucket `tia-assets`, extracted by supportcards' `scripts/images/` pipeline from the game's own bundles (never from a third party, D20b), only for cards in the pool, so that art and data appear together:
+
+- For each card id in the pool, the bundle `<assetId>.unity3d` when `isCharacterAsset` is false, and `<assetId>-<idol id>.unity3d` for each playable idol when it is true; 1,901 icons on 2026-10-31.
+- Each stored as a lossless master `master/<asset name>.webp` and a public rendition `w112/<asset name>.webp`, 112 pixels wide, where `<asset name>` is the bundle's name without `.unity3d` (D35). If the textures are narrower than 112 pixels, the rendition takes their width and its prefix is renamed to match before anything is published.
+- supportcards' Worker `img.ts` must answer `w112/` icons, as it answers `w192/` and `w48/` today, so that `upload.py`'s `HEAD` requests see which icons are already stored and the daily job fetches only the missing ones. The asset names seen in the pool have the form `img_general_skillcard_(act|men|ido)-<digits>_<three digits>`, with `-<four letters or digits>` per idol.
+
+This app's Worker then serves exactly `/img/w112/img_general_skillcard_….webp` from the bucket (Milestone 2) and builds each icon's path from `art` and the idol chosen in 「カードの絵柄」 (D20, D34).
 
 Revision note, 2026-10-31: first draft, written at the end of the /grill-me design session from its decision log, before any code; Milestone 0 is the next step.
 
 Revision note, 2026-10-31: the plan was reviewed against gakumas-supportcards, gkms-hif-final-stats and the upstream tables before any work, and the findings folded in at the user's request. Context and Orientation and Milestone 1 now describe supportcards' data pipeline as it is (only declared tables cached, a committed generated module, the published file written by a build plugin), where before they said the file was built from the cached tables. Milestones 0, 1 and 2 now cover the skill card icon rendition and the Workers that must serve it, because both Workers answer only support card thumbnails and item icons and supportcards' upload checks its own site. Milestone 0 also defines D20's "first idol" and settles D29, the counting approach reopened for cost. D30 validates count events against the data file, D31 keeps rows whose ids left the data file (replacing the rule that the 引き継ぎコード decoder checks every id against the data file), and D32 says what the service worker keeps. Milestones 6 and 7 carry `HASH_SALT` and a note that they change with D29. `FixedPattern` and `ExtraPattern` are added to the types so an extra group cannot hold a fixed pattern. Milestone 3 says it can run while Milestone 1 is in review. Three observations were added to Surprises & Discoveries, and the Progress line now names D26–D28.
+
+Revision note, 2026-10-31: Milestone 0's reading of the game data and the asset manifest added to Surprises & Discoveries, with the agent's defaults D33–D36 (a card is its id and upgrade level, the idol list and default, the `w112/` icon rendition, the buff-type sort). `Build` gained `upgrade`, and the draft of what supportcards must provide replaced the placeholder in Interfaces and Dependencies. Four questions for the user are listed in Progress; the milestone stays open until they are answered.
