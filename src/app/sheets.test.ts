@@ -94,16 +94,16 @@ describe("iconCell", () => {
 
 describe("spriteStyle", () => {
   test("scales the sheet to the size and moves it to the cell's column and row", () => {
-    expect(spriteStyle({ url: "/img/s.webp", columns: 10, rows: 7, index: 23 }, 56)).toEqual({
+    expect(spriteStyle({ url: "/img/s.webp", columns: 10, rows: 7, index: 23 }, "56px")).toEqual({
       width: "56px",
       height: "56px",
       backgroundImage: 'url("/img/s.webp")',
-      backgroundSize: "560px 392px",
-      backgroundPosition: "-168px -112px",
+      backgroundSize: "calc(10 * 56px) calc(7 * 56px)",
+      backgroundPosition: "calc(-3 * 56px) calc(-2 * 56px)",
     });
   });
 
-  test("the first cell sits at the origin", () => {
-    expect(spriteStyle({ url: "/img/s.webp", columns: 10, rows: 7, index: 0 }, 24).backgroundPosition).toBe("0px 0px");
+  test("the first cell sits at the origin, and the size may be a variable", () => {
+    expect(spriteStyle({ url: "/img/s.webp", columns: 10, rows: 7, index: 0 }, "var(--icon)").backgroundPosition).toBe("calc(0 * var(--icon)) calc(0 * var(--icon))");
   });
 });

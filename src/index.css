@@ -1,1 +1,80 @@
 @import "tailwindcss";
+
+/*
+ * Sizes of the memo grid (docs/plans/EXECPLAN_MEMORY_MEMO.md, D17 and Artifacts and Notes): phone
+ * first, the card and the three fixed groups fitting in about 370 px; from 600 px the sizes of the
+ * mockup the user accepted.
+ */
+:root {
+  --cell-w: 28px;
+  --cell-h: 26px;
+  --cell-font: 10px;
+  --cell-gap: 2px;
+  --group-gap: 8px;
+  --card-col: 56px;
+  --icon: 40px;
+  --hif-icon: 20px;
+  --pick-icon: 48px;
+}
+
+@media (min-width: 600px) {
+  :root {
+    --cell-w: 40px;
+    --cell-h: 30px;
+    --cell-font: 11px;
+    --cell-gap: 3px;
+    --group-gap: 10px;
+    --card-col: 72px;
+    --icon: 56px;
+    --hif-icon: 24px;
+    --pick-icon: 56px;
+  }
+}
+
+.cell {
+  width: var(--cell-w);
+  height: var(--cell-h);
+  font-size: var(--cell-font);
+}
+
+.memo-group {
+  width: calc(3 * var(--cell-w) + 2 * var(--cell-gap));
+}
+
+/* The game has no texture for the two qualities (Surprises & Discoveries); these are the CSS stand-ins. */
+.tier-diamond {
+  background: linear-gradient(135deg, #f4fbff 0%, #c4e6f8 30%, #f4fbff 50%, #b5ddf4 70%, #e3f3fc 100%);
+  border: 1px solid #7cc4ea;
+}
+
+.tier-rainbow {
+  background: linear-gradient(135deg, #ffd1e8 0%, #fff3b0 25%, #c9f5d0 50%, #c7e3ff 75%, #e5ccff 100%);
+  border: 1px solid #c79bf2;
+}
+
+.missing {
+  border: 2px dashed #f0a1bf;
+  background: repeating-linear-gradient(45deg, #fdeef4 0 4px, #ffffff 4px 8px);
+  color: #d0477f;
+}
+
+/* A delete button armed by its first tap (D4). */
+@keyframes armed {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+.armed {
+  animation: armed 0.3s ease-in-out 2;
+}
+
+/* A row shown by a jump from the 早見表 or a duplicate refusal. */
+@keyframes highlight {
+  from { background-color: #fde68a; }
+  to { background-color: transparent; }
+}
+
+.highlight {
+  animation: highlight 2s ease-out;
+}

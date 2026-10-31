@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { dropIndex, popoverOffset } from "./layout.ts";
+import { dropIndex, placeAmongAll, popoverOffset } from "./layout.ts";
 
 describe("dropIndex", () => {
   const mids = [100, 160, 220];
@@ -17,6 +17,29 @@ describe("dropIndex", () => {
 
   test("with no other row it lands first", () => {
     expect(dropIndex(130, [])).toBe(0);
+  });
+});
+
+describe("placeAmongAll", () => {
+  const others = ["a", "hidden1", "b", "hidden2", "c"];
+  const shown = ["a", "b", "c"];
+
+  test("before a shown row is that row's place among all", () => {
+    expect(placeAmongAll(others, shown, 0)).toBe(0);
+    expect(placeAmongAll(others, shown, 1)).toBe(2);
+    expect(placeAmongAll(others, shown, 2)).toBe(4);
+  });
+
+  test("past the shown rows is just after the last of them, before hidden rows after it", () => {
+    expect(placeAmongAll(["a", "b", "hidden"], ["a", "b"], 2)).toBe(2);
+  });
+
+  test("with every row shown, it is the same index", () => {
+    expect([0, 1, 2, 3].map((i) => placeAmongAll(shown, shown, i))).toEqual([0, 1, 2, 3]);
+  });
+
+  test("with no other row shown, it lands at the end", () => {
+    expect(placeAmongAll(["hidden"], [], 0)).toBe(1);
   });
 });
 

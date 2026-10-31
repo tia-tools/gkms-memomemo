@@ -115,15 +115,18 @@ export function iconCell(index: SheetIndex, plan: PlanId, art: Art, idol: string
   return cellIn(index, plan, idol, art) ?? (idol === defaultIdol ? null : cellIn(index, plan, defaultIdol, art));
 }
 
-/** The CSS that draws the cell at `size` pixels square, the sheet scaled to match. */
-export function spriteStyle(cell: IconCell, size: number): Record<string, string> {
+/**
+ * The CSS that draws the cell `size` square (a CSS length, such as `var(--icon)`, so one rule
+ * serves the phone and the desktop sizes), the sheet scaled to match.
+ */
+export function spriteStyle(cell: IconCell, size: string): Record<string, string> {
   const column = cell.index % cell.columns;
   const row = Math.floor(cell.index / cell.columns);
   return {
-    width: `${size}px`,
-    height: `${size}px`,
+    width: size,
+    height: size,
     backgroundImage: `url("${cell.url}")`,
-    backgroundSize: `${cell.columns * size}px ${cell.rows * size}px`,
-    backgroundPosition: `${-column * size}px ${-row * size}px`,
+    backgroundSize: `calc(${cell.columns} * ${size}) calc(${cell.rows} * ${size})`,
+    backgroundPosition: `calc(${-column} * ${size}) calc(${-row} * ${size})`,
   };
 }

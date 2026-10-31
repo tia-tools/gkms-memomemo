@@ -12,6 +12,18 @@ export function dropIndex(pointerY: number, midpoints: readonly number[]): numbe
   return midpoints.filter((mid) => mid < pointerY).length;
 }
 
+/**
+ * The drop place among all the section's other rows, from the place among those shown: before the
+ * shown row at `shownIndex`, or just after the last shown row when it is past them, so rows hidden
+ * by 「未所持がある行だけ表示」 keep their places relative to the rows around them.
+ */
+export function placeAmongAll(others: readonly string[], shownOthers: readonly string[], shownIndex: number): number {
+  const before = shownOthers[shownIndex];
+  if (before !== undefined) return others.indexOf(before);
+  const last = shownOthers.at(-1);
+  return last === undefined ? others.length : others.indexOf(last) + 1;
+}
+
 /** Space kept between a popover and the edge of the screen. */
 export const SCREEN_MARGIN = 8;
 
