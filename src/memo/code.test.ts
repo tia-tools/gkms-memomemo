@@ -51,8 +51,9 @@ describe("decodeMemo, refusals", () => {
     for (const code of ["mm1.ab+c", "mm1.ab/c", "mm1.abc=", "mm1.a b", "mm1.abcde"]) expect(await decodeMemo(code)).toEqual({ refused: "encoding" });
   });
 
-  test("refuses a code longer than the cap before reading it", async () => {
+  test("refuses a code longer than the cap before reading it, white space around it counted", async () => {
     expect(await decodeMemo(CODE_PREFIX + "A".repeat(MAX_CODE_LENGTH))).toEqual({ refused: "too-large" });
+    expect(await decodeMemo(" ".repeat(MAX_CODE_LENGTH) + (await encodeMemo(memo())))).toEqual({ refused: "too-large" });
   });
 
   test("refuses a stream that is not deflate-raw, or is cut short", async () => {

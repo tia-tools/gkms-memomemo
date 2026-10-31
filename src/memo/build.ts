@@ -92,14 +92,20 @@ export function newBuild(card: string, rules: CardRules, hif: string): Build {
   return { card, upgrade: rules.upgrade, customization: [], kaimaku: kaimakuRule(rules) !== null, hif };
 }
 
+export function isBuildProblem(result: Build | BuildProblem): result is BuildProblem {
+  return "problem" in result;
+}
+
 /**
- * The build with this customization. Steps beyond the card's 開幕時獲得 cap switch 開幕時獲得 off
- * (D40), unless the card's 開幕時獲得 is always on, where `buildProblem` then names the conflict.
+ * The build with this customization, or why it cannot have it: a returned build is always one
+ * `buildProblem` accepts. Steps beyond the card's 開幕時獲得 cap switch 開幕時獲得 off (D40); on a card
+ * whose 開幕時獲得 is always on, they are refused instead.
  */
-export function withCustomization(build: Build, customization: readonly ChosenStep[], card: CardRules): Build {
+export function withCustomization(build: Build, customization: readonly ChosenStep[], card: CardRules): Build | BuildProblem {
   const rule = kaimakuRule(card);
   const overCap = rule !== null && !rule.alwaysOn && stepTotal(customization) > rule.cap;
-  return { ...build, customization, kaimaku: overCap ? false : build.kaimaku };
+  const next = { ...build, customization, kaimaku: overCap ? false : build.kaimaku };
+  return buildProblem(next, card) ?? next;
 }
 
 /**

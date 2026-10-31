@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { cardNamed, kindLabelled } from "../test-support/skillcards.ts";
-import { buildKey, buildProblem, kaimakuRule, kaimakuSwitch, newBuild, stepLimit, withCustomization } from "./build.ts";
+import { type BuildProblem, buildKey, buildProblem, isBuildProblem, kaimakuRule, kaimakuSwitch, newBuild, stepLimit, withCustomization } from "./build.ts";
 import type { Build } from "./types.ts";
 
 /** ファンサ+ (R, limit 3): 好調追加 and 絶好調追加 of one step each, パラメータ+ of three (D39's own example). */
@@ -17,6 +17,12 @@ const SPRECH = cardNamed("シュプレヒコール+");
 
 function build(card: { id: string; upgrade: number }, customization: Build["customization"], kaimaku: boolean): Build {
   return { card: card.id, upgrade: card.upgrade, customization, kaimaku, hif: "memory_ability-x" };
+}
+
+/** The build `withCustomization` returned, or a failed test when it named a problem. */
+function built(result: Build | BuildProblem): Build {
+  if (isBuildProblem(result)) throw new Error(`problem: ${JSON.stringify(result)}`);
+  return result;
 }
 
 describe("buildKey", () => {
@@ -101,16 +107,21 @@ describe("開幕時獲得 (D40)", () => {
 
   test("customizing over the cap switches it off, and it stays off when the customization goes", () => {
     const zentoStep = [{ kind: ZENTO.customization.kinds[0]?.id ?? "", step: 1 }];
-    const customized = withCustomization(newBuild(ZENTO.id, ZENTO, "h"), zentoStep, ZENTO);
+    const customized = built(withCustomization(newBuild(ZENTO.id, ZENTO, "h"), zentoStep, ZENTO));
     expect(customized.kaimaku).toBe(false);
     expect(kaimakuSwitch(customized, ZENTO)).toBe("blocked");
-    const plain = withCustomization(customized, [], ZENTO);
+    const plain = built(withCustomization(customized, [], ZENTO));
     expect([plain.kaimaku, kaimakuSwitch(plain, ZENTO)]).toEqual([false, "switchable"]);
   });
 
   test("customizing within the cap keeps it on", () => {
-    const kept = withCustomization(newBuild(FANSA.id, FANSA, "h"), [{ kind: PARAM, step: 2 }], FANSA);
+    const kept = built(withCustomization(newBuild(FANSA.id, FANSA, "h"), [{ kind: PARAM, step: 2 }], FANSA));
     expect([kept.kaimaku, kaimakuSwitch(kept, FANSA)]).toEqual([true, "switchable"]);
+  });
+
+  test("a customization the card cannot carry is refused, never returned as a build", () => {
+    expect(withCustomization(newBuild(FANSA.id, FANSA, "h"), [{ kind: PARAM, step: 3 }], FANSA)).toEqual({ problem: "over-limit", steps: 3, limit: 2 });
+    expect(withCustomization(newBuild(FANSA.id, FANSA, "h"), [{ kind: "p_card_custom-x", step: 1 }], FANSA)).toEqual({ problem: "unknown-kind", kind: "p_card_custom-x" });
   });
 
   test("the switch is fixed on a base card and absent on SSR+ and N+ cards", () => {

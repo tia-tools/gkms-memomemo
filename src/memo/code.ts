@@ -74,9 +74,10 @@ export async function encodeMemo(memo: Memo): Promise<string> {
 
 /** The memo a code carries, or why it is refused; surrounding white space is ignored. */
 export async function decodeMemo(code: string): Promise<Memo | CodeRefusal> {
+  // The cap counts the code as pasted, white space included, so no input is scanned past it.
+  if (code.length > MAX_CODE_LENGTH) return { refused: "too-large" };
   const text = code.trim();
   if (!text.startsWith(CODE_PREFIX)) return { refused: "prefix" };
-  if (text.length > MAX_CODE_LENGTH) return { refused: "too-large" };
   const bytes = fromBase64Url(text.slice(CODE_PREFIX.length));
   if (bytes === null) return { refused: "encoding" };
   const inflated = await inflate(bytes, MAX_MEMO_BYTES);
