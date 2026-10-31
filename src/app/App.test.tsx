@@ -6,10 +6,8 @@ import { render } from "preact";
 import { act } from "preact/test-utils";
 import { parseSkillCardData, SkillCardDataError } from "../data/load.ts";
 import { App } from "./App.tsx";
-import { NO_SHEETS, type SheetIndex, SheetIndexError } from "./sheets.ts";
 
 const DATA = parseSkillCardData(JSON.parse(await Bun.file(new URL("../data/fixtures/skillcards.v1.json", import.meta.url)).text()));
-const noSheets = () => Promise.resolve(NO_SHEETS);
 
 let root: HTMLElement;
 beforeAll(() => GlobalRegistrator.register());
@@ -19,9 +17,9 @@ beforeEach(() => {
 });
 afterEach(() => act(() => render(null, root)));
 
-/** Renders the page with the two loaders and lets their promises settle. */
-async function page(load: () => Promise<typeof DATA>, loadSheets: () => Promise<SheetIndex> = noSheets): Promise<string> {
-  await act(() => render(<App load={load} loadSheets={loadSheets} />, root));
+/** Renders the page with the loader and lets its promise settle. */
+async function page(load: () => Promise<typeof DATA>): Promise<string> {
+  await act(() => render(<App load={load} />, root));
   await act(async () => {});
   return root.textContent ?? "";
 }
@@ -53,18 +51,15 @@ describe("App", () => {
     }
   });
 
-  test("still shows the memo when the sprite sheet index cannot be had, and says why in the console", async () => {
-    const warned = spyOn(console, "warn").mockImplementation(() => {});
+  test("asks only for the skill card file: the icons' index comes with the page", async () => {
+    const fetched = spyOn(globalThis, "fetch");
     try {
-      await page(
-        () => Promise.resolve(DATA),
-        () => Promise.reject(new SheetIndexError("/img/sheet112/index.v1.json: HTTP 404")),
-      );
-      expect(root.querySelectorAll('[role="tab"]').length).toBe(3);
-      expect(String(warned.mock.calls[0]?.[1])).toContain("HTTP 404");
+      await page(() => Promise.resolve(DATA));
+      expect(fetched.mock.calls).toEqual([]);
     } finally {
-      warned.mockRestore();
+      fetched.mockRestore();
     }
+    expect(root.querySelectorAll('[role="tab"]').length).toBe(3);
   });
 
   test("shows only the title while the file is still loading", async () => {

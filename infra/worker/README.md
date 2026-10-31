@@ -1,15 +1,15 @@
 # gkms-memomemo.tia.run Worker
 
-One Cloudflare Worker serves the whole page: the built page as static assets, the skill card sprite sheets and their index from the R2 bucket `tia-assets`, read only, and gakumas-supportcards' skill card data at this origin (`docs/adr/0001`; `docs/plans/EXECPLAN_MEMORY_MEMO.md`, decisions D22, D24 and D42). `wrangler.toml` runs the Worker's code only for `/img/*` and `/data/skillcards.json` (`run_worker_first`); every other path is answered by the assets directly. Both come from one list, `WORKER_FIRST` in `worker.ts`: `route` answers exactly its paths and sends the rest to the assets, and `wrangler.test.ts` keeps `run_worker_first` equal to it.
+One Cloudflare Worker serves the whole page: the built page as static assets, this app's game-style skill card sprite sheets from the R2 bucket `tia-assets`, read only, and gakumas-supportcards' skill card data at this origin (`docs/adr/0002`; `docs/plans/EXECPLAN_MEMORY_MEMO.md`, decisions D22, D24 and D42; `docs/plans/EXECPLAN_GAME_STYLE_ICONS.md`). The sheets are built and uploaded from a person's machine by the icon pipeline in `scripts/icons/`; the Worker never writes to the bucket. The sheets' index is not served: it is committed as `src/icons/index.v1.json` and bundled into the page. `wrangler.toml` runs the Worker's code only for `/img/*` and `/data/skillcards.json` (`run_worker_first`); every other path is answered by the assets directly. Both come from one list, `WORKER_FIRST` in `worker.ts`: `route` answers exactly its paths and sends the rest to the assets, and `wrangler.test.ts` keeps `run_worker_first` equal to it.
 
 That split matters on the Workers Free plan the `tia.run` account is on. Requests answered by the assets are free and unlimited. Every request that runs the Worker counts toward the account's 100,000 a day, which every `tia.run` Worker shares, and past it those requests fail until 00:00 UTC. That is why the page loads a few sprite sheets rather than one image per icon (D42; the plan's Surprises & Discoveries).
 
 | Route | Serves |
 |---|---|
 | `https://gkms-memomemo.tia.run/` | the page built by `bun run build` (`dist/`) |
-| `/img/sheet112/<plan>-<idol id>-<8 hex digits>.webp` | a sprite sheet from `tia-assets`, through `img.ts`, as immutable WebP; its name ends in a hash of its bytes, so it never changes meaning. A matching `If-None-Match` (a list, a weak tag or `*`, for GET and HEAD) is a 304 |
-| `/img/sheet112/index.v1.json` | the index of the current sheets, which names each cell, cached for an hour |
-| any other `/img/` path | a 404 marked `no-store`: the single icons under `w112/`, the private `master/` prefix and everything else in the bucket are never served |
+| `/img/gkms-memomemo/sheet112/<plan>-<idol id>-<8 hex digits>.webp` | a sprite sheet from `tia-assets`, through `img.ts`, as immutable WebP; its name ends in a hash of its bytes, so it never changes meaning. A matching `If-None-Match` (a list, a weak tag or `*`, for GET and HEAD) is a 304 |
+| `/icons/frames112.webp` | the placeholder frames, a static asset from `public/icons/` (no Worker request) |
+| any other `/img/` path | a 404 marked `no-store`: gakumas-supportcards' own sheets and index under `sheet112/`, the single icons under `w112/`, the private `master/` prefix and everything else in the bucket are never served |
 | `/data/skillcards.json` | gakumas-supportcards' `https://gakumas-supportcards.tia.run/data/skillcards.v1.json`, passed through with an hour's cache; a failure upstream is a 502 marked `no-store` (`data.ts`) |
 
 Hostname policy (tia-tools convention): each app lives on its own single-level subdomain of `tia.run`. The zone's free Universal SSL certificate covers no second level.
@@ -51,16 +51,18 @@ The D1 database and the daily Cron Trigger of the counts (decision D41) are adde
 
 ## Verify
 
-Once deployed, and once gakumas-supportcards publishes the data file and the sheets (Milestone 1):
+Once deployed, and once the sheets the committed index names are uploaded (`scripts/icons/upload.py`), from the repository root at the deployed commit:
 
     curl -sI https://gkms-memomemo.tia.run/ | head -3
     # -> HTTP/2 200, content-type: text/html
     curl -s https://gkms-memomemo.tia.run/data/skillcards.json | jq '.formatVersion, (.cards | length)'
     # -> 1, then the number of cards the sibling publishes
-    curl -s https://gkms-memomemo.tia.run/img/sheet112/index.v1.json | jq '.sheets | length'
+    jq '[.plans[].sheets[]] | length' src/icons/index.v1.json
     # -> 39 (three plans × 13 idols)
-    curl -sI "https://gkms-memomemo.tia.run/img/$(curl -s https://gkms-memomemo.tia.run/img/sheet112/index.v1.json | jq -r '.sheets[0].file')"
+    curl -sI "https://gkms-memomemo.tia.run/img/$(jq -r '.plans[0].sheets[0].file' src/icons/index.v1.json)"
     # -> HTTP/2 200, content-type: image/webp, cache-control: public, max-age=31536000, immutable
+    curl -sI https://gkms-memomemo.tia.run/icons/frames112.webp | head -3
+    # -> HTTP/2 200, content-type: image/webp (a static asset)
     curl -sI https://gkms-memomemo.tia.run/img/master/img_general_skillcard_men-0_003.webp
     # -> HTTP/2 404, cache-control: no-store   (a master must be refused even where it exists)
 

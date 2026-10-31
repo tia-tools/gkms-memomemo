@@ -8,7 +8,7 @@ import { type Page, PageContext } from "./page.ts";
 import { QuickTable } from "./QuickTable.tsx";
 import { SectionView } from "./Section.tsx";
 import { Settings } from "./Settings.tsx";
-import type { SheetIndex } from "./sheets.ts";
+import type { IconIndex } from "./sheets.ts";
 
 /** How long a jumped-to row stays highlighted. */
 export const HIGHLIGHT_MS = 2000;
@@ -48,7 +48,7 @@ function useHighlight(): [string | null, (rowId: string) => void] {
  * The memo page (Milestone 4): the three tabs, each with its 早見表, the 「未所持がある行だけ表示」
  * toggle and its sections, and the settings. The memo lives here, in memory; Milestone 5 saves it.
  */
-export function MemoPage({ catalog, sheets, initial }: { catalog: Catalog; sheets: SheetIndex; initial?: Memo }) {
+export function MemoPage({ catalog, sheets, initial }: { catalog: Catalog; sheets: IconIndex; initial?: Memo }) {
   const defaultIdol = catalog.data.idols[0]?.id ?? "";
   const [memo, setMemo] = useState<Memo>(() => initial ?? emptyMemo());
   const [tab, setTab] = useState<PlanId>("sense");

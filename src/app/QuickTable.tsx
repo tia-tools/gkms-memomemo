@@ -19,7 +19,7 @@ function QuickLine({ row, plan, onJump }: { row: Row; plan: PlanId; onJump: () =
   const coverage = rowCoverage(row);
   return (
     <button type="button" class="flex w-full items-center gap-2 rounded px-1 py-0.5 text-left hover:bg-slate-50" onClick={onJump}>
-      <CardIcon art={card?.art} plan={plan} size="24px" name={name} />
+      <CardIcon card={card} plan={plan} size="24px" name={name} />
       <span class="w-24 shrink-0 truncate text-xs">{name}</span>
       {FIXED_PATTERNS.map((p) => (
         <Square key={p} count={coverage.fixed[p]} />

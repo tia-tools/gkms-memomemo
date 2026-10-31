@@ -1,6 +1,6 @@
 /**
  * The memo page in a simulated DOM (happy-dom) for component tests: rendering it over the fixture,
- * a sprite sheet index made from the fixture the way gakumas-supportcards makes it, and finding
+ * an icon index made from the fixture the way scripts/icons/build.py makes it, and finding
  * and tapping controls by what the player reads. No layout: how it looks is checked in a browser.
  */
 
@@ -8,25 +8,25 @@ import { render } from "preact";
 import { act } from "preact/test-utils";
 import { makeCatalog } from "../app/catalog.ts";
 import { MemoPage } from "../app/MemoPage.tsx";
-import type { SheetIndex } from "../app/sheets.ts";
+import type { IconIndex } from "../app/sheets.ts";
 import { type Memo, PLAN_IDS } from "../memo/types.ts";
 import { SKILL_CARDS } from "./skillcards.ts";
 
 export const CATALOG = makeCatalog(SKILL_CARDS);
 
 /**
- * One sheet per plan for two idols, holding every card of the pool in that plan or free, as
- * supportcards builds them: also the N cards the pickers leave out (D54), which a saved row can hold.
+ * Sheets of every plan for two idols, holding every card the tabs offer at both levels, as
+ * scripts/icons/build.py builds them: not the N cards the pickers leave out (D54), which a saved
+ * row can still hold and which are then drawn as their frame.
  */
-export const TEST_SHEETS: SheetIndex = {
+export const TEST_SHEETS: IconIndex = {
   cell: 112,
-  sheets: PLAN_IDS.flatMap((plan) =>
-    ["hski", "ttmr"].map((idol) => {
-      const pool = CATALOG.data.cards.filter((c) => c.plan === plan || c.plan === "free");
-      const assets = [...new Set(pool.map((c) => (c.art.perIdol ? `${c.art.asset}-${idol}` : c.art.asset)))];
-      return { plan, idol, file: `sheet112/${plan}-${idol}-0000000${idol === "hski" ? 1 : 2}.webp`, columns: 10, assets };
-    }),
-  ),
+  columns: 10,
+  plans: PLAN_IDS.map((plan) => ({
+    plan,
+    cells: CATALOG.tabCards(plan).map((c) => `${c.id}:${c.upgrade}`),
+    sheets: ["hski", "ttmr"].map((idol) => ({ idol, file: `gkms-memomemo/sheet112/${plan}-${idol}-0000000${idol === "hski" ? 1 : 2}.webp` })),
+  })),
 };
 
 export function must<T>(value: T | null | undefined, what: string): T {
@@ -34,7 +34,7 @@ export function must<T>(value: T | null | undefined, what: string): T {
   return value;
 }
 
-export async function showPage(root: HTMLElement, initial?: Memo, sheets: SheetIndex = TEST_SHEETS): Promise<void> {
+export async function showPage(root: HTMLElement, initial?: Memo, sheets: IconIndex = TEST_SHEETS): Promise<void> {
   await act(() => render(<MemoPage catalog={CATALOG} sheets={sheets} initial={initial} />, root));
 }
 

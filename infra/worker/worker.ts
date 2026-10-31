@@ -1,6 +1,6 @@
 /**
- * The page's Worker: the built page from the static assets, the skill card sprite sheets and their
- * index from R2 (img.ts), and the sibling's skill card data at this origin (data.ts). Only `/img/*`
+ * The page's Worker: the built page from the static assets, this app's game-style skill card sprite
+ * sheets from R2 (img.ts), and the sibling's skill card data at this origin (data.ts). Only `/img/*`
  * and `/data/skillcards.json` need this code; `run_worker_first` in wrangler.toml sends just those
  * here, and every other request costs no Worker request on the Free plan (decision D42 of
  * docs/plans/EXECPLAN_MEMORY_MEMO.md).

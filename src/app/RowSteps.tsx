@@ -33,11 +33,12 @@ function SearchBox({ value, onInput, label }: { value: string; onInput: (text: s
 }
 
 /** A grid of icons with their names, the chosen one ringed. */
-function IconGrid<T>({ entries, keyOf, nameOf, artOf, chosen, plan, onPick }: {
+function IconGrid<T>({ entries, keyOf, nameOf, cardOf, chosen, plan, onPick }: {
   entries: readonly T[];
   keyOf: (entry: T) => string;
   nameOf: (entry: T) => string;
-  artOf: (entry: T) => SkillCard["art"];
+  /** The card whose icon stands for the entry: a card itself, or an ability's base card. */
+  cardOf: (entry: T) => SkillCard;
   chosen: (entry: T) => boolean;
   plan: PlanId;
   onPick: (entry: T) => void;
@@ -46,7 +47,7 @@ function IconGrid<T>({ entries, keyOf, nameOf, artOf, chosen, plan, onPick }: {
     <div class="grid max-h-[50vh] grid-cols-5 gap-1 overflow-y-auto">
       {entries.map((entry) => (
         <button key={keyOf(entry)} type="button" aria-pressed={chosen(entry)} class={`flex flex-col items-center gap-0.5 rounded p-0.5 ${chosen(entry) ? "ring-2 ring-slate-800" : ""}`} onClick={() => onPick(entry)}>
-          <CardIcon art={artOf(entry)} plan={plan} size="var(--pick-icon)" name={nameOf(entry)} />
+          <CardIcon card={cardOf(entry)} plan={plan} size="var(--pick-icon)" name={nameOf(entry)} />
           <span class="w-full truncate text-center text-[10px]">{nameOf(entry)}</span>
         </button>
       ))}
@@ -78,7 +79,7 @@ export function CardStep({ plan, chosen, onPick }: { plan: PlanId; chosen: Skill
     <>
       <SearchBox value={query} onInput={setQuery} label="カード名" />
       <RarityFilter on={rarities} onToggle={(rarity) => setRarities(toggled(rarities, rarity))} />
-      <IconGrid entries={cards} keyOf={(c) => `${c.id}:${c.upgrade}`} nameOf={(c) => c.name} artOf={(c) => c.art} chosen={(c) => c === chosen} plan={plan} onPick={onPick} />
+      <IconGrid entries={cards} keyOf={(c) => `${c.id}:${c.upgrade}`} nameOf={(c) => c.name} cardOf={(c) => c} chosen={(c) => c === chosen} plan={plan} onPick={onPick} />
     </>
   );
 }
@@ -95,7 +96,7 @@ export function HifStep({ plan, chosen, onPick }: { plan: PlanId; chosen: string
         entries={abilities}
         keyOf={(h) => h.ability.id}
         nameOf={(h) => h.card.name}
-        artOf={(h) => h.card.art}
+        cardOf={(h) => h.card}
         chosen={(h) => h.ability.id === chosen}
         plan={plan}
         onPick={(h) => onPick(h.ability.id)}

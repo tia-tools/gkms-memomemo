@@ -7,7 +7,7 @@ import { act } from "preact/test-utils";
 import { newBuild } from "../memo/build.ts";
 import { addExtraGroup, addMemory, addRow, type Edited, isRefusal } from "../memo/edit.ts";
 import { emptyMemo, FIXED_PATTERNS, type Memo, type Memory } from "../memo/types.ts";
-import { byLabel, byText, CATALOG, dialog, must, pick, section, showPage, tap } from "../test-support/page.tsx";
+import { byLabel, byText, CATALOG, dialog, must, pick, section, showPage, TEST_SHEETS, tap } from "../test-support/page.tsx";
 import { cardNamed } from "../test-support/skillcards.ts";
 
 const HIF = must(CATALOG.tabAbilities("sense")[0], "a センス ability").ability.id;
@@ -120,11 +120,21 @@ describe("art and unknown rows", () => {
     expect(urls().every((u) => u.includes("sense-ttmr-"))).toBe(true);
   });
 
-  test("without sheets every icon is drawn as its card's name", async () => {
-    await showPage(root, TWO_ROWS, { cell: 112, sheets: [] });
+  test("a card at a level the sheets lack is drawn as the empty frame of its rarity and type, with its name", async () => {
+    await showPage(root, TWO_ROWS, { cell: 112, columns: 10, plans: [] });
     const icons = [...section(root, "好調").querySelectorAll<HTMLElement>('[role="img"]')];
-    expect(icons.every((el) => el.style.backgroundImage === "")).toBe(true);
+    expect(icons.every((el) => el.style.backgroundImage.includes("/icons/frames112.webp"))).toBe(true);
     expect(icons[0]?.textContent).toBe("ファンサ+");
+  });
+
+  test("the H.I.F. ability is drawn with its card's base icon, never its ＋", async () => {
+    const card = must(CATALOG.hif(HIF), "the H.I.F. ability").card;
+    const only = (level: number) => ({ ...TEST_SHEETS, plans: TEST_SHEETS.plans.map((p) => ({ ...p, cells: p.cells.map((c) => (c.startsWith(`${card.id}:`) && c !== `${card.id}:${level}` ? "p_card-99-act-9_999:0" : c)) })) });
+    const hifIcon = () => must(section(root, "好調").querySelector<HTMLElement>('[role="img"][aria-label^="HIF "]'), "the H.I.F. icon").style.backgroundImage;
+    await showPage(root, TWO_ROWS, only(0));
+    expect(hifIcon()).toContain("sense-hski-");
+    await showPage(root, TWO_ROWS, only(1));
+    expect(hifIcon()).toContain("/icons/frames112.webp");
   });
 
   test("a row whose card the data lacks is drawn as unknown and keeps its memories and menu (D31)", async () => {

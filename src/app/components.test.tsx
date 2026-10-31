@@ -231,7 +231,7 @@ describe("changing a row of an N card that cannot be a produce memory (D54)", ()
     await showPage(root, ok(addRow(emptyMemo(), "sense.kocho", "r1", newBuild(chosen.id, chosen, HIF.ability.id))));
     const row = must(document.getElementById("row-r1"), "row r1");
     expect(row.textContent).toContain("挑戦+");
-    expect(byLabel(row, "挑戦+").style.backgroundImage).toContain("sense-hski-");
+    expect(byLabel(row, "挑戦+").style.backgroundImage).toContain("/icons/frames112.webp"); // no cell: the pickers leave it out
     await tap(byLabel(section(root, "好調"), "行のメニュー"));
     await tap(byText(dialog(root), "button", "変更"));
     expect([...dialog(root).querySelectorAll("button")].some((b) => b.textContent === "この内容で保存")).toBe(false);
