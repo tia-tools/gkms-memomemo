@@ -1,13 +1,13 @@
 # gkms-memomemo.tia.run Worker
 
-One Cloudflare Worker serves the whole page: the built page as static assets, the skill card sprite sheets and their index from the R2 bucket `tia-assets`, read only, and gakumas-supportcards' skill card data at this origin (`docs/adr/0001`; `docs/plans/EXECPLAN_MEMORY_MEMO.md`, decisions D22, D24 and D42). `wrangler.toml` runs the Worker's code only for `/img/*` and `/data/skillcards.json` (`run_worker_first`); every other path is answered by the assets directly. `wrangler.test.ts` keeps that list equal to the paths `worker.ts` answers.
+One Cloudflare Worker serves the whole page: the built page as static assets, the skill card sprite sheets and their index from the R2 bucket `tia-assets`, read only, and gakumas-supportcards' skill card data at this origin (`docs/adr/0001`; `docs/plans/EXECPLAN_MEMORY_MEMO.md`, decisions D22, D24 and D42). `wrangler.toml` runs the Worker's code only for `/img/*` and `/data/skillcards.json` (`run_worker_first`); every other path is answered by the assets directly. Both come from one list, `WORKER_FIRST` in `worker.ts`: `route` answers exactly its paths and sends the rest to the assets, and `wrangler.test.ts` keeps `run_worker_first` equal to it.
 
 That split matters on the Workers Free plan the `tia.run` account is on. Requests answered by the assets are free and unlimited. Every request that runs the Worker counts toward the account's 100,000 a day, which every `tia.run` Worker shares, and past it those requests fail until 00:00 UTC. That is why the page loads a few sprite sheets rather than one image per icon (D42; the plan's Surprises & Discoveries).
 
 | Route | Serves |
 |---|---|
 | `https://gkms-memomemo.tia.run/` | the page built by `bun run build` (`dist/`) |
-| `/img/sheet112/<plan>-<idol id>-<8 hex digits>.webp` | a sprite sheet from `tia-assets`, through `img.ts`, as immutable WebP; its name ends in a hash of its bytes, so it never changes meaning |
+| `/img/sheet112/<plan>-<idol id>-<8 hex digits>.webp` | a sprite sheet from `tia-assets`, through `img.ts`, as immutable WebP; its name ends in a hash of its bytes, so it never changes meaning. A matching `If-None-Match` (a list, a weak tag or `*`, for GET and HEAD) is a 304 |
 | `/img/sheet112/index.v1.json` | the index of the current sheets, which names each cell, cached for an hour |
 | any other `/img/` path | a 404 marked `no-store`: the single icons under `w112/`, the private `master/` prefix and everything else in the bucket are never served |
 | `/data/skillcards.json` | gakumas-supportcards' `https://gakumas-supportcards.tia.run/data/skillcards.v1.json`, passed through with an hour's cache; a failure upstream is a 502 marked `no-store` (`data.ts`) |

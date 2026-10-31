@@ -32,7 +32,7 @@ Cross-plan decisions live in `docs/adr/` (convention: `docs/adr/README.md`). Thi
 
 - `src/` is the page: Preact, built by Vite into `dist/`; `src/main.tsx` is the entry and `src/app/App.tsx` the root component, a placeholder until Milestone 4 (per `docs/plans/EXECPLAN_MEMORY_MEMO.md` § Plan of Work). The memo model goes in `src/memo/` (Milestone 3) and the data file's contract in `src/data/` once gakumas-supportcards defines it (Milestone 2, waiting on Milestone 1).
 - `infra/worker/` is the Cloudflare Worker on `gkms-memomemo.tia.run`: it serves `dist/` as static assets, and runs its own code only for `/data/skillcards.json` (proxied from gakumas-supportcards) and `/img/*` (the sprite sheets and their index, read from the shared R2 bucket `tia-assets`); see `infra/worker/README.md`. Every request that runs the Worker counts toward the account's Free-plan allowance of 100,000 a day, shared by every `tia.run` Worker, which is why icons come as sprite sheets (per the plan, D42 and § Surprises & Discoveries).
-- `vite.config.ts` gives the dev server the Worker's routes from local files: the sibling checkout `../gakumas-supportcards` (or `SUPPORTCARDS_DIR`) for the built data file and the image output, else this repository's fixture.
+- `vite.config.ts` gives the dev server the Worker's routes from local files: the sibling checkout `../gakumas-supportcards` (or `SUPPORTCARDS_DIR`) for the built data file and the image output, else this repository's fixture once it exists (it comes with the data contract), else a 502 for the data, as the Worker answers.
 
 ## Setup and Development
 
