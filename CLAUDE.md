@@ -26,23 +26,33 @@ Cross-plan decisions live in `docs/adr/` (convention: `docs/adr/README.md`). Thi
 
 ## Project Overview
 
-「学マス　メモリーメモ帳」 (`gkms-memomemo.tia.run`) is a public web page where 学園アイドルマスター players keep a memo of the produce memories they own for the H.I.F. scenario, because the game's own memory list makes it hard to see what is owned and what is still missing while preparing in the あさりゼミ event. A produce memory is the part of a game memory that carries a skill card into the next produce, not the stage memory beside it. The page has one tab per plan (センス / ロジック / アノマリー), each with three sections (the plan's two styles and 共通); a row is one build — skill card, customization and H.I.F. ability — and holds the memories of that build as Vo/Da/Vi ability groups (%%F, %F%, F%%, plus up to two extra patterns), each cell diamond or rainbow, with a folded 早見表 showing which patterns are owned and missing. The memo stays in the player's browser; anonymous per-section counts of what players choose rank the pickers, kept with a per-player daily cap in Cloudflare D1 on the account's Free plan (decision D41), and the card data and art come from gakumas-supportcards at runtime (per `docs/plans/EXECPLAN_MEMORY_MEMO.md`, decisions D1–D41, and `docs/adr/0001`).
+「学マス　メモリーメモ帳」 (`gkms-memomemo.tia.run`) is a public web page where 学園アイドルマスター players keep a memo of the produce memories they own for the H.I.F. scenario, because the game's own memory list makes it hard to see what is owned and what is still missing while preparing in the あさりゼミ event. A produce memory is the part of a game memory that carries a skill card into the next produce, not the stage memory beside it. The page has one tab per plan (センス / ロジック / アノマリー), each with three sections (the plan's two styles and 共通); a row is one build — skill card, customization and H.I.F. ability — and holds the memories of that build as Vo/Da/Vi ability groups (%%F, %F%, F%%, plus up to two extra patterns), each cell diamond or rainbow, with a folded 早見表 showing which patterns are owned and missing. The memo stays in the player's browser; anonymous per-section counts of what players choose rank the pickers, kept with a per-player daily cap in Cloudflare D1 on the account's Free plan (decision D41), and the card data and art come from gakumas-supportcards at runtime (per `docs/plans/EXECPLAN_MEMORY_MEMO.md`, decisions D1–D42, and `docs/adr/0001`).
 
 ## Architecture
 
-<!-- Describe the high-level structure: key directories, how components relate, data flow. Name the main entry points. -->
+- `src/` is the page: Preact, built by Vite into `dist/`; `src/main.tsx` is the entry and `src/app/App.tsx` the root component, a placeholder until Milestone 4 (per `docs/plans/EXECPLAN_MEMORY_MEMO.md` § Plan of Work). The memo model goes in `src/memo/` (Milestone 3) and the data file's contract in `src/data/` once gakumas-supportcards defines it (Milestone 2, waiting on Milestone 1).
+- `infra/worker/` is the Cloudflare Worker on `gkms-memomemo.tia.run`: it serves `dist/` as static assets, and runs its own code only for `/data/skillcards.json` (proxied from gakumas-supportcards) and `/img/*` (the sprite sheets and their index, read from the shared R2 bucket `tia-assets`); see `infra/worker/README.md`. Every request that runs the Worker counts toward the account's Free-plan allowance of 100,000 a day, shared by every `tia.run` Worker, which is why icons come as sprite sheets (per the plan, D42 and § Surprises & Discoveries).
+- `vite.config.ts` gives the dev server the Worker's routes from local files: the sibling checkout `../gakumas-supportcards` (or `SUPPORTCARDS_DIR`) for the built data file and the image output, else this repository's fixture.
 
 ## Setup and Development
 
-<!-- How to install dependencies, configure the environment, and run the project locally. Include exact commands. -->
+    bun install
+    bun run dev        # the page on Vite's dev server, with the Worker's routes from local files
+
+Bun 1.4.3, the version CI pins (`infra/workflows.test.ts` checks the two agree).
 
 ## Build and Test
 
-<!-- List the commands to build, test, lint, and format. Show expected output for a clean run. -->
+    bun test           # unit tests, co-located as *.test.ts
+    bun run type-check # tsc --noEmit
+    bun run lint       # oxlint --deny-warnings
+    bun run build      # vite build into dist/
+
+Judge each by its exit status: a clean type check or lint prints only the command line. `check.yml` runs all four on every pull request into `develop`, and `deploy.yml` runs them again before it deploys from `main` (`infra/worker/README.md` § Deploy).
 
 ## Code Style
 
-<!-- Language-specific conventions, naming patterns, import ordering, or formatting tools in use. -->
+The lint policy is `oxlint.config.ts`, adopted from gkms-hif-final-stats: size and complexity limits and the type escape hatches are errors, and an exception goes in that file with its reason and removal condition, never inline. Rules are pure functions in their own files with a co-located test; I/O stays at the call site.
 
 ## Tasks
 

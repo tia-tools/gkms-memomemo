@@ -23,6 +23,8 @@ To see it working: open the page, add a row 成就+ in センス → 好調, add
   - [ ] Requirements finalized with those answers, and Milestone 6 rewritten to the counting decision.
 - [ ] Milestone 1 (in gakumas-supportcards): publish `/data/skillcards.v1.json` and the skill card icons in `tia-assets`.
 - [ ] Milestone 2: project skeleton — page, Worker, checks and workflows copied from gkms-hif-final-stats; the Worker proxies the data file and reads the icons.
+  - [x] (2026-10-31 09:36Z) Skeleton without the data contract, worked while Milestone 1 waits for its session in supportcards (the user's choice): the toolchain and a placeholder page; the Worker with `/data/skillcards.json` proxied and `/img/` serving only the sprite sheets and their index (D42), `wrangler.toml`, `check.yml` and `deploy.yml`, the dev server's local routes, and `infra/worker/README.md`. `bun test` (25 tests, each new one seen to fail with its rule broken), `bun run type-check`, `bun run lint` (proved loaded by an injected `any`) and `bun run build` exit 0; `bun run dev` serves the page, answers `/data/skillcards.json` with 502 while no data file exists, and sheets and masters with 404.
+  - [ ] `src/data/contract.ts` copied from supportcards, `load.ts` with its test, and the fixture `src/data/fixtures/skillcards.v1.json`, once Milestone 1 defines the file; then the page lists the number of cards the file holds, the rest of this milestone's acceptance.
 - [ ] Milestone 3: the memo model as pure TypeScript with tests.
 - [ ] Milestone 4: the page — tabs, sections, rows, cells, popovers, pickers, 早見表, sorting, settings.
 - [ ] Milestone 5: saving in the browser, the home-screen install, and the 引き継ぎコード.
@@ -452,3 +454,5 @@ Revision note, 2026-10-31: D40 rewritten after the user's correction ("N" meant 
 Revision note, 2026-10-31: D40 completed with the user's answer: a base card's 開幕時獲得 is always on, and an R or SR + card's can be switched off by hand; Milestone 4 follows it.
 
 Revision note, 2026-10-31: D42 records the user's choice of sprite sheets for icons, and the supportcards requirements, Milestones 1, 2, 4 and 5 and D35 follow it; an observation records that wrangler cannot read the account's request counts. Milestone 0 is complete; Milestone 1 is next, in gakumas-supportcards.
+
+Revision note, 2026-10-31: Milestone 2's skeleton recorded in Progress, done before Milestone 1 at the user's choice; what waits for the data file is listed there.
