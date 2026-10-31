@@ -21,7 +21,7 @@ from PIL import Image
 from art import Card, load_master, master_variants, place, read_offered
 from cells import Identified, assign
 from identify import Candidate, Candidates, probe_mask
-from overlay import difference, fit_veil, lift, paint, slots, to_rgba
+from overlay import difference, fit_veil, lift, paint, slots, template, to_rgba
 from shots import icon, list_shots
 
 HERE = Path(__file__).parent
@@ -85,6 +85,7 @@ def main() -> int:
         veil = fit_veil(icons[a.shot.name], art)
         veiled[cell] = (veil, veil.apply(art))
     slot = slots([difference(icons[assigned[c].shot.name], v) for c, (_, v) in veiled.items()])
+    same = {t: template([icons[a.shot.name] for a in assigned.values() if a.card.type == t], t) for t in ("active", "mental")}
 
     (args.out / "lifted").mkdir(parents=True, exist_ok=True)
     (args.out / "check").mkdir(parents=True, exist_ok=True)
@@ -93,7 +94,7 @@ def main() -> int:
     for cell, a in sorted(assigned.items(), key=lambda kv: (kv[1].card.order, kv[1].card.upgrade)):
         shot = icons[a.shot.name]
         veil, art = veiled[cell]
-        overlay = lift(shot, art, a.card.type, slot)
+        overlay = lift(shot, art, a.card.type, slot, same[a.card.type])
         Image.fromarray(to_rgba(overlay), "RGBA").save(args.out / "lifted" / f"{cell.replace(':', '_')}.png")
         again = paint(art, overlay)
         error = np.abs(again - shot)

@@ -25,18 +25,27 @@ ART_Y0 = 3.875
 """The master is drawn as an ART_SIZE square with its top-left corner at (ART_X0, ART_Y0) of the icon:
 the median of sub-pixel fits on the 24 base screenshots with the most varied art."""
 
-HEXAGON = (
-    (72.12, 4.08),
-    (132.62, 32.47),
-    (132.62, 106.36),
-    (72.12, 144.52),
-    (11.63, 106.36),
-    (11.63, 32.47),
-)
-"""The アクティブ window's corners in icon pixels, clockwise from the top; its lower point lies under the frame."""
+OUTLINE_WIDTH = 1.75
+"""The white outline the game draws just outside each window, in icon pixels."""
 
-CIRCLE = (72.05, 73.01, 64.41)
-"""The メンタル window: centre x, centre y and radius in icon pixels."""
+HEXAGON = (
+    (72.25, 4.11),
+    (132.69, 31.98),
+    (132.69, 112.62),
+    (72.25, 140.49),
+    (11.81, 112.62),
+    (11.81, 31.98),
+)
+"""The アクティブ window's corners in icon pixels, clockwise from the top: a pointy-topped hexagon, wider
+than a regular one, symmetric about x = 72.25 and y = 72.3. Measured on the four hexagonal frames of
+`temp/image.png` (badge-free and 2.4 times the screenshots' size): the outline's outer edge, fitted
+over 2,552 points with an rms of 0.32 px, moved in by OUTLINE_WIDTH. The top edges and the sides
+agree with a fit on the screenshots to 0.1 px; its lower edges, hidden by badges there, were off by
+up to 6 px."""
+
+CIRCLE = (72.4, 72.67, 64.26)
+"""The メンタル window: centre x, centre y and radius in icon pixels, measured the same way on the four
+round frames (the outline's outer edge, rms 0.38 px over 2,144 points, radius less OUTLINE_WIDTH)."""
 
 SUPERSAMPLE = 8
 """Samples per pixel side when measuring how much of a pixel lies inside a window."""
@@ -68,6 +77,29 @@ def window(card_type: str, grow: float = 0.0) -> np.ndarray:
     for dy in offsets:
         for dx in offsets:
             total += inside(x + dx, y + dy, grow)
+    result = total / (n * n)
+    result.setflags(write=False)
+    return result
+
+
+CORNER_RADIUS = 8.5
+"""The icon's dark border is a rounded square; outside its corners the screenshot shows the P図鑑's white panel."""
+
+
+@cache
+def rounded(size: int = ICON) -> np.ndarray:
+    """Per pixel of a `size` square icon, the share of it inside the icon's rounded border, 0 to 1."""
+    r = CORNER_RADIUS * size / ICON
+    n = SUPERSAMPLE
+    offsets = (np.arange(n) + 0.5) / n
+    y, x = np.mgrid[0:size, 0:size].astype(np.float64)
+    total = np.zeros((size, size))
+    for dy in offsets:
+        for dx in offsets:
+            px, py = x + dx, y + dy
+            cx = np.clip(px, r, size - r)
+            cy = np.clip(py, r, size - r)
+            total += (px - cx) ** 2 + (py - cy) ** 2 <= r * r
     result = total / (n * n)
     result.setflags(write=False)
     return result

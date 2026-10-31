@@ -1,7 +1,7 @@
 import numpy as np
 
 from geometry import ICON, window
-from overlay import HIGH, Overlay, Veil, fit_veil, from_rgba, lift, paint, slots, to_rgba
+from overlay import HIGH, TEMPLATE_MIN_SHOTS, Overlay, Veil, fit_veil, from_rgba, lift, paint, slots, template, to_rgba
 from test_identify import art
 
 WHITE = np.array([255.0, 255.0, 255.0])
@@ -92,3 +92,41 @@ def test_an_overlay_survives_saving():
     back = from_rgba(to_rgba(Overlay(alpha, colour)))
     assert np.abs(back.alpha - alpha).max() <= 0.5 / 255 + 1e-6
     assert np.all(back.colour[alpha > 0] == 100)
+
+
+PALE = np.array([238.0, 244.0, 248.0])
+BOTTOM = (yy - 146) ** 2 + (xx - 72) ** 2 <= 14**2
+"""A pale badge at the bottom, drawn alike on every card, as the game's A and M are."""
+
+
+def with_bottom_badge(veiled: np.ndarray) -> np.ndarray:
+    shot = game_icon(veiled)
+    shot[BOTTOM] = PALE
+    return shot
+
+
+def test_a_badge_every_card_shows_alike_is_kept_where_it_has_the_arts_colour():
+    arts = [VEIL.apply(art(i)) for i in range(TEMPLATE_MIN_SHOTS)]
+    same = template([with_bottom_badge(a) for a in arts], "active")
+    white = np.full((ICON, ICON, 3), 245.0)
+    overlay = lift(with_bottom_badge(white), white, "active", BADGE_SLOT_FOR_TEMPLATE, same)
+    inside = BOTTOM & (window("active") == 1)
+    assert overlay.alpha[inside].min() == 1
+    assert np.allclose(overlay.colour[inside], PALE)
+
+
+def test_too_few_screenshots_make_no_template():
+    arts = [VEIL.apply(art(i)) for i in range(TEMPLATE_MIN_SHOTS - 1)]
+    assert not template([with_bottom_badge(a) for a in arts], "active").mask.any()
+
+
+BADGE_SLOT_FOR_TEMPLATE = badge_distance(BADGE) <= 12
+
+
+def test_a_card_showing_its_art_where_others_share_a_badge_does_not_carry_that_art():
+    arts = [VEIL.apply(art(i)) for i in range(TEMPLATE_MIN_SHOTS)]
+    same = template([with_bottom_badge(a) for a in arts], "active")
+    first, second = VEIL.apply(art(50)), VEIL.apply(art(51))
+    overlay = lift(game_icon(first), first, "active", BADGE_SLOT_FOR_TEMPLATE, same)  # this card has no bottom badge
+    inside = BOTTOM & (window("active", -3) == 1)
+    assert np.abs(paint(second, overlay) - second)[inside].max() < 1

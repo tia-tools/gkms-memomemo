@@ -16,7 +16,11 @@ a badge crossing the edge, as opaque as it is far from the art. Inside the windo
 be in the slots where the game draws badges (found across all screenshots, `slots`); there a
 pixel far from the veiled art is overlay, and a pixel at a badge's edge is matted against the
 colour of the nearest opaque badge pixel. Anywhere else inside the window the art shows, so a
-difference there (resampling noise in fine art) is never lifted.
+difference there (resampling noise in fine art) is never lifted. Last, what the game draws the
+same on every card of a type (the A or M badge at the bottom, the outline, part of the cost
+badge) is found as the pixels that do not change across all that type's screenshots, and is
+opaque overlay there even where it has the art's colour, as the A badge's pale backing has on
+white art (`template`).
 """
 
 from dataclasses import dataclass
@@ -39,6 +43,10 @@ SLOT_GROW = 2
 """Slots are grown by this many pixels, so a badge's soft edge stays inside."""
 EDGE_ZONE = 2.5
 """How far, in icon pixels, either side of the fitted window shape the outline is looked for."""
+TEMPLATE_SPREAD = 2.0
+"""A pixel is the same on every card of a type when its screenshots' median absolute deviation is at most this."""
+TEMPLATE_MIN_SHOTS = 20
+"""Fewer screenshots of a type than this make no template."""
 MEASURABLE = 40.0
 """The least difference (largest channel) between the outline's colour and the art for a share to be measured."""
 
@@ -50,6 +58,14 @@ class Veil:
 
     def apply(self, art: np.ndarray) -> np.ndarray:
         return np.clip(self.gain * art + self.offset, 0, 255)
+
+
+@dataclass(frozen=True)
+class Template:
+    """What the game draws the same on every card of a type, inside and near its window."""
+
+    mask: np.ndarray
+    colour: np.ndarray
 
 
 @dataclass(frozen=True)
@@ -99,6 +115,17 @@ def slots(differences: list[np.ndarray]) -> np.ndarray:
     """Where badges are drawn: pixels with opaque overlay in at least SLOT_MIN_SHARE of the screenshots, grown by SLOT_GROW."""
     count = sum((d > HIGH).astype(np.int32) for d in differences)
     return _grow(np.asarray(count) >= SLOT_MIN_SHARE * len(differences), SLOT_GROW)
+
+
+def template(icons: list[np.ndarray], card_type: str) -> Template:
+    """The pixels near or inside the window that every screenshot of `card_type` shows alike, and their median colour."""
+    near = window(card_type, EDGE_ZONE) > 0
+    if len(icons) < TEMPLATE_MIN_SHOTS:
+        return Template(np.zeros(near.shape, dtype=bool), np.zeros(near.shape + (3,), dtype=np.float32))
+    stack = np.stack(icons)
+    median = np.median(stack, axis=0)
+    spread = np.median(np.abs(stack - median), axis=0).max(axis=2)
+    return Template(near & (spread <= TEMPLATE_SPREAD), median.astype(np.float32))
 
 
 def _unpremultiply(shot: np.ndarray, veiled: np.ndarray, alpha: np.ndarray) -> np.ndarray:
@@ -154,8 +181,9 @@ def outline_colour(shot: np.ndarray, zone: np.ndarray, coverage: np.ndarray) -> 
     return np.median(light, axis=0).astype(np.float32)
 
 
-def lift(shot: np.ndarray, veiled: np.ndarray, card_type: str, slot: np.ndarray) -> Overlay:
-    """The overlay on `shot` of a card of `card_type`, whose art under the veil is `veiled`; `slot` is where badges may be."""
+def lift(shot: np.ndarray, veiled: np.ndarray, card_type: str, slot: np.ndarray, same: Template | None = None) -> Overlay:
+    """The overlay on `shot` of a card of `card_type`, whose art under the veil is `veiled`; `slot` is where badges
+    may be, and `same` what every card of the type shows alike."""
     coverage = window(card_type)
     zone = (window(card_type, EDGE_ZONE) > 0) & (window(card_type, -EDGE_ZONE) < 1)
     d = difference(shot, veiled)
@@ -185,6 +213,11 @@ def lift(shot: np.ndarray, veiled: np.ndarray, card_type: str, slot: np.ndarray)
     ramp = np.clip((np.abs(shot - veiled).max(axis=2) - LOW) / (HIGH - LOW), 0, 1).astype(np.float32)
     alpha[crossing] = ramp[crossing]
     colour[crossing] = _unpremultiply(shot, veiled, ramp)[crossing]
+    if same is not None:
+        # Only where this card shows it: a minority of cards may draw a badge over a shared pixel.
+        shown = same.mask & (np.abs(shot - same.colour).max(axis=2) < LOW)
+        alpha[shown] = 1.0
+        colour[shown] = shot[shown]
     return Overlay(alpha.astype(np.float32), colour.astype(np.float32))
 
 
