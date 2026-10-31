@@ -35,6 +35,7 @@ const UV_ACTIONS = ["actions/checkout", "astral-sh/setup-uv"];
 const GATES = ["bun install --frozen-lockfile", "bun test", "bun run type-check", "bun run lint", "bun run build"];
 const check = await load("check.yml");
 const deploy = await load("deploy.yml");
+const icons = await load("icons.yml");
 
 describe("the workflows", () => {
   test("neither may write to the repository, and no job widens that", () => {
@@ -83,5 +84,44 @@ describe("the workflows", () => {
     expect(last?.["working-directory"]).toBe("infra/worker");
     expect(last?.env).toEqual({ CLOUDFLARE_API_TOKEN: "${{ secrets.CLOUDFLARE_API_TOKEN }}", CLOUDFLARE_ACCOUNT_ID: "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" });
     expect(deploy["concurrency"]).toEqual({ group: "deploy-production", "cancel-in-progress": false });
+  });
+});
+
+describe("the icons workflow", () => {
+
+  test("runs daily after gakumas-supportcards' data update, and by hand", () => {
+    expect(icons["on"]).toEqual({ schedule: [{ cron: "45 11 * * *" }], workflow_dispatch: null });
+  });
+
+  test("reads by default; only the check writes, and only issues; only the post asks for an OIDC token; no secret", () => {
+    expect(icons["permissions"]).toEqual({ contents: "read" });
+    const all = jobs(icons);
+    expect(Object.keys(all)).toEqual(["check", "notify"]);
+    expect(all["check"]?.["permissions"]).toEqual({ contents: "read", issues: "write" });
+    expect(all["notify"]?.["permissions"]).toEqual({ "id-token": "write" });
+    expect(JSON.stringify(icons)).not.toContain("secrets.");
+  });
+
+  test("checks with this Bun, then keeps the issue with the run's own token", () => {
+    const list = steps(icons, "check");
+    expect(list.slice(0, ACTIONS.length).map((s) => s.uses?.split("@")[0])).toEqual(ACTIONS);
+    expect(list.flatMap((s) => (s.run === undefined ? [] : [s.run]))).toEqual([
+      "bun install --frozen-lockfile",
+      'bun scripts/icons/check.ts --out "$RUNNER_TEMP/icons"',
+      'bun scripts/icons/issue.ts "$RUNNER_TEMP/icons"',
+    ]);
+    expect(list.at(-1)?.env).toEqual({ GH_TOKEN: "${{ github.token }}" });
+  });
+
+  test("posts through nudge only when the list changed, its action pinned to a commit", () => {
+    expect(jobs(icons)["notify"]?.["if"]).toBe("needs.check.outputs.changed == 'true'");
+    const [post, ...rest] = steps(icons, "notify");
+    expect(rest).toEqual([]);
+    expect(post?.uses).toMatch(/^Taka499\/nudge\/actions\/notify@[0-9a-f]{40}$/);
+    expect(post?.with?.["endpoint"]).toBe("https://nudge.tia.run");
+    for (const s of steps(icons, "check")) {
+      if (s.uses !== undefined) expect(s.uses).toMatch(/^[\w.-]+\/[\w.-]+@[0-9a-f]{40}$/);
+      if (s.uses?.startsWith("oven-sh/setup-bun@") === true) expect(s.with?.["bun-version"]).toBe(Bun.version);
+    }
   });
 });
