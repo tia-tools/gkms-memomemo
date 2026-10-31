@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { PLAN_IDS } from "../memo/types.ts";
 import { cardNamed, kindLabelled, SKILL_CARDS } from "../test-support/skillcards.ts";
 import { customizationTexts, makeCatalog, stepText } from "./catalog.ts";
 
@@ -24,12 +25,20 @@ describe("makeCatalog", () => {
   test("a tab offers its plan's cards, then the free ones, in the game's order", () => {
     const cards = CATALOG.tabCards("sense");
     const firstFree = cards.findIndex((c) => c.plan === "free");
-    expect(cards.length).toBe(116 + 19);
+    expect(cards.length).toBe(112 + 19);
     expect(cards.slice(0, firstFree).every((c) => c.plan === "sense")).toBe(true);
     expect(cards.slice(firstFree).every((c) => c.plan === "free")).toBe(true);
     expect(cards[firstFree]?.name).toBe("表現の基本");
     const order = cards.slice(0, firstFree).map((c) => SKILL_CARDS.cards.indexOf(c));
     expect(order).toEqual(order.toSorted((a, b) => a - b));
+  });
+
+  test("no tab offers an N card but 表現の基本: the others cannot be a produce memory (D54)", () => {
+    const offeredN = PLAN_IDS.flatMap((plan) => CATALOG.tabCards(plan))
+      .filter((c) => c.rarity === "N")
+      .map((c) => `${c.name}:${c.upgrade}`);
+    expect([...new Set(offeredN)]).toEqual(["表現の基本:0"]);
+    expect(CATALOG.card(cardNamed("挑戦+").id, 1)?.name).toBe("挑戦+");
   });
 
   test("a tab offers the H.I.F. abilities of its plan's cards only, with their base card", () => {

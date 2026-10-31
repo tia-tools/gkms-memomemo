@@ -20,13 +20,26 @@ export interface Catalog {
   card: (id: string, upgrade: number) => SkillCard | undefined;
   /** The ability and its card, or undefined when the file does not have both. */
   hif: (id: string) => HifEntry | undefined;
-  /** The cards a tab offers (D8): the plan's cards, then the free ones, each in the game's order, base before +. */
+  /** The cards a tab offers (D8, D54): the plan's cards, then the free ones, each in the game's order, base before +. */
   tabCards: (plan: PlanId) => SkillCard[];
   /** The H.I.F. abilities a tab offers: those of the plan's cards, in their cards' game order. */
   tabAbilities: (plan: PlanId) => HifEntry[];
 }
 
 const cardKey = (id: string, upgrade: number) => `${id}:${upgrade}`;
+
+/** 表現の基本, at its base level the one N card that can be a produce memory (D8, D54). */
+export const N_MEMORY_CARD = "p_card-00-men-0_003";
+
+/**
+ * Whether the pickers offer the card (D54): every card of the data file's pool except the N cards
+ * other than 表現の基本. The pool still holds six plan N cards at both levels (挑戦, 試行錯誤, 可愛い仕草,
+ * 気分転換, はげしく, スパート), which cannot be a produce memory. A saved row of one is still drawn as
+ * a known card (D31).
+ */
+export function offered(card: SkillCard): boolean {
+  return card.rarity !== "N" || card.id === N_MEMORY_CARD;
+}
 
 export function makeCatalog(data: SkillCardDataFile): Catalog {
   const cards = new Map(data.cards.map((c) => [cardKey(c.id, c.upgrade), c]));
@@ -41,7 +54,7 @@ export function makeCatalog(data: SkillCardDataFile): Catalog {
     data,
     card: (id, upgrade) => cards.get(cardKey(id, upgrade)),
     hif: (id) => hifs.get(id),
-    tabCards: (plan) => [...data.cards.filter((c) => c.plan === plan), ...data.cards.filter((c) => c.plan === "free")],
+    tabCards: (plan) => [...data.cards.filter((c) => c.plan === plan), ...data.cards.filter((c) => c.plan === "free")].filter(offered),
     tabAbilities: (plan) => [...hifs.values()].filter((h) => h.card.plan === plan).toSorted(byCardOrder),
   };
 }
