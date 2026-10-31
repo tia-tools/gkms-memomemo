@@ -55,7 +55,7 @@ function IconGrid<T>({ entries, keyOf, nameOf, artOf, chosen, plan, onPick }: {
   );
 }
 
-/** The card step's rarity toggles (D58); with none on, every rarity shows. */
+/** The card step's rarity toggles (D56); with none on, every rarity shows. */
 function RarityFilter({ on, onToggle }: { on: ReadonlySet<SkillCardRarity>; onToggle: (rarity: SkillCardRarity) => void }) {
   return (
     <div class="flex gap-1" role="group" aria-label="レアリティ">
@@ -68,7 +68,7 @@ function RarityFilter({ on, onToggle }: { on: ReadonlySet<SkillCardRarity>; onTo
   );
 }
 
-/** Step 1: the skill card, the plan's cards then the free ones (D8, D19), by name and by rarity (D58). */
+/** Step 1: the skill card, the plan's cards then the free ones (D8, D19), by name and by rarity (D56). */
 export function CardStep({ plan, chosen, onPick }: { plan: PlanId; chosen: SkillCard | undefined; onPick: (card: SkillCard) => void }) {
   const { catalog } = usePage();
   const [query, setQuery] = useState("");

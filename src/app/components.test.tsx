@@ -129,7 +129,7 @@ describe("the row popover", () => {
   });
 });
 
-describe("the card step's rarity filter (D58)", () => {
+describe("the card step's rarity filter (D56)", () => {
   const shown = () => [...dialog(root).querySelectorAll("button[aria-pressed] span:last-child")].map((el) => el.textContent);
   const offeredNames = (...rarities: string[]) =>
     CATALOG.tabCards("sense")

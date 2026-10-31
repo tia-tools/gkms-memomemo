@@ -1,5 +1,5 @@
 /**
- * The row popover's pickers (docs/plans/EXECPLAN_MEMORY_MEMO.md, D19, D58). Search: a name matches
+ * The row popover's pickers (docs/plans/EXECPLAN_MEMORY_MEMO.md, D19, D56). Search: a name matches
  * when it contains the query once both are folded, full-width letters and digits to half-width and
  * katakana to hiragana, so ふぁんさ finds ファンサ and ＋ finds +. The card step's rarity filter: a
  * toggle per rarity, the cards of the rarities on, every card while none is on. The order is the
