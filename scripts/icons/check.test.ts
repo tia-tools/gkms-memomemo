@@ -43,6 +43,8 @@ describe("the issue's text", () => {
     const body = issueBody(list);
     expect(body).toContain("## New cards (1)\n\n- ファンサ — `base/R` — `p_card-01-act-1_001:0`");
     expect(body).toContain("## Changed in the game since their screenshot (1)\n\n- ファンサ+ — `enhanced/R`");
+    expect(body).toContain("add it to `NOT_DRAWN`");
+    expect(issueBody(list.slice(0, 1))).not.toContain("NOT_DRAWN");
     expect(keyOf(body)).toBe(listKey(list));
   });
 

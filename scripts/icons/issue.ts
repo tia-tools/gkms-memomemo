@@ -3,7 +3,7 @@
  * I7): opened when the list becomes non-empty, its body replaced when the list changes, closed
  * when the list is empty. The list's key in a hidden marker tells whether it changed, so a card
  * that waits for its screenshot does not reopen or repost anything day after day. Only an issue
- * the workflow opened (author github-actions) with the exact title is ever touched.
+ * the workflow opened (author github-actions, the exact title and the marker) is ever touched.
  *
  *     GH_TOKEN=… bun scripts/icons/issue.ts <dir from check.ts>
  *
@@ -34,9 +34,12 @@ export function announce(action: Action): boolean {
   return action.kind === "create" || action.kind === "edit";
 }
 
-/** The workflow's own open issue among those listed, by its exact title. */
+/**
+ * The workflow's own open issue among those listed: the exact title and the hidden marker check.ts
+ * writes, since another workflow of this repository also writes as github-actions.
+ */
 export function ours(listed: readonly OpenIssue[], title: string): OpenIssue | null {
-  return listed.find((i) => i.title === title) ?? null;
+  return listed.find((i) => i.title === title && keyOf(i.body) !== null) ?? null;
 }
 
 /**
@@ -63,7 +66,7 @@ if (import.meta.main) {
   }
   const found: { key: string; count: number; title: string; summary: string } = await Bun.file(`${dir}/needed.json`).json();
   const bodyFile = `${dir}/body.md`;
-  const listed: OpenIssue[] = JSON.parse(gh(["issue", "list", "--state", "open", "--author", "app/github-actions", "--json", "number,title,body,url", "--limit", "50"]));
+  const listed: OpenIssue[] = JSON.parse(gh(["issue", "list", "--state", "open", "--author", "app/github-actions", "--json", "number,title,body,url", "--limit", "500"]));
   const action = decide(found.count, found.key, ours(listed, found.title));
   let url = "";
   if (action.kind === "create") url = gh(["issue", "create", "--title", found.title, "--body-file", bodyFile]);

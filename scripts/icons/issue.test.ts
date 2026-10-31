@@ -32,10 +32,11 @@ describe("decide", () => {
 });
 
 describe("ours", () => {
-  test("is the open issue with the exact title, if any", () => {
+  test("is the open issue with the exact title and the check's marker, if any", () => {
     const other = { ...open(KEY), number: 9, title: "Screenshots needed for game-style icons (old)" };
-    expect(ours([other, open(KEY)], "Screenshots needed for game-style icons")?.number).toBe(7);
-    expect(ours([other], "Screenshots needed for game-style icons")).toBeNull();
+    const unmarked = { ...open(KEY), number: 8, body: "Opened by another workflow with the same title." };
+    expect(ours([other, unmarked, open(KEY)], "Screenshots needed for game-style icons")?.number).toBe(7);
+    expect(ours([other, unmarked], "Screenshots needed for game-style icons")).toBeNull();
   });
 });
 

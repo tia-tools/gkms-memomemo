@@ -75,7 +75,11 @@ export function issueBody(list: readonly Needed[]): string {
     "The daily check (`.github/workflows/icons.yml`) found cards the page offers without an up-to-date game-style icon. Take a P図鑑 screenshot of each (720 × 1280, the card selected), put it in `temp/skill_cards/<folder>/`, and follow `docs/plans/EXECPLAN_GAME_STYLE_ICONS.md` § Concrete Steps to lift, build, upload and stamp. A retaken screenshot replaces the old one in its folder. Until then a new card is drawn as its empty frame with its name, and a changed card keeps its old icon.",
   ];
   if (fresh.length > 0) parts.push(`## New cards (${fresh.length})\n\n${lines(fresh)}`);
-  if (changed.length > 0) parts.push(`## Changed in the game since their screenshot (${changed.length})\n\n${lines(changed)}`);
+  if (changed.length > 0) {
+    parts.push(
+      `## Changed in the game since their screenshot (${changed.length})\n\n${lines(changed)}\n\nIf nearly every card is listed here at once, the game's table probably gained a field rather than every card changing: when that field is not drawn on the icon, add it to \`NOT_DRAWN\` in \`scripts/icons/fingerprint.ts\`, and the list empties with no screenshot retaken.`,
+    );
+  }
   parts.push(marker(listKey(list)));
   return `${parts.join("\n\n")}\n`;
 }
