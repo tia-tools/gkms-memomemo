@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { cardNamed, SKILL_CARDS } from "../test-support/skillcards.ts";
-import { GUIDE_LABEL_ORDER, OTHER_LABEL, sortRows, sortSection, type CardLookup } from "./sort.ts";
+import { GUIDE_LABEL_ORDER, OTHER_LABEL, SORT_KEYS, sortRows, sortSection, type CardLookup } from "./sort.ts";
 import { emptyMemo, emptyRow, type Memo, type Row } from "./types.ts";
 
 const BY_LEVEL = new Map(SKILL_CARDS.cards.map((c) => [`${c.id}:${c.upgrade}`, c]));
@@ -46,8 +46,8 @@ describe("sortRows", () => {
     expect(sorted(["テレビ出演", "総合芸術"], "buff")).toEqual(["総合芸術", "テレビ出演"]);
   });
 
-  test("五十音: kana names in the order of the syllabary", () => {
-    expect(sorted(["ファンサ", "ハイタッチ", "トークタイム", "エキサイト", "アドリブ"], "name")).toEqual(["アドリブ", "エキサイト", "トークタイム", "ハイタッチ", "ファンサ"]);
+  test("offers レアリティ, アクティブ/メンタル and buff type, and no 五十音 (D47)", () => {
+    expect([...SORT_KEYS]).toEqual(["rarity", "type", "buff"]);
   });
 
   test("looks a card up at its own level: 表現の基本 has no +, and sorts as itself", () => {
@@ -55,7 +55,7 @@ describe("sortRows", () => {
   });
 
   test("a card the data file does not have sorts last under every key, keeping its order", () => {
-    for (const key of ["rarity", "type", "buff", "name"] as const) {
+    for (const key of SORT_KEYS) {
       expect(sorted(["unknown-b", "挑戦", "unknown-a", "成就"], key).slice(2)).toEqual(["unknown-b", "unknown-a"]);
     }
   });

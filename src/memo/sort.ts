@@ -1,5 +1,5 @@
 /**
- * The sort button (docs/plans/EXECPLAN_MEMORY_MEMO.md, D15, D36, D44, D45): a one-time, stable
+ * The sort button (docs/plans/EXECPLAN_MEMORY_MEMO.md, D15, D36, D44, D45, D47): a one-time, stable
  * rearrange of one section, whose result becomes the player's own order. The memo passed in is not
  * changed, so it is the undo. A row whose card is not in the data file (D31) sorts after every
  * known card, keeping its order.
@@ -8,8 +8,8 @@
 import type { SkillCard, SkillCardRarity } from "../data/contract.ts";
 import type { Memo, Row, SectionId } from "./types.ts";
 
-/** レアリティ, アクティブ/メンタル, buff type (the game's guide categories), 五十音. */
-export const SORT_KEYS = ["rarity", "type", "buff", "name"] as const;
+/** レアリティ, アクティブ/メンタル, buff type (the game's guide categories); no 五十音 (D47). */
+export const SORT_KEYS = ["rarity", "type", "buff"] as const;
 export type SortKey = (typeof SORT_KEYS)[number];
 
 /** The data file's card at that level, or undefined when the file does not have it. */
@@ -39,9 +39,6 @@ export const GUIDE_LABEL_ORDER: readonly string[] = [
 ];
 export const OTHER_LABEL = "その他のスキルカード";
 
-/** D45: the card name in Japanese collation; the data has no readings, so kanji names do not sort by reading. */
-const collator = new Intl.Collator("ja");
-
 /** A card's place under the buff-type key: its earliest listed label, then unlisted labels, then none or その他 (D36). */
 function buffRank(card: SkillCard): number {
   const ranks = card.guideLabels
@@ -58,8 +55,6 @@ function compareCards(key: SortKey, a: SkillCard, b: SkillCard): number {
       return (a.type === "active" ? 0 : 1) - (b.type === "active" ? 0 : 1);
     case "buff":
       return buffRank(a) - buffRank(b);
-    case "name":
-      return collator.compare(a.name, b.name);
   }
 }
 
