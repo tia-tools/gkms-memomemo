@@ -45,6 +45,19 @@ export function imageKey(pathname: string): string | null {
   return SHEET_PATH.exec(pathname)?.[1] ?? null;
 }
 
+/**
+ * Whether an `If-None-Match` header matches the stored ETag, so the answer is a 304 (RFC 9110
+ * § 13.1.2): `*`, or a list of tags compared weakly, since Cloudflare weakens an ETag (`W/"…"`)
+ * when it compresses a response, as it does the JSON index. R2's tags are hex digits, so a tag
+ * never holds the comma the list is split on.
+ */
+export function notModified(ifNoneMatch: string | null, etag: string): boolean {
+  if (ifNoneMatch === null) return false;
+  if (ifNoneMatch.trim() === "*") return true;
+  const opaque = (tag: string) => tag.trim().replace(/^W\//, "");
+  return ifNoneMatch.split(",").some((tag) => opaque(tag) === opaque(etag));
+}
+
 /** A miss is never cached, so a sheet the sibling uploads later shows at once. */
 function notFound(): Response {
   return new Response("Not found", { status: 404, headers: { "Cache-Control": "no-store" } });
@@ -66,10 +79,12 @@ export async function serveImage(request: Request, bucket: ImageBucket): Promise
   const key = imageKey(new URL(request.url).pathname);
   if (key === null) return notFound();
 
+  const ifNoneMatch = request.headers.get("If-None-Match");
   if (request.method === "HEAD") {
     const meta = await bucket.head(key);
     if (meta === null) return notFound();
     const headers = headersFor(key, meta);
+    if (notModified(ifNoneMatch, meta.httpEtag)) return new Response(null, { status: 304, headers });
     headers.set("Content-Length", String(meta.size));
     return new Response(null, { status: 200, headers });
   }
@@ -77,6 +92,6 @@ export async function serveImage(request: Request, bucket: ImageBucket): Promise
   const object = await bucket.get(key);
   if (object === null) return notFound();
   const headers = headersFor(key, object);
-  if (request.headers.get("If-None-Match") === object.httpEtag) return new Response(null, { status: 304, headers });
+  if (notModified(ifNoneMatch, object.httpEtag)) return new Response(null, { status: 304, headers });
   return new Response(object.body, { status: 200, headers });
 }

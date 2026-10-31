@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { IMMUTABLE, INDEX_CACHE, INDEX_KEY, imageKey, serveImage, type ImageBucket } from "./img.ts";
+import { IMMUTABLE, INDEX_CACHE, INDEX_KEY, imageKey, notModified, serveImage, type ImageBucket } from "./img.ts";
 
 const SHEET = "sheet112/sense-hski-1a2b3c4d.webp";
 const URL_OK = `https://example.tia.run/img/${SHEET}`;
@@ -58,6 +58,54 @@ describe("imageKey", () => {
   });
 });
 
+describe("the URL parser in front of imageKey", () => {
+  // worker.ts hands serveImage the request as the runtime parsed it, so these go through the parser.
+  test("encoded slashes, double slashes, trailing dots, case and Unicode never reach the bucket", async () => {
+    const tricks = [
+      "/img/sheet112%2fsense-hski-1a2b3c4d.webp",
+      "/img/sheet112/%2e%2e/master/img_general_skillcard_men-0_003.webp",
+      "/img//sheet112/sense-hski-1a2b3c4d.webp",
+      "/img/sheet112//sense-hski-1a2b3c4d.webp",
+      "/img/sheet112/sense-hski-1a2b3c4d.webp.",
+      "/IMG/sheet112/sense-hski-1a2b3c4d.webp",
+      "/img/sheet112/sense-hsкi-1a2b3c4d.webp",
+      "/img/sheet112/index.v1.json%00",
+    ];
+    for (const path of tricks) {
+      const b = bucket({ [SHEET]: "x", [INDEX_KEY]: "{}", "master/img_general_skillcard_men-0_003.webp": "y" });
+      const res = await serveImage(new Request(`https://example.tia.run${path}`), b);
+      expect({ path, status: res.status, calls: b.calls }).toEqual({ path, status: 404, calls: [] });
+    }
+  });
+
+  test("dot segments are resolved before matching, so they can only land on an allowed name", async () => {
+    const b = bucket({ [SHEET]: "sheet" });
+    const res = await serveImage(new Request(`https://example.tia.run/img/master/%2e%2e/${SHEET}`), b);
+    expect([res.status, b.calls]).toEqual([200, [`get ${SHEET}`]]);
+  });
+
+  test("a query string is not part of the key", async () => {
+    const b = bucket({ [SHEET]: "sheet" });
+    const res = await serveImage(new Request(`${URL_OK}?v=2`), b);
+    expect([res.status, b.calls]).toEqual([200, [`get ${SHEET}`]]);
+  });
+});
+
+describe("notModified", () => {
+  const ETAG = '"abc123"';
+  test("matches the same tag, a weak form of it, a list holding it, and *", () => {
+    for (const header of ['"abc123"', 'W/"abc123"', ' "x", W/"abc123" ', "*"]) expect({ header, hit: notModified(header, ETAG) }).toEqual({ header, hit: true });
+  });
+
+  test("matches a weak stored tag against its strong form", () => {
+    expect(notModified('"abc123"', 'W/"abc123"')).toBe(true);
+  });
+
+  test("misses without the header, with another tag, and with a tag that only contains it", () => {
+    for (const header of [null, "", '"abc124"', '"abc1234"', 'W/"xabc123"']) expect({ header, hit: notModified(header, ETAG) }).toEqual({ header, hit: false });
+  });
+});
+
 describe("serveImage", () => {
   test("GET serves a sheet as immutable webp", async () => {
     const b = bucket({ [SHEET]: "webp-bytes" });
@@ -111,10 +159,25 @@ describe("serveImage", () => {
     expect(b.calls).toEqual([]);
   });
 
-  test("a matching If-None-Match is a 304", async () => {
-    const res = await serveImage(new Request(URL_OK, { headers: { "If-None-Match": `"etag-${SHEET}"` } }), bucket({ [SHEET]: "x" }));
-    expect(res.status).toBe(304);
-    expect(res.headers.get("Cache-Control")).toBe(IMMUTABLE);
+  test("a matching If-None-Match is a 304, for GET and HEAD alike, a weakened tag included", async () => {
+    for (const method of ["GET", "HEAD"]) {
+      for (const tag of [`"etag-${SHEET}"`, `W/"etag-${SHEET}"`]) {
+        const res = await serveImage(new Request(URL_OK, { method, headers: { "If-None-Match": tag } }), bucket({ [SHEET]: "x" }));
+        expect({ method, tag, status: res.status, cache: res.headers.get("Cache-Control") }).toEqual({ method, tag, status: 304, cache: IMMUTABLE });
+      }
+    }
+  });
+
+  test("a 304 for the index keeps the index's one-hour cache, never immutable", async () => {
+    for (const method of ["GET", "HEAD"]) {
+      const res = await serveImage(new Request(URL_INDEX, { method, headers: { "If-None-Match": `W/"etag-${INDEX_KEY}"` } }), bucket({ [INDEX_KEY]: "{}" }));
+      expect({ method, status: res.status, cache: res.headers.get("Cache-Control") }).toEqual({ method, status: 304, cache: INDEX_CACHE });
+    }
+  });
+
+  test("a stale If-None-Match gets the full answer", async () => {
+    const res = await serveImage(new Request(URL_OK, { headers: { "If-None-Match": '"etag-old"' } }), bucket({ [SHEET]: "x" }));
+    expect([res.status, await res.text()]).toEqual([200, "x"]);
   });
 
   test("other methods are refused", async () => {

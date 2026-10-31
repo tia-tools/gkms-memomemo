@@ -25,4 +25,10 @@ describe("route", () => {
     expect(e.seen).toEqual(["get sheet112/sense-hski-1a2b3c4d.webp", "assets /", "assets /data/skillcards.v1.json"]);
     expect(await data.text()).toBe("{}");
   });
+
+  test("a path next to a Worker route is the assets' to answer", async () => {
+    const e = env();
+    for (const path of ["/img", "/imgx/a", "/data/skillcards.json/", "/data/skillcards.jsonx"]) await route(new Request(`https://example.tia.run${path}`), e, upstream);
+    expect(e.seen).toEqual(["assets /img", "assets /imgx/a", "assets /data/skillcards.json/", "assets /data/skillcards.jsonx"]);
+  });
 });

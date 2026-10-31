@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { SKILLCARDS_ROUTE } from "./data.ts";
+import { WORKER_FIRST } from "./worker.ts";
 
 const config: unknown = Bun.TOML.parse(await Bun.file(new URL("./wrangler.toml", import.meta.url)).text());
 
@@ -20,7 +20,7 @@ describe("wrangler.toml", () => {
     const assets = table(root["assets"]);
     expect(assets["directory"]).toBe("../../dist");
     expect(assets["binding"]).toBe("ASSETS");
-    expect(assets["run_worker_first"]).toEqual(["/img/*", SKILLCARDS_ROUTE]);
+    expect(assets["run_worker_first"]).toEqual([...WORKER_FIRST]);
   });
 
   test("binds the sibling's bucket as IMAGES, the name the Worker's Env reads", () => {
