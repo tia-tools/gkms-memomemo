@@ -4,11 +4,12 @@
  * contract does not name is dropped. Anything else that does not match refuses the whole file, with
  * the path of the first bad value: the page never works from part of the card list. One check goes
  * beyond the types: an empty card or idol list is refused too (docs/plans/EXECPLAN_MEMORY_MEMO.md,
- * decision D43). Adopted from
- * gkms-hif-final-stats' src/data/load.ts, which reads support cards the same way.
+ * decision D43). Adopted from gkms-hif-final-stats' src/data/load.ts, which reads support cards the
+ * same way; the readers themselves are src/lib/read.ts.
  */
 
 import { SKILLCARDS_ROUTE } from "../../infra/worker/data.ts";
+import { boolean, fail, integer, isFields, list, object, oneOf, type Read, ReadError, req, string } from "../lib/read.ts";
 import {
   type CustomizationKind,
   type CustomizationStep,
@@ -28,42 +29,6 @@ export class SkillCardDataError extends Error {
     super(message);
     this.name = "SkillCardDataError";
   }
-}
-
-/** Reads one value as T, or throws naming `path`. */
-type Read<T> = (value: unknown, path: string) => T;
-type Fields = Record<string, unknown>;
-
-function fail(path: string, expected: string): never {
-  throw new SkillCardDataError(`${path}: expected ${expected}`);
-}
-
-function isFields(value: unknown): value is Fields {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-const object: Read<Fields> = (value, path) => (isFields(value) ? value : fail(path, "an object"));
-const string: Read<string> = (value, path) => (typeof value === "string" ? value : fail(path, "a string"));
-const integer: Read<number> = (value, path) =>
-  typeof value === "number" && Number.isInteger(value) ? value : fail(path, "an integer");
-const boolean: Read<boolean> = (value, path) => (typeof value === "boolean" ? value : fail(path, "true or false"));
-
-function oneOf<T extends string>(options: readonly T[]): Read<T> {
-  return (value, path) => options.find((option) => option === value) ?? fail(path, options.join(" | "));
-}
-
-function list<T>(item: Read<T>): Read<T[]> {
-  return (value, path) =>
-    Array.isArray(value) ? value.map((entry: unknown, i: number) => item(entry, `${path}[${i}]`)) : fail(path, "an array");
-}
-
-function child(path: string, key: string): string {
-  return path === "" ? key : `${path}.${key}`;
-}
-
-/** A field every object of its kind has: the contract has no optional fields. */
-function req<T>(fields: Fields, key: string, read: Read<T>, path: string): T {
-  return read(fields[key], child(path, key));
 }
 
 const PLANS: readonly SkillCardPlan[] = ["sense", "logic", "anomaly", "free"];
@@ -118,6 +83,15 @@ const hifAbility: Read<HifAbility> = (value, path) => {
 
 /** The skill card file, checked whole; throws `SkillCardDataError` at the first value that does not match. */
 export function parseSkillCardData(json: unknown): SkillCardDataFile {
+  try {
+    return readFile(json);
+  } catch (error) {
+    if (error instanceof ReadError) throw new SkillCardDataError(error.message);
+    throw error;
+  }
+}
+
+function readFile(json: unknown): SkillCardDataFile {
   if (!isFields(json)) throw new SkillCardDataError("the skill card file: expected an object");
   const version = json["formatVersion"];
   if (version !== SKILLCARD_DATA_FORMAT_VERSION) {
