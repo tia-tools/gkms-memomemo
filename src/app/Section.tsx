@@ -1,45 +1,12 @@
 import type { VNode } from "preact";
 import { useState } from "preact/hooks";
 import { hasGaps } from "../memo/coverage.ts";
-import { SORT_KEYS, type SortKey, sortSection } from "../memo/sort.ts";
 import { FIXED_PATTERNS, type PlanId, type Row, type SectionId } from "../memo/types.ts";
-import { columnLabels, SECTION_LABELS, SORT_LABELS, STATS } from "./labels.ts";
+import { columnLabels, SECTION_LABELS, STATS } from "./labels.ts";
 import { usePage } from "./page.ts";
-import { Popover } from "./Popover.tsx";
 import { RowPopover } from "./RowPopover.tsx";
 import { RowView } from "./RowView.tsx";
 import { type Drag, useRowDrag } from "./useRowDrag.ts";
-
-/** The sort button (D15, D47): a one-time rearrange of the section, with a brief undo. */
-function SortButton({ section }: { section: SectionId }) {
-  const page = usePage();
-  const [open, setOpen] = useState(false);
-  const sort = (key: SortKey) => {
-    const before = page.memo;
-    const after = sortSection(before, section, key, page.catalog.card);
-    page.setMemo(after);
-    page.offerUndo(`${SECTION_LABELS[section]}を${SORT_LABELS[key]}順に並べ替えました`, before, after);
-    setOpen(false);
-  };
-  return (
-    <div class="relative">
-      <button type="button" class="rounded border border-slate-300 px-2 py-0.5 text-xs text-slate-600" onClick={() => setOpen(true)}>
-        並べ替え
-      </button>
-      {open && (
-        <Popover label="並べ替え" onClose={() => setOpen(false)}>
-          <div class="flex w-44 flex-col gap-1">
-            {SORT_KEYS.map((key) => (
-              <button key={key} type="button" class="rounded border border-slate-300 px-3 py-1.5 text-left" onClick={() => sort(key)}>
-                {SORT_LABELS[key]}順
-              </button>
-            ))}
-          </div>
-        </Popover>
-      )}
-    </div>
-  );
-}
 
 /** The fixed groups' column labels under their stats' colours, aligned with the rows' groups. */
 function ColumnHeader() {
@@ -89,7 +56,7 @@ function rowsWithDropLine(shown: readonly Row[], drag: Drag | null, render: (row
   return items;
 }
 
-/** One section of a tab (D9, D14, D15): its header, its rows in the player's order, and 「＋ カードを追加」. */
+/** One section of a tab (D9, D14): its header, its rows in the player's order, and 「＋ カードを追加」. */
 export function SectionView({ section, plan, gapsOnly }: { section: SectionId; plan: PlanId; gapsOnly: boolean }) {
   const { memo } = usePage();
   const rows = memo.sections[section];
@@ -97,10 +64,7 @@ export function SectionView({ section, plan, gapsOnly }: { section: SectionId; p
   const { list, drag, handle } = useRowDrag(rows, shown);
   return (
     <section class="flex flex-col gap-1 rounded-lg bg-white p-1 shadow-sm min-[600px]:p-2" aria-label={SECTION_LABELS[section]}>
-      <div class="flex items-center justify-between">
-        <h2 class="font-bold">{SECTION_LABELS[section]}</h2>
-        {rows.length > 1 && <SortButton section={section} />}
-      </div>
+      <h2 class="font-bold">{SECTION_LABELS[section]}</h2>
       {rows.length > 0 && <ColumnHeader />}
       <div ref={list}>
         {rowsWithDropLine(shown, drag, (row, i) => (

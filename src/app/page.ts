@@ -23,8 +23,6 @@ export interface Page {
   jumpTo: (rowId: string) => void;
   /** The row highlighted after a jump, or null. */
   highlighted: string | null;
-  /** Offers a brief undo of a change that went from `before` to `after` (D15). */
-  offerUndo: (text: string, before: Memo, after: Memo) => void;
 }
 
 export const PageContext = createContext<Page | null>(null);
