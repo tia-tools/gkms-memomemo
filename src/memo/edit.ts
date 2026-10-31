@@ -146,16 +146,13 @@ export function deleteRow(memo: Memo, rowId: string): Memo {
   return withSection(memo, section, memo.sections[section].filter((r) => r.id !== rowId));
 }
 
-/** The row with one group's memories changed; an extra group left with none goes (D27). */
+/** The row with one group's memories changed; a group left with none stays, as 未所持 (D27). */
 function changeGroup(row: Row, pattern: GroupPattern, change: (memories: readonly Memory[]) => readonly Memory[]): Row {
   if (isFixed(pattern)) return { ...row, fixed: { ...row.fixed, [pattern]: change(row.fixed[pattern]) } };
   const group = row.extras.find((g) => g.pattern === pattern);
   if (group === undefined) throw new MemoEditError(`row ${row.id} has no ${pattern} group`);
   const memories = change(group.memories);
-  return {
-    ...row,
-    extras: memories.length === 0 ? row.extras.filter((g) => g !== group) : row.extras.map((g) => (g === group ? { pattern, memories } : g)),
-  };
+  return { ...row, extras: row.extras.map((g) => (g === group ? { pattern, memories } : g)) };
 }
 
 function checkIndex(memories: readonly Memory[], index: number, where: string): void {
@@ -185,7 +182,7 @@ export function changeMemory(memo: Memo, rowId: string, pattern: GroupPattern, i
   );
 }
 
-/** The group without its memory at `index` (D4); an extra group left empty goes (D27). */
+/** The group without its memory at `index` (D4); an extra group left empty stays (D27). */
 export function deleteMemory(memo: Memo, rowId: string, pattern: GroupPattern, index: number): Memo {
   return replaceRow(memo, rowId, (row) =>
     changeGroup(row, pattern, (memories) => {
@@ -193,4 +190,12 @@ export function deleteMemory(memo: Memo, rowId: string, pattern: GroupPattern, i
       return memories.toSpliced(index, 1);
     }),
   );
+}
+
+/** The row without one of its extra groups and that group's memories, removed by hand (D27). */
+export function removeExtraGroup(memo: Memo, rowId: string, pattern: ExtraPattern): Memo {
+  return replaceRow(memo, rowId, (row) => {
+    if (!row.extras.some((g) => g.pattern === pattern)) throw new MemoEditError(`row ${row.id} has no ${pattern} group`);
+    return { ...row, extras: row.extras.filter((g) => g.pattern !== pattern) };
+  });
 }

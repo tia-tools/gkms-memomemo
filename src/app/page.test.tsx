@@ -5,7 +5,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } fr
 import { render } from "preact";
 import { act } from "preact/test-utils";
 import { newBuild } from "../memo/build.ts";
-import { addMemory, addRow, type Edited, isRefusal } from "../memo/edit.ts";
+import { addExtraGroup, addMemory, addRow, type Edited, isRefusal } from "../memo/edit.ts";
 import { emptyMemo, FIXED_PATTERNS, type Memo, type Memory } from "../memo/types.ts";
 import { byLabel, byText, CATALOG, dialog, must, pick, section, showPage, tap } from "../test-support/page.tsx";
 import { cardNamed } from "../test-support/skillcards.ts";
@@ -47,6 +47,39 @@ describe("extra groups", () => {
     await tap(byText(section(root, "好調"), "button", "＋追加"));
     expect(byText(dialog(root), "button", "%%%").hasAttribute("disabled")).toBe(true);
     expect(byText(dialog(root), "button", "FFF").hasAttribute("disabled")).toBe(false);
+  });
+});
+
+describe("an emptied extra group (D27)", () => {
+  const withExtra = () => ok(addExtraGroup(withRow(emptyMemo(), "r1", "成就+"), "r1", "%%%", DDR));
+
+  test("stays as 未所持 under its pattern when its last memory is deleted, and takes a memory again", async () => {
+    await showPage(root, withExtra());
+    await tap(byLabel(section(root, "好調"), "%%% 3.5 / 3.5 / 2.8"));
+    await tap(byText(dialog(root), "button", "削除"));
+    await tap(byText(dialog(root), "button", "もう一度押すと削除"));
+    expect(byLabel(section(root, "好調"), "%%% 未所持")).toBeTruthy();
+    await tap(byLabel(section(root, "好調"), "%%% 未所持"));
+    for (const tier of ["Vo 虹 2.8", "Da 虹 2.8", "Vi 虹 2.8"]) await tap(byLabel(dialog(root), tier));
+    await tap(byText(dialog(root), "button", "追加"));
+    expect(byLabel(section(root, "好調"), "%%% 2.8 / 2.8 / 2.8")).toBeTruthy();
+  });
+
+  test("is removed by hand in two taps, its armed label counting the memories that go, and its pattern is free again", async () => {
+    await showPage(root, withExtra());
+    await tap(byLabel(section(root, "好調"), "%%% 3.5 / 3.5 / 2.8"));
+    await tap(byText(dialog(root), "button", "このパターンを外す"));
+    expect(byLabel(section(root, "好調"), "%%% 3.5 / 3.5 / 2.8")).toBeTruthy();
+    await tap(byText(dialog(root), "button", "メモリー1件も外す"));
+    expect(section(root, "好調").querySelector('[aria-label^="%%% "]')).toBeNull();
+    await tap(byText(section(root, "好調"), "button", "＋追加"));
+    expect(byText(dialog(root), "button", "%%%").hasAttribute("disabled")).toBe(false);
+  });
+
+  test("a fixed group has no removal", async () => {
+    await showPage(root, withExtra());
+    await tap(byLabel(section(root, "好調"), "%%F 未所持"));
+    expect([...dialog(root).querySelectorAll("button")].some((b) => b.textContent === "このパターンを外す")).toBe(false);
   });
 });
 

@@ -12,6 +12,7 @@ import {
   isRefusal,
   MemoEditError,
   moveRow,
+  removeExtraGroup,
   reorderRow,
 } from "./edit.ts";
 import { type Build, emptyMemo, type Memo, type Memory } from "./types.ts";
@@ -163,11 +164,24 @@ describe("extra groups", () => {
     expect(addExtraGroup(two, "r1", "%FF", DDD)).toEqual({ refused: "extras-full" });
   });
 
-  test("an extra group goes when its last memory does (D27), and its slot is free again", () => {
+  test("an extra group left with no memory stays, as 未所持, keeping its slot and taking memories again (D27)", () => {
     const two = ok(addExtraGroup(ok(addExtraGroup(memo(), "r1", "%%%", DDD)), "r1", "FFF", RRR));
-    const one = deleteMemory(two, "r1", "%%%", 0);
+    const emptied = deleteMemory(two, "r1", "%%%", 0);
+    expect(findRow(emptied, "r1")?.row.extras).toEqual([
+      { pattern: "%%%", memories: [] },
+      { pattern: "FFF", memories: [RRR] },
+    ]);
+    expect(addExtraGroup(emptied, "r1", "%FF", DDD)).toEqual({ refused: "extras-full" });
+    expect(addExtraGroup(emptied, "r1", "%%%", DDD)).toEqual({ refused: "pattern-in-row" });
+    expect(findRow(addMemory(emptied, "r1", "%%%", RRR), "r1")?.row.extras[0]).toEqual({ pattern: "%%%", memories: [RRR] });
+  });
+
+  test("an extra group removed by hand goes with its memories, and its slot is free again (D27)", () => {
+    const two = ok(addExtraGroup(ok(addExtraGroup(memo(), "r1", "%%%", DDD)), "r1", "FFF", RRR));
+    const one = removeExtraGroup(two, "r1", "%%%");
     expect(findRow(one, "r1")?.row.extras).toEqual([{ pattern: "FFF", memories: [RRR] }]);
     expect(isRefusal(addExtraGroup(one, "r1", "%FF", DDD))).toBe(false);
+    expect(() => removeExtraGroup(one, "r1", "%%%")).toThrow(MemoEditError);
   });
 
   test("a memory added to an extra group the row does not have throws", () => {

@@ -110,11 +110,10 @@ describe("readMemo, refusals", () => {
     }
   });
 
-  test("refuses extra groups the edits never make: a fixed pattern, an empty one, a repeat, a third", () => {
+  test("refuses extra groups the edits never make: a fixed pattern, a repeat, a third", () => {
     const group = (pattern: string, memories = [["diamond", "diamond", "diamond"]]) => ({ pattern, memories });
     const cases: [unknown[], string][] = [
       [[group("%%F")], "extras[0].pattern: expected %%% | FFF"],
-      [[group("FFF", [])], "extras[0].memories: expected at least one memory"],
       [[group("FFF"), group("FFF")], "extras: expected distinct patterns"],
       [[group("FFF"), group("%%%"), group("%FF")], "extras: expected at most 2 extra groups"],
     ];
@@ -123,6 +122,13 @@ describe("readMemo, refusals", () => {
       row["extras"] = extras;
       expect(() => readMemo(withFirstRow(json(), row))).toThrow(`sections.sense.kocho[0].${message}`);
     }
+  });
+
+  test("keeps an extra group with no memory: it stays, as 未所持, until removed by hand (D27)", () => {
+    const row = firstRow(json());
+    row["extras"] = [{ pattern: "FFF", memories: [] }];
+    const memo = readMemo(withFirstRow(json(), row));
+    expect(memo.sections["sense.kocho"][0]?.extras).toEqual([{ pattern: "FFF", memories: [] }]);
   });
 
   test("refuses two rows with one id, and one build twice in a tab, but not across tabs", () => {

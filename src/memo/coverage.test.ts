@@ -23,6 +23,10 @@ describe("rowCoverage", () => {
     const coverage = rowCoverage(row({}, [{ pattern: "FFF", memories: [RRR] }, { pattern: "%%%", memories: [DDR, DDR] }]));
     expect([coverage.extras, coverage.missing]).toEqual([["FFF", "%%%"], ["%%F", "%F%", "F%%"]]);
   });
+
+  test("an emptied extra group owns nothing, so it gets no grey tag (D27)", () => {
+    expect(rowCoverage(row({}, [{ pattern: "FFF", memories: [] }, { pattern: "%%%", memories: [DDR] }])).extras).toEqual(["%%%"]);
+  });
 });
 
 describe("hasGaps", () => {
