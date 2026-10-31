@@ -121,8 +121,8 @@ def publish(
     fetch: Callable[[str], bytes] = stored,
 ) -> list[str]:
     """Uploads the sheets the committed index lacks, reads back every sheet the new index names, and only
-    then copies the index and the frames into `root`. Returns the keys uploaded; raises UploadError, having
-    copied nothing, when a file is wrong or the bucket lacks a named sheet."""
+    then copies the frames and, last, the index into `root`. Returns the keys uploaded; raises UploadError,
+    having copied nothing, when a file is wrong or the bucket lacks a named sheet."""
     new = json.loads((out / "index.v1.json").read_text())
     keys = to_upload(new, committed, everything)
     for key in keys:
@@ -135,8 +135,10 @@ def publish(
     problems = missing(named, fetch)
     if problems:
         raise UploadError("the index was not copied, since the bucket lacks what it names:\n" + "\n".join(problems))
-    shutil.copyfile(out / "index.v1.json", root / "src/icons/index.v1.json")
+    # The frames first and the index last: whatever stops this halfway, the index changes only once
+    # everything else has, and then names only sheets just read back.
     shutil.copyfile(out / "frames112.webp", root / "public/icons/frames112.webp")
+    shutil.copyfile(out / "index.v1.json", root / "src/icons/index.v1.json")
     return keys
 
 
