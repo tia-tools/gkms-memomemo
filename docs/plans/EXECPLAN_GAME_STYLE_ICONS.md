@@ -15,7 +15,7 @@ The work is issue #10 on the project's board (`tia-tools` project 7, see `CLAUDE
 ## Progress
 
 - [x] (2026-10-31 18:55Z) #10 claimed on `feat/game-style-icons`; the user settled the open design points (composite sheets, `tia-assets` under this app's prefix, Python, a blank-frame placeholder, stale icons kept until retaken, new cards reported by issue and nudge); ADR 0002 written, superseding ADR 0001; this plan drafted.
-- [ ] Milestone 1: identify every screenshot's card and lift the game's overlay off its art.
+- [x] (2026-10-31 19:24Z) Milestone 1: identify every screenshot's card and lift the game's overlay off its art (`45f8059`). `uv run lift.py` identifies all 349 screenshots as the 349 offered cells, with no problem and none missing; the best other card scores at least 2.35 times worse than the match; each overlay painted back on its own art is 2.17 levels from the screenshot on average (worst card 6.52). The contact sheets in `scripts/icons/out/check/` show the frames, values, badges, ＋ and A/M laid cleanly on other idols' art. The measurements behind it (the box, the art's placement, the veil per card, the window shapes, the badge slots, the outline at the edge) are in Surprises & Discoveries and I13–I16. `uv run pytest` (31 tests) and `bun test` (233), `bun run type-check`, `bun run lint` and `bun run build` exit 0; every rule of the new modules was seen to turn a test red when broken (17 mutations, two of which first survived and got a sharper test). `check.yml` runs the pytest suite in a job of its own.
 - [ ] Milestone 2: paint the overlays onto every idol's art; build the sprite sheets, the placeholder frames, the index and the stamps locally.
 - [ ] Milestone 3: the page draws this app's sheets (a cell per level, the H.I.F. icon from the base cell, the placeholder); the Worker and the dev server serve them.
 - [ ] Milestone 4: upload the sheets to `tia-assets` and commit the index.
@@ -37,6 +37,30 @@ The work is issue #10 on the project's board (`tia-tools` project 7, see `CLAUDE
 
 - Observation: the game table this plan's fingerprints read, `ProduceCard.yaml`, is 40 MB, and Bun 1.4.3 parses YAML itself (`Bun.YAML.parse`), as `infra/workflows.test.ts` already does.
   Evidence: `curl -sS -o ProduceCard.yaml https://raw.githubusercontent.com/vertesan/gakumasu-diff/main/ProduceCard.yaml`, 40,845,533 bytes, 2026-11-01.
+
+- Observation: the icon is at exactly the same pixels in every screenshot, and the trial's placement of the art was close but not exact. The dark border's bounding box is (27, 132)–(173, 278) in all 349; sub-pixel fits of the art on the 24 base screenshots with the most varied art put it at a 138.25 px square at (3.75, 3.875), with an interquartile spread under a pixel (the trial's single card gave 137.75 at (3.75, 4.25)).
+  Evidence: the scratch measurement `median size, x0, y0: [138.25, 3.75, 3.875] spread (IQR): [0.8125, 0.25, 0.3125]`.
+
+- Observation: the veil is a property of each card's art, not one constant: a whitening toward about 249 of 0 to 27 %, identical in the base and ＋ screenshots of every card. A per-channel fit overfits art with little colour variety (it turned blue sleeves purple), so the veil is one gain and one offset shared by the three channels, fitted robustly per card; with it the art inside the window matches the screenshot to a median of 1.6 levels.
+  Evidence: per-card gain from 0.727 to 0.999 over the 349 cells (`out/lifted.json`), base and ＋ equal to three decimals for all 174 pairs; the global fit over all cards gave gain 0.99 and offset 2, which fits none of the whitened ones.
+
+- Observation: the masters are opaque inside, so the light backdrops with the school's watermark are part of each idol's art, not a layer the game adds; and 3 of the 2,226 skill card masters are 512 px rather than 256 (placing scales by the master's own width).
+  Evidence: no master has more than 0.12 % transparent pixels inside a centred disc of 39 % of its width; sizes `Counter({(256, 256): 2223, (512, 512): 3})`.
+
+- Observation: identification needs the veil fitted per candidate, and a trimmed score. Scored by the median difference with a fixed veil, cards sharing the pink backdrop matched the wrong card (one SR card took the screenshots of two). Fitting a gain and an offset per channel for each candidate on the probe disc and averaging the closest 80 % of its pixels identifies all 349 with a margin of 2.35 or more; the runner-up is always another card, never another idol of the same.
+  Evidence: the first prototype's `duplicates [('img_general_skillcard_act-2_042', 'base'), …]`; the second's `min ratio 2.26` (2.35 with the refined placement).
+
+- Observation: the windows are a pointy-topped hexagon wider than a regular one, whose lower point lies under the frame, and a circle. Fitted to where the art shows in the 87 and 88 base screenshots of each type: hexagon corners (72.12, 4.08), (132.62, 32.47), (132.62, 106.36), (72.12, 144.52) and their mirror images, rms 0.28 px over the edge points kept; circle centre (72.05, 73.01), radius 64.41, worst point 0.84 px. A white outline about 1.5 px wide runs just outside both.
+  Evidence: the colourfulness profiles across each edge reach their minimum (the white outline) 0.5 to 1.5 px outside the fitted shapes.
+
+- Observation: the fitted shapes are right only to a pixel or two along some edges, and that is enough to leak the original idol's art. Painted with the shape's coverage as alpha, スタートダッシュ showed a band of 花海咲季's pink backdrop along the lower-left edge on every other idol's art, where the real window reaches up to 2 px past the fitted edge. Within 2.5 px of the edge, alpha is therefore measured per pixel as the share of the outline's colour in a mix of outline and art (I14).
+  Evidence: the zoomed check of `p_card-01-act-2_002:0` before and after; on a synthetic icon with the window 1.5 px wider than fitted, `test_the_overlay_carries_frame_outline_and_badge_to_other_art_without_the_first_art` fails when the edge takes the shape's coverage and the screenshot's colour.
+
+- Observation: overlay inside the window is only ever drawn at a few places, the badge slots: the left column of effect badges, the top-left value, the top-right 元気 shield, the ＋, the cost and the A or M. Counted over all screenshots, the pixels inside the windows with opaque overlay fall steeply up to a share of 3 % of the screenshots (resampling noise in the art) and then stay near 3,600 up to 6 % (the slots). With a threshold of three screenshots instead, art noise covered most of the window and carried the original art onto other idols.
+  Evidence: `share >= 0.01: 6552`, `0.02: 4102`, `0.03: 3728`, `0.04: 3654`, `0.06: 3557` of 12,265 inner pixels.
+
+- Observation: one artefact remains. Where a light badge (the A or M at the bottom) lies on art of nearly its own colour, its pixels cannot be told from the art, so they are lifted as art; on another idol's art a sliver of that art can show through the badge. It is a pixel or two at the icon's size, and is left as it is unless the user sees it in the page.
+  Evidence: the R アクティブ sample in `out/check/R-active.png` (an orange stroke beside the A).
 
 ## Decision Log
 
@@ -90,6 +114,22 @@ The decisions are numbered I1, I2, … so they cannot be confused with the D num
   Rationale: issue #10 ("Inputs, kept out of git"); the folder is 220 MB, and ignoring it means a careless `git add` cannot commit it.
   Date/Author: 2026-11-01, agent.
 
+- Decision: I13 — the veil is fitted per card as one gain and one offset shared by the three channels, on the probe disc, ignoring its worst 30 % of pixels, and applied to every idol's art of that card when painting.
+  Rationale: it is a property of the card's art (Surprises & Discoveries), and a fit per channel overfits art with little colour variety. That the same veil holds for every idol of a card is an assumption: only one idol's art per card was captured.
+  Date/Author: 2026-11-01, agent.
+
+- Decision: I14 — within 2.5 px of the fitted window edge, a pixel that is a mix of the outline's colour and the art under it gets the outline's colour, with alpha its share in the mix; where the art is too close to the outline's colour for the share to be measured, the shape's coverage decides; a pixel there that is no such mix is the frame (outside the shape) or a badge crossing the edge (inside), as opaque as it is far from the art.
+  Rationale: the shapes are right only to a pixel or two, and a colour or alpha taken from the shape leaks the original art (Surprises & Discoveries). This is the "exact mask" issue #10 asked for, measured from the pixels rather than drawn from the shape.
+  Date/Author: 2026-11-01, agent.
+
+- Decision: I15 — inside the window, overlay is lifted only in the badge slots, the pixels where at least 3 % of all screenshots have opaque overlay, grown by 2 px; anywhere else inside the window the art shows.
+  Rationale: the knee of the count (Surprises & Discoveries). A new card with a badge at a place no other card uses would lose it; the game's badges sit in a fixed column and corners, so none does today.
+  Date/Author: 2026-11-01, agent.
+
+- Decision: I16 — the pipeline's modules are `geometry.py` (the measured constants and the window shapes), `shots.py`, `art.py`, `identify.py`, `overlay.py` (lifting and painting), `cells.py` (what the identified screenshots mean and what is wrong with them) and the command `lift.py`; Milestone 2's command is `build.py`. Plan of Work's `lift.py` holding the overlay rules became `overlay.py`, so the command and the rules are apart.
+  Rationale: pure rules in their own modules with their tests, I/O in the commands (`CLAUDE.md` § Code Style).
+  Date/Author: 2026-11-01, agent.
+
 ## Outcomes & Retrospective
 
 Nothing yet; the plan has not started.
@@ -136,9 +176,17 @@ From the repository root `~/Developer/gkms-memomemo`, once Milestone 1 has creat
 
     cd scripts/icons
     uv sync
-    bun ../../scripts/icons/offered.ts > out/offered.json        # the cards the page offers, from the fixture
-    uv run lift.py --shots ../../temp/skill_cards --masters <masters dir> --cards out/offered.json
+    mkdir -p out && bun offered.ts > out/offered.json        # the cards the page offers, from the fixture
+    uv run lift.py --masters <masters dir>                    # --shots and --cards default to the paths above
     uv run pytest
+
+Expected from `lift.py` on the 349 screenshots of 2026-11-01 (about 80 seconds):
+
+    349 screenshots, 349 offered cells
+    1808 candidate arts
+    349 cells lifted; smallest margin 2.35; painted back on the same art, mean error 2.17 (worst 6.52)
+
+and exit status 0. A `problem:` line names a screenshot that cannot be trusted and makes it exit 1; a `missing:` line names an offered cell no screenshot shows (a card to capture), which does not.
 
 Where the masters are: by default `../gakumas-supportcards/scripts/images/out/master`; on this machine today the supportcards worktree named in Context and Orientation. To fill a missing library, in a supportcards checkout: `cd scripts/images && ./fetch-vendor.sh && uv sync && uv run extract.py --only skillcard`.
 
@@ -213,3 +261,5 @@ In `src/app/sheets.ts`, at the end of Milestone 3:
     export function frameStyle(rarity: Rarity, type: CardType, size: string): Record<string, string>;
 
 Revision note, 2026-11-01: first draft, written after claiming #10 and the user's answers on the open points of the issue, before any code.
+
+Revision note, 2026-11-01: Milestone 1 done and recorded: Progress, seven observations from measuring the screenshots (placement, a veil per card, opaque masters, how identification must score, the window shapes, the edge leak and the badge slots, and one artefact left), decisions I13–I16, and the commands and their output in Concrete Steps.
