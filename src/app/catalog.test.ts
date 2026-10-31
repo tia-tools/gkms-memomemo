@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { PLAN_IDS } from "../memo/types.ts";
 import { cardNamed, kindLabelled, SKILL_CARDS } from "../test-support/skillcards.ts";
-import { customizationTexts, makeCatalog, stepText } from "./catalog.ts";
+import { customizationLabels, makeCatalog, stepText } from "./catalog.ts";
 
 const CATALOG = makeCatalog(SKILL_CARDS);
 
@@ -91,24 +91,26 @@ describe("stepText", () => {
   });
 });
 
-describe("customizationTexts", () => {
+describe("customizationLabels", () => {
+  const texts = (...args: Parameters<typeof customizationLabels>) => customizationLabels(...args).map((l) => [l.label, l.times]);
+
   test("lists the chosen steps in the card's kind order, whatever order they were chosen in", () => {
     const card = cardNamed("ファンサ+");
     const chosen = [
       { kind: kindLabelled(card, "パラメータ+"), step: 1 },
       { kind: kindLabelled(card, "好調追加"), step: 1 },
     ];
-    expect(customizationTexts(card, chosen)).toEqual(["好調追加 1回", "パラメータ+ 1回"]);
+    expect(texts(card, chosen)).toEqual([["好調追加", "1回"], ["パラメータ+", "1回"]]);
   });
 
   test("no customization is no label", () => {
-    expect(customizationTexts(cardNamed("ファンサ+"), [])).toEqual([]);
+    expect(texts(cardNamed("ファンサ+"), [])).toEqual([]);
   });
 
   test("a kind or step the card lacks, or an unknown card, reads 不明 rather than disappearing", () => {
     const card = cardNamed("ファンサ+");
-    expect(customizationTexts(card, [{ kind: "p_card_custom-gone", step: 1 }])).toEqual(["不明"]);
-    expect(customizationTexts(card, [{ kind: kindLabelled(card, "好調追加"), step: 2 }])).toEqual(["不明"]);
-    expect(customizationTexts(undefined, [{ kind: "p_card_custom-x", step: 1 }])).toEqual(["不明"]);
+    expect(texts(card, [{ kind: "p_card_custom-gone", step: 1 }])).toEqual([["不明", ""]]);
+    expect(texts(card, [{ kind: kindLabelled(card, "好調追加"), step: 2 }])).toEqual([["不明", ""]]);
+    expect(texts(undefined, [{ kind: "p_card_custom-x", step: 1 }])).toEqual([["不明", ""]]);
   });
 });

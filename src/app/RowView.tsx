@@ -2,7 +2,7 @@ import type { JSX } from "preact";
 import { useState } from "preact/hooks";
 import { deleteRow, isRefusal, moveRow } from "../memo/edit.ts";
 import { FIXED_PATTERNS, planOf, type PlanId, type Row, type SectionId, sectionsOf } from "../memo/types.ts";
-import { customizationTexts } from "./catalog.ts";
+import { customizationLabels } from "./catalog.ts";
 import { ExtrasArea, GroupView } from "./Group.tsx";
 import { CardIcon } from "./Icon.tsx";
 import { SECTION_LABELS } from "./labels.ts";
@@ -24,14 +24,28 @@ function CardCell({ row, plan }: { row: Row; plan: PlanId }) {
   const card = catalog.card(row.build.card, row.build.upgrade);
   const hif = catalog.hif(row.build.hif);
   const name = card?.name ?? "不明なカード";
-  const labels = customizationTexts(card, row.build.customization);
+  const labels = customizationLabels(card, row.build.customization);
   return (
     <div class="flex w-[var(--card-col)] shrink-0 flex-col gap-0.5">
       <CardIcon art={card?.art} plan={plan} size="var(--icon)" name={name} />
       <span class="text-[10px] leading-tight break-all">{name}</span>
       <CardIcon art={hif?.card.art} plan={plan} size="var(--hif-icon)" name={hif ? `HIF ${hif.card.name}` : "不明なHIF"} />
       <div class="flex flex-col text-[length:var(--label-font)] leading-tight break-all">
-        {labels.length === 0 ? <span class="text-slate-400">なし</span> : labels.map((label, i) => <span key={i}>{label}</span>)}
+        {labels.length === 0 ? (
+          <span class="text-slate-400">なし</span>
+        ) : (
+          labels.map(({ label, times }, i) => (
+            <span key={i}>
+              {label}
+              {times && (
+                <>
+                  {" "}
+                  <span class="whitespace-nowrap">{times}</span>
+                </>
+              )}
+            </span>
+          ))
+        )}
         {row.build.kaimaku && <span class="text-emerald-700">開幕時獲得</span>}
       </div>
     </div>

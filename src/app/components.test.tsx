@@ -189,6 +189,8 @@ describe("changing a row whose build the rules reject (saved before the data cha
     await tap(byText(dialog(root), "button", "この内容で保存"));
     expect(byText(root, '[role="alert"]', "このカードでは選べない組み合わせです。カスタマイズを選び直してください")).toBeTruthy();
     expect(section(root, "好調").textContent).toContain("パラメータ+ 3回");
+    // The 回数 is kept on one line in the card column, however the label wraps (D51).
+    expect(must(section(root, "好調").querySelector("span.whitespace-nowrap"), "the 回数").textContent).toBe("3回");
     await tap(byText(dialog(root), "button", "なし"));
     expect(root.querySelector('[role="alert"]')).toBeNull();
     await tap(byText(dialog(root), "button", "この内容で保存"));
