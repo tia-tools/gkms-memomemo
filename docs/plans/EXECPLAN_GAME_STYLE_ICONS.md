@@ -16,7 +16,7 @@ The work is issue #10 on the project's board (`tia-tools` project 7, see `CLAUDE
 
 - [x] (2026-10-31 18:55Z) #10 claimed on `feat/game-style-icons`; the user settled the open design points (composite sheets, `tia-assets` under this app's prefix, Python, a blank-frame placeholder, stale icons kept until retaken, new cards reported by issue and nudge); ADR 0002 written, superseding ADR 0001; this plan drafted.
 - [x] (2026-10-31 19:24Z) Milestone 1: identify every screenshot's card and lift the game's overlay off its art (`45f8059`). `uv run lift.py` identifies all 349 screenshots as the 349 offered cells, with no problem and none missing; the best other card scores at least 2.35 times worse than the match; each overlay painted back on its own art is 2.17 levels from the screenshot on average (worst card 6.52). The contact sheets in `scripts/icons/out/check/` show the frames, values, badges, ＋ and A/M laid cleanly on other idols' art. The measurements behind it (the box, the art's placement, the veil per card, the window shapes, the badge slots, the outline at the edge) are in Surprises & Discoveries and I13–I16. `uv run pytest` (31 tests) and `bun test` (233), `bun run type-check`, `bun run lint` and `bun run build` exit 0; every rule of the new modules was seen to turn a test red when broken (17 mutations, two of which first survived and got a sharper test). `check.yml` runs the pytest suite in a job of its own.
-- [ ] Milestone 2: paint the overlays onto every idol's art; build the sprite sheets, the placeholder frames, the index and the stamps locally.
+- [x] (2026-10-31 20:10Z) Milestone 2: paint the overlays onto every idol's art; build the sprite sheets, the placeholder frames, the index and the stamps locally (`035900a`, `4fea8a4`). `uv run build.py` writes 39 sheets (sense and logic 131 cells, anomaly 125), 13.8 MB in all, 345–361 KB each at WebP quality 75, the index, `cells.json` and `frames112.webp`; `bun stamp.ts` stamped the 349 cells against `ProduceCard.yaml` at `fc6afb8b5ba4` (2026-10-28, before the screenshots were taken), and a second run restamps none. Building it turned up two faults in Milestone 1's lift, both fixed and re-lifted: the hexagon's lower edges were off by up to 6 px (the windows are now measured on the high-resolution frames, I19), and the A badge's pale backing vanished on white art (what every card of a type shows alike is kept opaque, I18). Painted back on its own art each overlay is now 2.09 levels from the screenshot on average (worst 6.53). `uv run pytest` (42), `bun test` (241), `bun run type-check`, `bun run lint` and `bun run build` exit 0; every new rule turned a test red when broken (17 Python and 7 TypeScript mutations; two that first survived got sharper tests).
 - [ ] Milestone 3: the page draws this app's sheets (a cell per level, the H.I.F. icon from the base cell, the placeholder); the Worker and the dev server serve them.
 - [ ] Milestone 4: upload the sheets to `tia-assets` and commit the index.
 - [ ] Milestone 5: the daily check for new and changed cards, with an issue and a Discord message.
@@ -59,9 +59,15 @@ The work is issue #10 on the project's board (`tia-tools` project 7, see `CLAUDE
 - Observation: overlay inside the window is only ever drawn at a few places, the badge slots: the left column of effect badges, the top-left value, the top-right 元気 shield, the ＋, the cost and the A or M. Counted over all screenshots, the pixels inside the windows with opaque overlay fall steeply up to a share of 3 % of the screenshots (resampling noise in the art) and then stay near 3,600 up to 6 % (the slots). With a threshold of three screenshots instead, art noise covered most of the window and carried the original art onto other idols.
   Evidence: `share >= 0.01: 6552`, `0.02: 4102`, `0.03: 3728`, `0.04: 3654`, `0.06: 3557` of 12,265 inner pixels.
 
-- Observation: one artefact remains. Where a light badge (the A or M at the bottom) lies on art of nearly its own colour, its pixels cannot be told from the art, so they are lifted as art; on another idol's art a sliver of that art can show through the badge. It is a pixel or two at the icon's size, and is left as it is unless the user sees it in the page.
-  Evidence: the R アクティブ sample in `out/check/R-active.png` (an orange stroke beside the A).
+- Observation: the A or M badge's pale backing vanished on white art, and with it part of the letter: its colour is within a few levels of the art, so nothing told it from the art. Every card of a type draws it alike, so the pixels near or inside the window whose screenshots agree across all cards of the type (median absolute deviation of 2 or less) are that badge, the white outline and part of the cost badge's backing; they are kept opaque wherever a card shows that colour (I18). This replaces the artefact first recorded here, which was this.
+  Evidence: about 1,200 such pixels per type (`active 87 MAD<= 2 1203`, `mental 88 MAD<= 2 1183`); the zoomed A of 軽い足取り before and after.
 
+
+- Observation: the screenshots' fit of the hexagon was wrong at its lower edges, where badges hide most of the edge: the real lower corners are near y 112.6, not 106.4, and the lower point near 140.5, not 144.5. The placeholder frames showed it first, as a strip of art along both lower edges; the lift had hidden it in its 2.5 px edge zone except near the corners. The ten icons of `temp/image.png` are 2.4 times the screenshots' size and carry no badges, and their white outline is sharp: fitted on its outer edge, the hexagon is symmetric top to bottom (rms 0.32 px over 2,552 points), and moved in by the outline's width (1.75 px) it meets the screenshots' fit on the top edges and the sides to 0.1 px. The circle moved by about 0.35 px the same way.
+  Evidence: the outline's outer edge minus the old fit, by angle on R-active: `30:+4.7 45:+4.9 … 135:+4.9 150:+4.8` below against `+1.5`–`+2.5` above.
+
+- Observation: the sheets are 345–361 KB each at WebP quality 75 (13.8 MB for 39), against 514–542 KB at 88, with no difference visible at the 40–56 px the page draws. A cell costs about 2.7 KB against 1.8 KB in supportcards' plain-art sheets.
+  Evidence: `39 sheets, 13.8 MB, 345–361 KB each (quality 75)`; `39 sheets, 20.7 MB, 514–542 KB each (quality 88)`; the two side by side at twice the cell size in `out/check/`.
 ## Decision Log
 
 The decisions are numbered I1, I2, … so they cannot be confused with the D numbers of `docs/plans/EXECPLAN_MEMORY_MEMO.md`, which this plan cites.
@@ -130,6 +136,18 @@ The decisions are numbered I1, I2, … so they cannot be confused with the D num
   Rationale: pure rules in their own modules with their tests, I/O in the commands (`CLAUDE.md` § Code Style).
   Date/Author: 2026-11-01, agent.
 
+- Decision: I17 — the sheets are lossy WebP at quality 75 with lossless alpha (the cells' rounded corners are transparent, so the page shows through them), 10 cells to a row, and the placeholder frames at quality 95.
+  Rationale: a third smaller than quality 88 with no visible difference at the page's sizes; the frames are one small file.
+  Date/Author: 2026-11-01, agent.
+
+- Decision: I18 — what every card of a type shows alike (the pixels within the window's edge zone whose screenshots' median absolute deviation is 2 or less, from at least 20 screenshots) is opaque overlay wherever a card's screenshot shows that colour, and is left to the other rules where it does not.
+  Rationale: the A and M badges' pale backing cannot be told from white art otherwise; the condition on the card's own colour keeps a card that shows its art there (or its own badge) from having it overwritten, since the median allows up to half the cards to differ.
+  Date/Author: 2026-11-01, agent.
+
+- Decision: I19 — the window shapes are measured on the outline of the eight frames in `temp/image.png`, not on the screenshots, and the placeholder frames are blanked up to 1.5 px past the window.
+  Rationale: the frames are larger and badge-free, so the whole outline is visible; the screenshots hide the hexagon's lower edges under badges (Surprises & Discoveries).
+  Date/Author: 2026-11-01, agent.
+
 ## Outcomes & Retrospective
 
 Nothing yet; the plan has not started.
@@ -190,10 +208,20 @@ and exit status 0. A `problem:` line names a screenshot that cannot be trusted a
 
 Where the masters are: by default `../gakumas-supportcards/scripts/images/out/master`; on this machine today the supportcards worktree named in Context and Orientation. To fill a missing library, in a supportcards checkout: `cd scripts/images && ./fetch-vendor.sh && uv sync && uv run extract.py --only skillcard`.
 
-Milestones 2 to 4 add, in `scripts/icons`:
+Milestone 2 adds, in `scripts/icons`, after `lift.py`:
 
-    uv run build.py --shots ../../temp/skill_cards --masters <masters dir> --cards out/offered.json --frames ../../temp/image.png
-    bun stamp.ts
+    uv run build.py --masters <masters dir>       # --cards and --frames default to out/offered.json and ../../temp/image.png
+    bun stamp.ts                                  # fetches ProduceCard.yaml; --tables <path> to use a local copy
+
+Expected (about two minutes):
+
+    sense: 131 cells, 13 sheets
+    logic: 131 cells, 13 sheets
+    anomaly: 125 cells, 13 sheets
+    39 sheets, 13.8 MB, 345–361 KB each (quality 75)
+    349 cells stamped, 349 with the current tables
+
+A `fallback:` line from `build.py` names an idol's art a master library lacks, drawn in the default idol's art instead. Milestone 4 adds:
     uv run upload.py --dry-run          # which sheets would go to tia-assets
     uv run upload.py                    # upload them, then copy the index into src/icons/
 
@@ -263,3 +291,5 @@ In `src/app/sheets.ts`, at the end of Milestone 3:
 Revision note, 2026-11-01: first draft, written after claiming #10 and the user's answers on the open points of the issue, before any code.
 
 Revision note, 2026-11-01: Milestone 1 done and recorded: Progress, seven observations from measuring the screenshots (placement, a veil per card, opaque masters, how identification must score, the window shapes, the edge leak and the badge slots, and one artefact left), decisions I13–I16, and the commands and their output in Concrete Steps.
+
+Revision note, 2026-11-01: Milestone 2 done and recorded: Progress, three observations (the A badge's backing, the hexagon's lower edges, the sheets' sizes; the first replaces the artefact Milestone 1 left), decisions I17–I19, and the build's commands and output in Concrete Steps.
