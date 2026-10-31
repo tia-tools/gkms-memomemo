@@ -10,7 +10,7 @@ After this plan, a player opens `https://gkms-memomemo.tia.run` on a phone or PC
 
 To see it working: open the page, add a row 成就+ in センス → 好調, add a %%F memory with Vo diamond, Da diamond, Vi rainbow, and observe the row showing 3.5% / 3.5% / 20 with diamond, diamond and rainbow textures, the %F% and F%% groups showing 未所持, and the 早見表 showing one ✓ and two dashed squares for that row. Reload the page and observe that it is all still there.
 
-The work is tracked on the project's board (`tia-tools` project 7, see `CLAUDE.md` § Tasks), one issue per branch: Milestone 2 is #3 (the skeleton) and #4 (the data contract). Milestone 0 and the plan review went in before any issue existed (pull requests #1 and #2).
+The work is tracked on the project's board (`tia-tools` project 7, see `CLAUDE.md` § Tasks), one issue per branch: Milestone 2 is #3 (the skeleton) and #4 (the data contract), Milestone 3 is #7. Milestone 0 and the plan review went in before any issue existed (pull requests #1 and #2).
 
 ## Progress
 
@@ -29,6 +29,7 @@ The work is tracked on the project's board (`tia-tools` project 7, see `CLAUDE.m
   - [x] (2026-10-31 09:36Z) Skeleton without the data contract, worked while Milestone 1 waits for its session in supportcards (the user's choice): the toolchain and a placeholder page; the Worker with `/data/skillcards.json` proxied and `/img/` serving only the sprite sheets and their index (D42), `wrangler.toml`, `check.yml` and `deploy.yml`, the dev server's local routes, and `infra/worker/README.md`. `bun test` (25 tests, each new one seen to fail with its rule broken), `bun run type-check`, `bun run lint` (proved loaded by an injected `any`) and `bun run build` exit 0; `bun run dev` serves the page, answers `/data/skillcards.json` with 502 while no data file exists, and sheets and masters with 404.
   - [x] (2026-10-31 13:19Z) The data contract (#4): `src/data/contract.ts` with the format version and types copied verbatim from supportcards' `data/skillcard-data-file.ts` at `f336717`; `src/data/load.ts`, which checks a whole file against those types, and beyond them refuses an empty card or idol list (D43), copies it into fresh objects and refuses it with the path of the first bad value, and fetches it from `/data/skillcards.json`; the live file committed as `src/data/fixtures/skillcards.v1.json`; and the placeholder page showing 「スキルカード 361 件」, or 「カードデータを読み込めませんでした」 with the reason in the console. `bun test` (58 tests; each of the loader's 12 rules and the page's 4 seen to turn a test red when broken), `bun run type-check`, `bun run lint` and `bun run build` exit 0; `bun run dev` showed 「スキルカード 361 件」 in Chrome, from the fixture, since the sibling checkout has no built file, with no console messages. The page bundle carries only the route string from `infra/worker/data.ts`.
 - [ ] Milestone 3: the memo model as pure TypeScript with tests.
+  - [x] (2026-10-31 14:21Z) The model in `src/memo/` on `feat/memo-model` (#7), each module with its co-located test: `types.ts` (the Interfaces below, the chosen step named `ChosenStep`); `build.ts` (`buildKey`, `buildProblem`, D39's `MEMORY_STEP_CAP` and D40's `KAIMAKU_RULES`, and `newBuild`, `withCustomization` and `kaimakuSwitch` for D40's switch); `edit.ts` (rows added, changed, moved within their tab, reordered and deleted, memories added, changed and deleted, extra groups; a refusal is a value, a missing row throws); `sort.ts` (D15's keys under D36, D44 and D45); `coverage.ts`; `values.ts`; `read.ts`, which checks a whole memo for the 引き継ぎコード now and for the saved memo in Milestone 5 (D46); and `code.ts`. The JSON readers moved from `src/data/load.ts` to `src/lib/read.ts`, shared by both, the loader's messages and tests unchanged. Tests use the real fixture through `src/test-support/skillcards.ts` rather than a stand-in. `bun test` (136 tests; each rule of every new module seen to turn a test red when broken, 93 broken rules in all, five of which first survived and got a sharper test), `bun run type-check`, `bun run lint` and `bun run build` exit 0.
 - [ ] Milestone 4: the page — tabs, sections, rows, cells, popovers, pickers, 早見表, sorting, settings.
 - [ ] Milestone 5: saving in the browser, the home-screen install, and the 引き継ぎコード.
 - [ ] Milestone 6: anonymous counts and ranked pickers.
@@ -122,6 +123,15 @@ The observations below are Milestone 0's. Unless stated otherwise their evidence
 
 - Observation, for Milestone 3: the contract's `CustomizationStep` is a step of a card's customization kind, `{ step, label }`, while this plan's `src/memo/types.ts` names a chosen step `CustomizationStep` too, `{ kind, step }`. The two are different things under one name; Milestone 3 should name the memo's type differently (for example `ChosenStep`) rather than import one under an alias.
   Evidence: `src/data/contract.ts` and Interfaces and Dependencies below.
+
+- Observation, for Milestone 3: the data file gives each card its guide labels but not the order of the labels across the game's table, which D36's buff-type sort needs. Read from `ProduceGuideProduceCardCategory.yaml` (67 rows), the labels first appear in this order: やる気, スコア, 元気, その他, 好印象, 強気, 温存, 全力, 集中, 好調, 絶好調 (each 「…スキルカード」). Six cards carry two labels, and 総合芸術 lists 強気 before スコア although スコア comes first in the table, so "the first of them" (D36) has to mean the first in the table's order.
+  Evidence: the table at `vertesan/gakumasu-diff` commit `fc6afb8b5ba4`, read 2026-10-31 (its `label` field, row by row); the fixture's labels per card, counted by a scratch script.
+
+- Observation, for Milestone 3: the game data has no reading for a card's name, so D15's 五十音 can only be the Japanese collator's order of the name as written. `ProduceCard.yaml` has no field for a reading (no `ruby`, `kana` or `reading` anywhere in it), and 233 of the 361 entries have kanji in their names; kana names sort in syllabary order, kanji names do not sort by their reading.
+  Evidence: `grep -c -i -E "ruby|kana|reading|yomi|phonetic" ProduceCard.yaml` at `fc6afb8b5ba4` gave 0, 2026-10-31; its first row's fields are `id`, `upgradeCount`, `name`, `assetId` and the game fields after them.
+
+- Observation, for Milestone 3: 引き継ぎコード stay short, and Bun's `DecompressionStream("deflate-raw")` refuses a cut or foreign stream with an error, which `code.ts` turns into its `compression` refusal. A memo of 30, 150 and 300 rows built from real cards, customizations and H.I.F. abilities, with two memories each, gave codes of 2,302, 8,518 and 15,358 characters (16, 77 and 154 KB of JSON). 20 MB of zeros deflates to 19,448 bytes, which is why the inflated size is capped and not only the code's length.
+  Evidence: scratch scripts with Bun 1.4.3, 2026-10-31: "truncated error TypeError: unexpected end of file", "garbage error TypeError: inflate failed"; every measured memo round-tripped.
 
 ## Decision Log
 
@@ -303,6 +313,18 @@ All decisions D1–D25 were made by the user in the /grill-me session of 2026-10
   Rationale: an empty list can only come from a broken publication, since supportcards' pool and its playable idols are never empty, and with no idol the page has no art variant to draw (D34's default names the first); refusing it keeps the rule that the page never works from part of the file. gkms-hif-final-stats' loader refuses an empty card list for the same reason. The contract stays verbatim: the check is the loader's, not a change of the types. Codex's review of #4 noted that the refusal goes beyond the types; the code and this plan now say so.
   Date/Author: 2026-10-31, agent.
 
+- Decision: D44 — D36's label order is a constant in `src/memo/sort.ts`, `GUIDE_LABEL_ORDER`, copied from the game's table at `fc6afb8b5ba4` without その他のスキルカード, which sorts with the cards in no category. A card with several labels sorts by the one that comes first in that order. A label the constant lacks sorts after the listed ones and before unlabelled cards, and a test fails when the fixture holds such a label, so a new label is noticed when the fixture is refreshed.
+  Rationale: the data file does not carry the order (Surprises & Discoveries), and adding it would bump the file's format version in supportcards for one sort key that D36 already marks to confirm with the user in Milestone 4; the table's order changes only when the game adds a category.
+  Date/Author: 2026-10-31, agent.
+
+- Decision: D45 — D15's other keys: レアリティ sorts highest first (SSR, SR, R, N; Legend above SSR, though the pool has none), アクティブ/メンタル puts active first, as D15's example has it, and 五十音 compares names with `Intl.Collator("ja")`. Under every key a row whose card is not in the data file (D31) sorts after every known card, keeping its order, and equal rows keep theirs.
+  Rationale: the game lists higher rarities first; the data has no readings (Surprises & Discoveries), so the collator is the closest order to 五十音 the page can compute; unknown rows have nothing to sort by. Agent's defaults, to show the user with D36 in Milestone 4.
+  Date/Author: 2026-10-31, agent.
+
+- Decision: D46 — the memo's own rules beyond its types, as `src/memo/read.ts` and `code.ts` check them. An id must have the game's shape (a card `p_card-NN-xxx-N_N`, a customization `p_card_custom-…`, an H.I.F. ability `memory_ability-…`, each bounded in length) and a row id 1 to 64 characters of base64url; a level is 0 or 1 (D37) and a step 1 to 9. A memo is refused, not repaired, when two rows share an id, a tab holds one build twice, an extra group is empty, repeats a pattern or is a third, or a section is missing or unknown, since no edit makes any of these and dropping one would import a memo in part. A code longer than 1,000,000 characters, or inflating past 4,000,000 bytes, is refused; base64url is written with `btoa` and `atob`, which every target browser has, rather than `Uint8Array.prototype.toBase64`, which older iPhone Safari lacks. A row moves only between the sections of its own tab, since a tab offers only its plan's cards.
+  Rationale: D31 keeps ids the data file lacks, so their shape is the only check left on them; the caps leave a 300-row memo (a 15,358-character code, Surprises & Discoveries) with room of two orders of magnitude while keeping a small code from expanding without bound.
+  Date/Author: 2026-10-31, agent.
+
 ## Outcomes & Retrospective
 
 Nothing yet; the plan has not started.
@@ -399,11 +421,11 @@ At the end of Milestone 3, `src/memo/types.ts` defines:
     export type ExtraPattern = Exclude<Pattern, FixedPattern>;
     export type Tier = "diamond" | "rainbow";
     export type Memory = readonly [Tier, Tier, Tier];       // Vo, Da, Vi
-    export interface CustomizationStep { kind: string; step: number }   // ProduceCardCustomize id, its customizeCount
+    export interface ChosenStep { kind: string; step: number }          // ProduceCardCustomize id, its customizeCount
     export interface Build {
       card: string;                                         // ProduceCard id
       upgrade: number;                                      // its upgradeCount: 0 base, 1 + (D33)
-      customization: readonly CustomizationStep[];          // empty for なし; steps add up to at most 2 (D39)
+      customization: readonly ChosenStep[];                 // empty for なし; steps add up to at most 2 (D39)
       kaimaku: boolean;                                     // 開幕時獲得 (D40)
       hif: string;                                          // MemoryAbility id of the H.I.F. ability
     }
@@ -419,7 +441,7 @@ At the end of Milestone 3, `src/memo/types.ts` defines:
       sections: Record<SectionId, readonly Row[]>;           // each section in the player's order
     }
 
-`src/memo/edit.ts` exposes pure functions from a `Memo` to a new `Memo` or a refusal, for example `addRow(memo, section, build): Memo | { refused: "duplicate"; section: SectionId }`. The data file's types live in `src/data/contract.ts`, copied verbatim from supportcards once Milestone 1 defines them; they are never edited here on their own.
+`src/memo/edit.ts` exposes pure functions from a `Memo` to a new `Memo` or a refusal, for example `addRow(memo, section, id, build): Memo | { refused: "duplicate"; section: SectionId }`, the new row's random id passed in so the function stays pure. The data file's types live in `src/data/contract.ts`, copied verbatim from supportcards once Milestone 1 defines them; they are never edited here on their own.
 
 ### What gakumas-supportcards must provide (Milestone 1)
 
@@ -471,3 +493,5 @@ Revision note, 2026-10-31: D42 records the user's choice of sprite sheets for ic
 Revision note, 2026-10-31: Milestone 2's skeleton recorded in Progress, done before Milestone 1 at the user's choice; what waits for the data file is listed there.
 
 Revision note, 2026-10-31: Milestone 1's data file went live from supportcards, and Milestone 2's data contract (#4) was recorded in Progress, closing Milestone 2; two observations were added, one on the fixture's provenance and counts and one on the clash of `CustomizationStep` with Milestone 3's types; D43 records that the loader refuses an empty card or idol list. The Purpose now names both of Milestone 2's issues, and a sub-item of Milestone 0 left unchecked was checked against the entries that did it.
+
+Revision note, 2026-10-31: Milestone 3's model (#7) recorded in Progress, with three observations (the guide labels' order is not in the data file, the data has no readings for 五十音, and the 引き継ぎコード's measured sizes) and the agent's defaults D44 (the label order as a constant), D45 (the other sort keys) and D46 (the memo's rules beyond its types and the code's caps). Interfaces now names the chosen step `ChosenStep`, as the observation on `CustomizationStep` asked, and gives `addRow` its id parameter.
