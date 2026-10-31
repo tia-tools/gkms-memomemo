@@ -82,6 +82,20 @@ const build: Read<Build> = (value, path) => {
   };
 };
 
+/**
+ * The reader's message for a build that breaks the memo's shapes (D46), or null. edit.ts refuses such
+ * a build before it enters a memo, so every memo the edits make is one `readMemo` accepts.
+ */
+export function buildShapeError(value: Build): string | null {
+  try {
+    build(value, "build");
+    return null;
+  } catch (error) {
+    if (error instanceof ReadError) return error.message;
+    throw error;
+  }
+}
+
 const memory: Read<Memory> = (value, path) => {
   const tiers = list(oneOf(TIERS))(value, path);
   const [vo, da, vi] = tiers;

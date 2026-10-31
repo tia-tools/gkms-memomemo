@@ -52,7 +52,7 @@ describe("rows", () => {
 
   test("the same card with another customization, 開幕時獲得 or H.I.F. ability is another build", () => {
     const m = memo();
-    for (const other of [{ customization: [{ kind: "k", step: 1 }] }, { kaimaku: true }, { hif: "memory_ability-b" }]) {
+    for (const other of [{ customization: [{ kind: "p_card_custom-070-k", step: 1 }] }, { kaimaku: true }, { hif: "memory_ability-b" }]) {
       expect(isRefusal(addRow(m, "sense.kocho", "r9", build("p_card-01-act-3_029", other)))).toBe(false);
     }
   });
@@ -92,6 +92,20 @@ describe("rows", () => {
   test("deleting a row takes its memories with it", () => {
     const m = deleteRow(addMemory(memo(), "r1", "%%F", DDR), "r1");
     expect([ids(m, "sense.kocho"), findRow(m, "r1")]).toEqual([["r2"], null]);
+  });
+
+  test("a new row's id must be unused and of a row id's shape, so no two rows share one (D46)", () => {
+    expect(() => addRow(memo(), "sense.common", "r1", build("p_card-01-act-1_020"))).toThrow("row id r1 is already used");
+    expect(() => addRow(memo(), "sense.common", "r 9", build("p_card-01-act-1_020"))).toThrow(MemoEditError);
+    expect(() => addRow(memo(), "sense.common", "", build("p_card-01-act-1_020"))).toThrow(MemoEditError);
+  });
+
+  test("a build whose ids, level or steps lack the memo's shapes is refused on add and on change (D46)", () => {
+    const bad: Partial<Build>[] = [{ card: "x" }, { upgrade: 2 }, { customization: [{ kind: "p_card_custom-070-k", step: 0 }] }, { hif: "ability-x" }];
+    for (const change of bad) {
+      expect(() => addRow(memo(), "sense.common", "r9", build("p_card-01-act-1_020", change))).toThrow(MemoEditError);
+      expect(() => changeBuild(memo(), "r1", build("p_card-01-act-1_020", change))).toThrow(MemoEditError);
+    }
   });
 
   test("an edit naming a row the memo does not have throws", () => {

@@ -1,12 +1,14 @@
 /**
  * Every change a player makes to the memo, as pure functions from a memo to a new memo
  * (docs/plans/EXECPLAN_MEMORY_MEMO.md § Plan of Work, Milestone 3). A change the rules refuse
- * returns a `Refusal` saying why, for the page to show; a row or memory that is not in the memo is
- * the caller's mistake and throws `MemoEditError`. The memo passed in is never changed, so the
- * previous memo is the undo.
+ * returns a `Refusal` saying why, for the page to show; a row or memory that is not in the memo, a
+ * new row id already used or not of a row id's shape, and a build whose ids lack the game's shape
+ * are the caller's mistakes and throw `MemoEditError`, so every memo these functions make is one
+ * read.ts accepts (D46). The memo passed in is never changed, so the previous memo is the undo.
  */
 
 import { buildKey } from "./build.ts";
+import { buildShapeError, ID_SHAPES } from "./read.ts";
 import {
   type Build,
   emptyRow,
@@ -84,6 +86,16 @@ function replaceRow(memo: Memo, rowId: string, change: (row: Row) => Row): Memo 
   return withSection(memo, section, memo.sections[section].with(index, change(row)));
 }
 
+function checkBuild(build: Build): void {
+  const problem = buildShapeError(build);
+  if (problem !== null) throw new MemoEditError(problem);
+}
+
+function checkNewId(memo: Memo, id: string): void {
+  if (!ID_SHAPES.row.test(id)) throw new MemoEditError(`row id ${JSON.stringify(id)} is not of a row id's shape`);
+  if (findRow(memo, id) !== null) throw new MemoEditError(`row id ${id} is already used`);
+}
+
 /** The section of the tab whose rows hold this build, ignoring the row `except`, or null (D13). */
 export function sectionHolding(memo: Memo, plan: PlanId, build: Build, except?: string): SectionId | null {
   const key = buildKey(build);
@@ -92,6 +104,8 @@ export function sectionHolding(memo: Memo, plan: PlanId, build: Build, except?: 
 
 /** A new row with no memories at the end of the section (D13, D14), unless its build is already in the tab. */
 export function addRow(memo: Memo, section: SectionId, id: string, build: Build): Edited {
+  checkNewId(memo, id);
+  checkBuild(build);
   const holder = sectionHolding(memo, planOf(section), build);
   if (holder !== null) return { refused: "duplicate", section: holder };
   return withSection(memo, section, [...memo.sections[section], emptyRow(id, build)]);
@@ -100,6 +114,7 @@ export function addRow(memo: Memo, section: SectionId, id: string, build: Build)
 /** The row with another build, keeping its memories and place, unless that build is elsewhere in the tab (D19). */
 export function changeBuild(memo: Memo, rowId: string, build: Build): Edited {
   const { section } = locate(memo, rowId);
+  checkBuild(build);
   const holder = sectionHolding(memo, planOf(section), build, rowId);
   if (holder !== null) return { refused: "duplicate", section: holder };
   return replaceRow(memo, rowId, (row) => ({ ...row, build }));
