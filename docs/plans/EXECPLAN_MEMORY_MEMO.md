@@ -10,7 +10,7 @@ After this plan, a player opens `https://gkms-memomemo.tia.run` on a phone or PC
 
 To see it working: open the page, add a row 成就+ in センス → 好調, add a %%F memory with Vo diamond, Da diamond, Vi rainbow, and observe the row showing 3.5% / 3.5% / 20 with diamond, diamond and rainbow textures, the %F% and F%% groups showing 未所持, and the 早見表 showing one ✓ and two dashed squares for that row. Reload the page and observe that it is all still there.
 
-The work is tracked on the project's board (`tia-tools` project 7, see `CLAUDE.md` § Tasks), one issue per branch: Milestone 2 is #3. Milestone 0 and the plan review went in before any issue existed (pull requests #1 and #2).
+The work is tracked on the project's board (`tia-tools` project 7, see `CLAUDE.md` § Tasks), one issue per branch: Milestone 2 is #3 (the skeleton) and #4 (the data contract). Milestone 0 and the plan review went in before any issue existed (pull requests #1 and #2).
 
 ## Progress
 
@@ -22,11 +22,12 @@ The work is tracked on the project's board (`tia-tools` project 7, see `CLAUDE.m
   - [x] (2026-10-31 08:15Z) The counting approach (D29): compared in a table of five options; the user chose everything in D1 on the Free plan the account is on (D41), and Milestones 6 and 7 were rewritten to it. The user also corrected D40: "N" meant the base card, and the rule is a customization-steps cap while 開幕時獲得 is on.
   - [x] (2026-10-31 09:14Z) Icon delivery under the Free plan: the user chose sprite sheets (D42), and the supportcards requirements gained the sheets and their index. The account's daily request counts cannot be read with wrangler (Surprises & Discoveries); the user can read them in the dashboard.
 - [x] (2026-10-31 09:14Z) Milestone 0 complete: every question has an answer with evidence or a recorded fallback (the icon width is measured in Milestone 1, D35), D29 is settled by D41, and Interfaces and Dependencies states what supportcards must provide.
-  - [ ] Requirements finalized with those answers, and Milestone 6 rewritten to the counting decision.
-- [ ] Milestone 1 (in gakumas-supportcards): publish `/data/skillcards.v1.json` and the skill card icons in `tia-assets`.
-- [ ] Milestone 2: project skeleton — page, Worker, checks and workflows copied from gkms-hif-final-stats; the Worker proxies the data file and reads the icons.
+  - [x] Requirements finalized with those answers, and Milestone 6 rewritten to the counting decision (in the 08:15Z and 09:14Z entries above).
+- [ ] Milestone 1 (in gakumas-supportcards, its issue #65 and `docs/plans/EXECPLAN_SKILLCARD_DATA_AND_ICONS.md`): publish `/data/skillcards.v1.json` and the skill card icons in `tia-assets`.
+  - [x] (2026-10-31 13:13Z) The data file is live: `https://gakumas-supportcards.tia.run/data/skillcards.v1.json` answers 200 with 192,178 bytes, the file supportcards' merge `f336717` generates, byte for byte (Surprises & Discoveries). The icons, the sprite sheets and their index are that plan's Milestones 2–5, still open: `/img/sheet112/index.v1.json` answers 404.
+- [x] (2026-10-31 13:19Z) Milestone 2: project skeleton — page, Worker, checks and workflows copied from gkms-hif-final-stats; the Worker proxies the data file and reads the icons.
   - [x] (2026-10-31 09:36Z) Skeleton without the data contract, worked while Milestone 1 waits for its session in supportcards (the user's choice): the toolchain and a placeholder page; the Worker with `/data/skillcards.json` proxied and `/img/` serving only the sprite sheets and their index (D42), `wrangler.toml`, `check.yml` and `deploy.yml`, the dev server's local routes, and `infra/worker/README.md`. `bun test` (25 tests, each new one seen to fail with its rule broken), `bun run type-check`, `bun run lint` (proved loaded by an injected `any`) and `bun run build` exit 0; `bun run dev` serves the page, answers `/data/skillcards.json` with 502 while no data file exists, and sheets and masters with 404.
-  - [ ] `src/data/contract.ts` copied from supportcards, `load.ts` with its test, and the fixture `src/data/fixtures/skillcards.v1.json`, once Milestone 1 defines the file; then the page lists the number of cards the file holds, the rest of this milestone's acceptance.
+  - [x] (2026-10-31 13:19Z) The data contract (#4): `src/data/contract.ts` with the format version and types copied verbatim from supportcards' `data/skillcard-data-file.ts` at `f336717`; `src/data/load.ts`, which checks a whole file, copies it into fresh objects and refuses it with the path of the first bad value, and fetches it from `/data/skillcards.json`; the live file committed as `src/data/fixtures/skillcards.v1.json`; and the placeholder page showing 「スキルカード 361 件」, or 「カードデータを読み込めませんでした」 with the reason in the console. `bun test` (58 tests; each of the loader's 12 rules and the page's 4 seen to turn a test red when broken), `bun run type-check`, `bun run lint` and `bun run build` exit 0; `bun run dev` showed 「スキルカード 361 件」 in Chrome, from the fixture, since the sibling checkout has no built file, with no console messages. The page bundle carries only the route string from `infra/worker/data.ts`.
 - [ ] Milestone 3: the memo model as pure TypeScript with tests.
 - [ ] Milestone 4: the page — tabs, sections, rows, cells, popovers, pickers, 早見表, sorting, settings.
 - [ ] Milestone 5: saving in the browser, the home-screen install, and the 引き継ぎコード.
@@ -115,6 +116,12 @@ The observations below are Milestone 0's. Unless stated otherwise their evidence
 
 - Observation: the account's Worker request counts cannot be read with wrangler. Wrangler 4.156.0 has no metrics command (`wrangler tail` streams live logs only), and its login token carries no analytics permission. They are in the Cloudflare dashboard (Workers & Pages, each Worker's Metrics), or in the GraphQL Analytics API with a token the user creates with Account Analytics read.
   Evidence: `bunx wrangler --help` in supportcards, 2026-10-31, lists only `wrangler tail` among commands about running Workers; `bunx wrangler whoami` lists the scopes `account (read)`, `workers (write)`, `workers_scripts (write)`, `workers_tail (read)`, `d1 (write)` and others, none for analytics.
+
+- Observation, for Milestone 2: the published data file is exactly what supportcards' committed module holds, so the fixture is a known version of it. It has 361 entries (181 cards at level 0, 180 at level 1), 13 idols from `hski`, 115 H.I.F. abilities, 126 card ids with per-idol art and 55 with one image, and no Legend card, the counts Milestone 0 predicted.
+  Evidence: on 2026-10-31 at 13:13Z the live file (`curl -sS https://gakumas-supportcards.tia.run/data/skillcards.v1.json`, 192,178 bytes, SHA-256 `508cf23d…dba356`) equalled `skillCardDataJson(SKILL_CARD_DATA)` run on `data/skillcard-data-file.ts` and `data/skillcards.generated.ts` as of supportcards' merge `f336717` (its pull request #66, 2026-10-31 22:00 JST); the counts are from the same run.
+
+- Observation, for Milestone 3: the contract's `CustomizationStep` is a step of a card's customization kind, `{ step, label }`, while this plan's `src/memo/types.ts` names a chosen step `CustomizationStep` too, `{ kind, step }`. The two are different things under one name; Milestone 3 should name the memo's type differently (for example `ChosenStep`) rather than import one under an alias.
+  Evidence: `src/data/contract.ts` and Interfaces and Dependencies below.
 
 ## Decision Log
 
@@ -458,3 +465,5 @@ Revision note, 2026-10-31: D40 completed with the user's answer: a base card's �
 Revision note, 2026-10-31: D42 records the user's choice of sprite sheets for icons, and the supportcards requirements, Milestones 1, 2, 4 and 5 and D35 follow it; an observation records that wrangler cannot read the account's request counts. Milestone 0 is complete; Milestone 1 is next, in gakumas-supportcards.
 
 Revision note, 2026-10-31: Milestone 2's skeleton recorded in Progress, done before Milestone 1 at the user's choice; what waits for the data file is listed there.
+
+Revision note, 2026-10-31: Milestone 1's data file went live from supportcards, and Milestone 2's data contract (#4) was recorded in Progress, closing Milestone 2; two observations were added, one on the fixture's provenance and counts and one on the clash of `CustomizationStep` with Milestone 3's types. The Purpose now names both of Milestone 2's issues, and a sub-item of Milestone 0 left unchecked was checked against the entries that did it.

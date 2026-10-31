@@ -30,9 +30,9 @@ Cross-plan decisions live in `docs/adr/` (convention: `docs/adr/README.md`). Thi
 
 ## Architecture
 
-- `src/` is the page: Preact, built by Vite into `dist/`; `src/main.tsx` is the entry and `src/app/App.tsx` the root component, a placeholder until Milestone 4 (per `docs/plans/EXECPLAN_MEMORY_MEMO.md` § Plan of Work). The memo model goes in `src/memo/` (Milestone 3) and the data file's contract in `src/data/` once gakumas-supportcards defines it (Milestone 2, waiting on Milestone 1).
+- `src/` is the page: Preact, built by Vite into `dist/`; `src/main.tsx` is the entry and `src/app/App.tsx` the root component, a placeholder showing how many entries the data file holds until Milestone 4 (per `docs/plans/EXECPLAN_MEMORY_MEMO.md` § Plan of Work). `src/data/` is the data file's contract: `contract.ts` copied verbatim from gakumas-supportcards' `data/skillcard-data-file.ts` (never edited here on its own; a new format version is copied anew), `load.ts` that refuses a whole file at its first bad value, and the published file as `fixtures/skillcards.v1.json` for the tests. The memo model goes in `src/memo/` (Milestone 3).
 - `infra/worker/` is the Cloudflare Worker on `gkms-memomemo.tia.run`: it serves `dist/` as static assets, and runs its own code only for `/data/skillcards.json` (proxied from gakumas-supportcards) and `/img/*` (the sprite sheets and their index, read from the shared R2 bucket `tia-assets`); see `infra/worker/README.md`. Every request that runs the Worker counts toward the account's Free-plan allowance of 100,000 a day, shared by every `tia.run` Worker, which is why icons come as sprite sheets (per the plan, D42 and § Surprises & Discoveries).
-- `vite.config.ts` gives the dev server the Worker's routes from local files: the sibling checkout `../gakumas-supportcards` (or `SUPPORTCARDS_DIR`) for the built data file and the image output, else this repository's fixture once it exists (it comes with the data contract), else a 502 for the data, as the Worker answers.
+- `vite.config.ts` gives the dev server the Worker's routes from local files: the sibling checkout `../gakumas-supportcards` (or `SUPPORTCARDS_DIR`) for the built data file and the image output, else this repository's fixture for the data; a missing image answers 404, as the Worker does.
 
 ## Setup and Development
 
