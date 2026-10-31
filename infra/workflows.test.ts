@@ -15,21 +15,40 @@ async function load(name: string): Promise<Record<string, unknown>> {
   return Object.fromEntries(Object.entries(parsed));
 }
 
+function jobs(workflow: Record<string, unknown>): Record<string, Record<string, unknown>> {
+  const all: unknown = workflow["jobs"];
+  if (typeof all !== "object" || all === null) throw new Error("no jobs");
+  return Object.fromEntries(Object.entries(all).map(([name, job]: [string, unknown]) => [name, typeof job === "object" && job !== null ? Object.fromEntries(Object.entries(job)) : {}]));
+}
+
 function steps(workflow: Record<string, unknown>, job: string): Step[] {
-  const jobs: unknown = workflow["jobs"];
-  const found: unknown = typeof jobs === "object" && jobs !== null ? Object.fromEntries(Object.entries(jobs))[job] : undefined;
-  const list: unknown = typeof found === "object" && found !== null ? Object.fromEntries(Object.entries(found))["steps"] : undefined;
+  const list: unknown = jobs(workflow)[job]?.["steps"];
   if (!Array.isArray(list)) throw new Error(`no steps in job ${job}`);
   return list.filter((s): s is Step => typeof s === "object" && s !== null);
 }
+
+/** The only actions either workflow may use, in this order, before any `run` step. */
+const ACTIONS = ["actions/checkout", "oven-sh/setup-bun"];
 
 const GATES = ["bun install --frozen-lockfile", "bun test", "bun run type-check", "bun run lint", "bun run build"];
 const check = await load("check.yml");
 const deploy = await load("deploy.yml");
 
 describe("the workflows", () => {
-  test("neither may write to the repository", () => {
-    for (const w of [check, deploy]) expect(w["permissions"]).toEqual({ contents: "read" });
+  test("neither may write to the repository, and no job widens that", () => {
+    for (const w of [check, deploy]) {
+      expect(w["permissions"]).toEqual({ contents: "read" });
+      for (const [name, job] of Object.entries(jobs(w))) expect({ name, permissions: job["permissions"] }).toEqual({ name, permissions: undefined });
+    }
+  });
+
+  test("each job is a single job using only checkout and setup-bun, first, then run steps", () => {
+    for (const [w, job] of [[check, "check"], [deploy, "deploy"]] as const) {
+      expect(Object.keys(jobs(w))).toEqual([job]);
+      const list = steps(w, job);
+      expect(list.slice(0, ACTIONS.length).map((s) => s.uses?.split("@")[0])).toEqual(ACTIONS);
+      expect(list.slice(ACTIONS.length).filter((s) => s.uses !== undefined)).toEqual([]);
+    }
   });
 
   test("every action is pinned to a full commit hash, and CI runs this Bun", () => {
