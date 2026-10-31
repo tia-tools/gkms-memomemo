@@ -30,7 +30,7 @@ export function App({ load, loadSheets }: { load: () => Promise<SkillCardDataFil
   }, [loadSheets]);
   const catalog = useMemo(() => (state.status === "ready" ? makeCatalog(state.data) : null), [state]);
   return (
-    <main class="mx-auto max-w-5xl px-3 py-3">
+    <main class="mx-auto max-w-5xl px-1 py-3 min-[600px]:px-3">
       <h1 class="text-lg font-bold">学マス　メモリーメモ帳</h1>
       {catalog && <MemoPage catalog={catalog} sheets={sheets} />}
       {state.status === "failed" && <p class="text-sm text-rose-600">カードデータを読み込めませんでした</p>}

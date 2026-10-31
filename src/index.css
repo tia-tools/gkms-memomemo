@@ -2,19 +2,22 @@
 
 /*
  * Sizes of the memo grid (docs/plans/EXECPLAN_MEMORY_MEMO.md, D17 and Artifacts and Notes): phone
- * first, the card and the three fixed groups fitting in about 370 px; from 600 px the sizes of the
- * mockup the user accepted.
+ * first, the drag strip, the card and the three fixed groups taking 358 px, which with the page's
+ * and the section's 4 px paddings fits a 375 px screen; from 600 px the sizes of the mockup the
+ * user accepted.
  */
 :root {
   --cell-w: 28px;
   --cell-h: 26px;
   --cell-font: 10px;
   --cell-gap: 2px;
-  --group-gap: 8px;
+  --group-gap: 6px;
+  --controls: 14px;
   --card-col: 56px;
   --icon: 40px;
   --hif-icon: 20px;
   --pick-icon: 48px;
+  --label-font: 8px;
 }
 
 @media (min-width: 600px) {
@@ -24,10 +27,12 @@
     --cell-font: 11px;
     --cell-gap: 3px;
     --group-gap: 10px;
+    --controls: 16px;
     --card-col: 72px;
     --icon: 56px;
     --hif-icon: 24px;
     --pick-icon: 56px;
+    --label-font: 9px;
   }
 }
 

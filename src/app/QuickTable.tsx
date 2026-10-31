@@ -46,7 +46,7 @@ export function QuickTable({ plan }: { plan: PlanId }) {
       <div class="flex flex-col gap-2 px-2 pb-2">
         {sections.length === 0 && <p class="text-xs text-slate-500">まだ行がありません</p>}
         {sections.length > 0 && (
-          <div class="flex items-center gap-2 pl-[calc(24px+6rem+1rem)] font-mono text-[10px] text-slate-500">
+          <div class="flex items-center gap-2 pl-[calc(24px+6rem+1.25rem)] font-mono text-[10px] text-slate-500">
             {FIXED_PATTERNS.map((p) => (
               <span key={p} class="w-[26px] text-center">
                 {p}

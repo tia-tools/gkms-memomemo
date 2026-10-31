@@ -45,7 +45,7 @@ function SortButton({ section }: { section: SectionId }) {
 function ColumnHeader() {
   return (
     <div class="flex items-end gap-x-[var(--group-gap)] text-[10px] text-slate-600">
-      <span class="w-4 shrink-0" />
+      <span class="w-[var(--controls)] shrink-0" />
       <span class="w-[var(--card-col)] shrink-0" />
       {FIXED_PATTERNS.map((pattern) => (
         <div key={pattern} class="memo-group flex shrink-0 gap-[var(--cell-gap)]">
@@ -96,7 +96,7 @@ export function SectionView({ section, plan, gapsOnly }: { section: SectionId; p
   const shown = gapsOnly ? rows.filter(hasGaps) : rows;
   const { list, drag, handle } = useRowDrag(rows, shown);
   return (
-    <section class="flex flex-col gap-1 rounded-lg bg-white p-2 shadow-sm" aria-label={SECTION_LABELS[section]}>
+    <section class="flex flex-col gap-1 rounded-lg bg-white p-1 shadow-sm min-[600px]:p-2" aria-label={SECTION_LABELS[section]}>
       <div class="flex items-center justify-between">
         <h2 class="font-bold">{SECTION_LABELS[section]}</h2>
         {rows.length > 1 && <SortButton section={section} />}

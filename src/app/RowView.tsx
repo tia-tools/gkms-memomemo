@@ -18,7 +18,7 @@ export function memoryCount(row: Row): number {
   return FIXED_PATTERNS.reduce((n, p) => n + row.fixed[p].length, 0) + row.extras.reduce((n, g) => n + g.memories.length, 0);
 }
 
-/** The card column (D1, D31): the card, its name, and under it the H.I.F. ability, the customization and 開幕時獲得. */
+/** The card column (D1, D31): the card, its name, and under it the H.I.F. ability, then the customization and 開幕時獲得. */
 function CardCell({ row, plan }: { row: Row; plan: PlanId }) {
   const { catalog } = usePage();
   const card = catalog.card(row.build.card, row.build.upgrade);
@@ -29,12 +29,10 @@ function CardCell({ row, plan }: { row: Row; plan: PlanId }) {
     <div class="flex w-[var(--card-col)] shrink-0 flex-col gap-0.5">
       <CardIcon art={card?.art} plan={plan} size="var(--icon)" name={name} />
       <span class="text-[10px] leading-tight break-all">{name}</span>
-      <div class="flex items-start gap-0.5">
-        <CardIcon art={hif?.card.art} plan={plan} size="var(--hif-icon)" name={hif ? `HIF ${hif.card.name}` : "不明なHIF"} />
-        <div class="flex min-w-0 flex-col text-[9px] leading-tight">
-          {labels.length === 0 ? <span class="text-slate-400">なし</span> : labels.map((label, i) => <span key={i}>{label}</span>)}
-          {row.build.kaimaku && <span class="text-emerald-700">開幕時獲得</span>}
-        </div>
+      <CardIcon art={hif?.card.art} plan={plan} size="var(--hif-icon)" name={hif ? `HIF ${hif.card.name}` : "不明なHIF"} />
+      <div class="flex flex-col text-[length:var(--label-font)] leading-tight break-all">
+        {labels.length === 0 ? <span class="text-slate-400">なし</span> : labels.map((label, i) => <span key={i}>{label}</span>)}
+        {row.build.kaimaku && <span class="text-emerald-700">開幕時獲得</span>}
       </div>
     </div>
   );
@@ -76,7 +74,7 @@ function RowControls({ row, section, plan, handle }: { row: Row; section: Sectio
   const [open, setOpen] = useState<"menu" | "change" | null>(null);
   const close = () => setOpen(null);
   return (
-    <div class="relative flex w-4 shrink-0 flex-col items-center gap-2 pt-1 text-slate-400">
+    <div class="relative flex w-[var(--controls)] shrink-0 flex-col items-center gap-2 pt-1 text-slate-400">
       <button type="button" aria-label="並べ替えのハンドル" class="cursor-grab touch-none px-0.5 leading-none select-none" {...handle}>
         ⋮⋮
       </button>
@@ -91,7 +89,7 @@ function RowControls({ row, section, plan, handle }: { row: Row; section: Sectio
 
 /**
  * One row (D1): the card column, the three fixed groups in %%F, %F%, F%% order, and the 追加 area,
- * which moves to a line of its own on a phone (D17).
+ * which moves to a line of its own under the groups on a phone (D17).
  */
 export function RowView({ row, section, plan, handle, dragging }: { row: Row; section: SectionId; plan: PlanId; handle: HandleProps; dragging: boolean }) {
   const { highlighted } = usePage();
@@ -99,15 +97,17 @@ export function RowView({ row, section, plan, handle, dragging }: { row: Row; se
     <div
       id={`row-${row.id}`}
       data-row={row.id}
-      class={`flex flex-wrap items-start gap-x-[var(--group-gap)] gap-y-1 border-b border-slate-100 py-1.5 ${highlighted === row.id ? "highlight" : ""} ${dragging ? "opacity-40" : ""}`}
+      class={`flex items-start gap-x-[var(--group-gap)] border-b border-slate-100 py-1.5 ${highlighted === row.id ? "highlight" : ""} ${dragging ? "opacity-40" : ""}`}
     >
       <RowControls row={row} section={section} plan={plan} handle={handle} />
       <CardCell row={row} plan={plan} />
-      {FIXED_PATTERNS.map((p) => (
-        <GroupView key={p} row={row} pattern={p} memories={row.fixed[p]} />
-      ))}
-      <div class="basis-full pl-[calc(1rem+var(--card-col)+2*var(--group-gap))] min-[600px]:basis-auto min-[600px]:pl-0">
-        <ExtrasArea row={row} />
+      <div class="flex flex-1 flex-wrap items-start gap-x-[var(--group-gap)] gap-y-1">
+        {FIXED_PATTERNS.map((p) => (
+          <GroupView key={p} row={row} pattern={p} memories={row.fixed[p]} />
+        ))}
+        <div class="basis-full min-[600px]:basis-auto">
+          <ExtrasArea row={row} />
+        </div>
       </div>
     </div>
   );
