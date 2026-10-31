@@ -1,0 +1,20 @@
+[project]
+name = "gkms-memomemo-icons"
+version = "0.0.0"
+description = "Builds the game-style skill card icons from P図鑑 screenshots on gakumas-supportcards' art (docs/plans/EXECPLAN_GAME_STYLE_ICONS.md)."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "pillow",
+  "numpy",
+]
+
+[dependency-groups]
+dev = ["pytest"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["."]
+python_files = ["test_*.py"]
+norecursedirs = ["out", ".venv"]
