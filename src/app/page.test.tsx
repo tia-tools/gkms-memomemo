@@ -141,6 +141,16 @@ describe("dragging", () => {
     expect(rowOrder("好調")).toEqual(["r2", "r1"]);
   });
 
+  test("losing the pointer capture ends the drag: the row is no longer drawn as dragged, and a later release moves nothing", async () => {
+    await showPage(root, TWO_ROWS);
+    await pointer(handleOf("r1"), "pointerdown", 0);
+    expect(must(document.getElementById("row-r1"), "r1").className).toContain("opacity-40");
+    await pointer(handleOf("r1"), "lostpointercapture", 0);
+    expect(must(document.getElementById("row-r1"), "r1").className).not.toContain("opacity-40");
+    await pointer(handleOf("r1"), "pointerup", 10);
+    expect(rowOrder("好調")).toEqual(["r1", "r2"]);
+  });
+
   test("a tap on the handle moves nothing and keeps the sort's undo offered", async () => {
     await showPage(root, TWO_ROWS);
     await tap(byText(section(root, "好調"), "button", "並べ替え"));
