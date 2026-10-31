@@ -6,9 +6,11 @@
 
 A sheet is uploaded when out/index.v1.json names it and the index committed at HEAD
 (src/icons/index.v1.json) does not: a sheet's name is its hash, so a name the committed index
-already holds was stored with these bytes. Only once every sheet is stored is out/index.v1.json
-copied to src/icons/index.v1.json (and out/frames112.webp to public/icons/), so the index never
-names a sheet the bucket lacks. Uploading uses `bunx wrangler r2 object put` with the Wrangler
+already holds was stored with these bytes. Then every sheet the new index names, uploaded now or
+before, is read back from the bucket and its bytes checked against its name; only when all of them
+are there is out/index.v1.json copied to src/icons/index.v1.json (and out/frames112.webp to
+public/icons/), so the index never names a sheet the bucket lacks, even one deleted since it was
+first uploaded. Uploading uses `bunx wrangler r2 object put` with the Wrangler
 login of the person running it; no key outside this app's prefix is ever written (I3).
 """
 
@@ -57,6 +59,17 @@ def check(key: str, data: bytes) -> None:
         raise UploadError(f"{key}: the file's bytes do not match the hash in its name")
 
 
+def _retried(command: list[str], what: str, run: Callable[..., object], sleep: Callable[[float], None], waits: Sequence[float]) -> object:
+    """Runs `command`, again after each of `waits` when it fails, and raises the last failure."""
+    for wait in waits:
+        try:
+            return run(command, check=True, capture_output=True)
+        except subprocess.CalledProcessError as e:
+            print(f"{what} failed (exit {e.returncode}); trying again in {wait:g} s", file=sys.stderr)
+            sleep(wait)
+    return run(command, check=True, capture_output=True)
+
+
 def put(
     key: str,
     path: Path,
@@ -67,20 +80,64 @@ def put(
     """`wrangler r2 object put` of one checked sheet, tried again after each of `waits`, then the last failure raised."""
     check(key, path.read_bytes())
     command = ["bunx", "wrangler", "r2", "object", "put", f"{BUCKET}/{key}", "--file", str(path), "--content-type", "image/webp", "--cache-control", IMMUTABLE, "--remote"]
-    for wait in waits:
+    _retried(command, f"put {key}", run, sleep, waits)
+
+
+def stored(
+    key: str,
+    run: Callable[..., object] = subprocess.run,
+    sleep: Callable[[float], None] = time.sleep,
+    waits: Sequence[float] = RETRY_WAITS,
+) -> bytes:
+    """The bytes the bucket holds under `key`, by `wrangler r2 object get --pipe`; a missing key fails like any error."""
+    command = ["bunx", "wrangler", "r2", "object", "get", f"{BUCKET}/{key}", "--pipe", "--remote"]
+    done = _retried(command, f"get {key}", run, sleep, waits)
+    return getattr(done, "stdout", b"")
+
+
+def missing(keys: list[str], fetch: Callable[[str], bytes]) -> list[str]:
+    """Each key whose stored bytes cannot be had or do not match its name, with the reason."""
+    problems = []
+    for key in keys:
         try:
-            run(command, check=True)
-            return
-        except subprocess.CalledProcessError as e:
-            print(f"put {key} failed (exit {e.returncode}); trying again in {wait:g} s", file=sys.stderr)
-            sleep(wait)
-    run(command, check=True)
+            check(key, fetch(key))
+        except (UploadError, subprocess.CalledProcessError) as e:
+            problems.append(f"{key}: {e if isinstance(e, UploadError) else 'not in the bucket, or not readable'}")
+    return problems
 
 
 def committed_index() -> dict | None:
     """The index at HEAD, or None where there is none yet."""
     shown = subprocess.run(["git", "show", "HEAD:src/icons/index.v1.json"], cwd=ROOT, capture_output=True, text=True)
     return json.loads(shown.stdout) if shown.returncode == 0 else None
+
+
+def publish(
+    out: Path,
+    root: Path,
+    committed: dict | None,
+    everything: bool,
+    send: Callable[[str, Path], None] = put,
+    fetch: Callable[[str], bytes] = stored,
+) -> list[str]:
+    """Uploads the sheets the committed index lacks, reads back every sheet the new index names, and only
+    then copies the index and the frames into `root`. Returns the keys uploaded; raises UploadError, having
+    copied nothing, when a file is wrong or the bucket lacks a named sheet."""
+    new = json.loads((out / "index.v1.json").read_text())
+    keys = to_upload(new, committed, everything)
+    for key in keys:
+        check(key, (out / key).read_bytes())
+    for n, key in enumerate(keys, 1):
+        send(key, out / key)
+        print(f"{n}/{len(keys)} {key}", file=sys.stderr)
+    named = sheet_files(new)
+    print(f"reading back the {len(named)} sheets the index names", file=sys.stderr)
+    problems = missing(named, fetch)
+    if problems:
+        raise UploadError("the index was not copied, since the bucket lacks what it names:\n" + "\n".join(problems))
+    shutil.copyfile(out / "index.v1.json", root / "src/icons/index.v1.json")
+    shutil.copyfile(out / "frames112.webp", root / "public/icons/frames112.webp")
+    return keys
 
 
 def main() -> int:
@@ -90,21 +147,17 @@ def main() -> int:
     parser.add_argument("--all", action="store_true")
     args = parser.parse_args()
 
-    new = json.loads((args.out / "index.v1.json").read_text())
-    keys = to_upload(new, committed_index(), args.all)
-    for key in keys:
-        check(key, (args.out / key).read_bytes())
-    print(f"{len(keys)} of {len(sheet_files(new))} sheets to upload", file=sys.stderr)
     if args.dry_run:
+        new = json.loads((args.out / "index.v1.json").read_text())
+        keys = to_upload(new, committed_index(), args.all)
+        for key in keys:
+            check(key, (args.out / key).read_bytes())
+        print(f"{len(keys)} of {len(sheet_files(new))} sheets to upload", file=sys.stderr)
         for key in keys:
             print(key)
         return 0
-    for n, key in enumerate(keys, 1):
-        put(key, args.out / key)
-        print(f"{n}/{len(keys)} {key}", file=sys.stderr)
-    shutil.copyfile(args.out / "index.v1.json", ROOT / "src/icons/index.v1.json")
-    shutil.copyfile(args.out / "frames112.webp", ROOT / "public/icons/frames112.webp")
-    print("index and frames copied into the repository; commit them with scripts/icons/stamps.json")
+    keys = publish(args.out, ROOT, committed_index(), args.all)
+    print(f"{len(keys)} sheets uploaded; index and frames copied into the repository; commit them with scripts/icons/stamps.json")
     return 0
 
 
