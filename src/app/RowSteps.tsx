@@ -98,7 +98,7 @@ function KaimakuSwitch({ build, card, onBuild }: { build: Build; card: CardRules
     <label class="flex items-center gap-2">
       <input type="checkbox" checked={build.kaimaku} disabled={state !== "switchable"} onChange={() => onBuild(switchKaimaku(build, card))} />
       開幕時獲得
-      {state === "blocked" && <span class="text-xs text-slate-500">{cap === 0 ? "カスタマイズなしのときだけ" : `カスタマイズ${cap}段階までのときだけ`}</span>}
+      {state === "blocked" && <span class="text-xs text-slate-500">{cap === 0 ? "カスタマイズなしのときだけ" : `カスタマイズ${cap}回までのときだけ`}</span>}
     </label>
   );
 }
@@ -130,7 +130,7 @@ export function CustomizeStep({ card, build, onBuild, onNext }: { card: SkillCar
           </div>
         ))}
       </div>
-      {card.customization.kinds.length > 0 && <p class="text-xs text-slate-500">合計{stepLimit(card)}段階まで</p>}
+      {card.customization.kinds.length > 0 && <p class="text-xs text-slate-500">合計{stepLimit(card)}回まで</p>}
       <KaimakuSwitch build={build} card={card} onBuild={onBuild} />
       <button type="button" class="self-end rounded bg-slate-800 px-4 py-1.5 text-white" onClick={onNext}>
         次へ

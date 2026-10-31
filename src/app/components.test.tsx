@@ -122,7 +122,7 @@ describe("the row popover", () => {
     await tap(must([...dialog(root).querySelectorAll<HTMLElement>("button")].find((b) => b.textContent === "前途洋々+"), "前途洋々+"));
     const kaimaku = must(dialog(root).querySelector<HTMLInputElement>('input[type="checkbox"]'), "開幕時獲得");
     expect([kaimaku.checked, kaimaku.disabled]).toEqual([true, false]);
-    const step = must([...dialog(root).querySelectorAll<HTMLElement>("button[aria-pressed]")].find((b) => b.textContent?.endsWith("1") === true), "a step");
+    const step = must([...dialog(root).querySelectorAll<HTMLElement>("button[aria-pressed]")].find((b) => b.textContent?.endsWith(" 1回") === true), "a step");
     await tap(step);
     const after = must(dialog(root).querySelector<HTMLInputElement>('input[type="checkbox"]'), "開幕時獲得");
     expect([after.checked, after.disabled]).toEqual([false, true]);
@@ -158,11 +158,11 @@ describe("changing a row whose build the rules reject (saved before the data cha
     await tap(byText(dialog(root), "button", "変更"));
     await tap(byText(dialog(root), "button", "この内容で保存"));
     expect(byText(root, '[role="alert"]', "このカードでは選べない組み合わせです。カスタマイズを選び直してください")).toBeTruthy();
-    expect(section(root, "好調").textContent).toContain("パラメータ+3");
+    expect(section(root, "好調").textContent).toContain("パラメータ+ 3回");
     await tap(byText(dialog(root), "button", "なし"));
     expect(root.querySelector('[role="alert"]')).toBeNull();
     await tap(byText(dialog(root), "button", "この内容で保存"));
-    expect(section(root, "好調").textContent).not.toContain("パラメータ+3");
+    expect(section(root, "好調").textContent).not.toContain("パラメータ+ 3回");
   });
 
   test("a 開幕時獲得 the card cannot have is switched off, so the row can be saved and customized", async () => {
@@ -172,12 +172,12 @@ describe("changing a row whose build the rules reject (saved before the data cha
     await tap(byLabel(section(root, "好調"), "行のメニュー"));
     await tap(byText(dialog(root), "button", "変更"));
     await tap(byText(dialog(root), "button", "2 カスタマイズ"));
-    await tap(byText(dialog(root), "button", "好調+1"));
-    expect(byText(dialog(root), "button", "好調+1").getAttribute("aria-pressed")).toBe("true");
+    await tap(byText(dialog(root), "button", "好調+ 1回"));
+    expect(byText(dialog(root), "button", "好調+ 1回").getAttribute("aria-pressed")).toBe("true");
     await tap(byText(dialog(root), "button", "この内容で保存"));
     expect(root.querySelector('[role="alert"]')).toBeNull();
     expect(section(root, "好調").textContent).not.toContain("開幕時獲得");
-    expect(section(root, "好調").textContent).toContain("好調+1");
+    expect(section(root, "好調").textContent).toContain("好調+ 1回");
   });
 });
 
