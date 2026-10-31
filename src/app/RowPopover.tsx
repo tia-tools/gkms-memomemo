@@ -3,6 +3,7 @@ import type { SkillCard } from "../data/contract.ts";
 import { buildProblem, newBuild } from "../memo/build.ts";
 import { addRow, changeBuild, isRefusal, type Refusal } from "../memo/edit.ts";
 import type { Build, PlanId, Row, SectionId } from "../memo/types.ts";
+import { offered } from "./catalog.ts";
 import { fitKaimaku, nothingToCustomize } from "./customize.ts";
 import { newRowId } from "./ids.ts";
 import { refusalText } from "./labels.ts";
@@ -25,9 +26,14 @@ interface Draft {
 
 const NO_BUILD: Build = { card: "", upgrade: 0, customization: [], kaimaku: false, hif: "" };
 
-/** A row's build to change, its 開幕時獲得 fitted to its card where the card is known (D31). */
-function draftOf(row: Row | undefined, card: SkillCard | undefined): Draft {
+/**
+ * A row's build to change, its 開幕時獲得 fitted to its card where the card is known (D31). A card
+ * the pickers do not offer (D54) counts as not chosen, like an unknown one, so it cannot be saved
+ * again: the player picks a card first.
+ */
+function draftOf(row: Row | undefined, found: SkillCard | undefined): Draft {
   if (row === undefined) return { card: undefined, build: NO_BUILD };
+  const card = found && offered(found) ? found : undefined;
   return { card, build: card ? fitKaimaku(row.build, card) : row.build };
 }
 

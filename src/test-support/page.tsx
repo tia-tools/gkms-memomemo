@@ -14,12 +14,16 @@ import { SKILL_CARDS } from "./skillcards.ts";
 
 export const CATALOG = makeCatalog(SKILL_CARDS);
 
-/** One sheet per plan for two idols, holding every card the tab offers, as supportcards builds them. */
+/**
+ * One sheet per plan for two idols, holding every card of the pool in that plan or free, as
+ * supportcards builds them: also the N cards the pickers leave out (D54), which a saved row can hold.
+ */
 export const TEST_SHEETS: SheetIndex = {
   cell: 112,
   sheets: PLAN_IDS.flatMap((plan) =>
     ["hski", "ttmr"].map((idol) => {
-      const assets = [...new Set(CATALOG.tabCards(plan).map((c) => (c.art.perIdol ? `${c.art.asset}-${idol}` : c.art.asset)))];
+      const pool = CATALOG.data.cards.filter((c) => c.plan === plan || c.plan === "free");
+      const assets = [...new Set(pool.map((c) => (c.art.perIdol ? `${c.art.asset}-${idol}` : c.art.asset)))];
       return { plan, idol, file: `sheet112/${plan}-${idol}-0000000${idol === "hski" ? 1 : 2}.webp`, columns: 10, assets };
     }),
   ),

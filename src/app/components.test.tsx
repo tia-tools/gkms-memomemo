@@ -8,7 +8,7 @@ import { newBuild } from "../memo/build.ts";
 import { addMemory, addRow, isRefusal, type Edited } from "../memo/edit.ts";
 import { emptyMemo, type Memo, type Memory } from "../memo/types.ts";
 import { cardNamed, kindLabelled } from "../test-support/skillcards.ts";
-import { addRowThroughPopover, byLabel, byText, CATALOG, dialog, must, section, showPage, tap } from "../test-support/page.tsx";
+import { addRowThroughPopover, byLabel, byText, CATALOG, dialog, must, pick, section, showPage, tap } from "../test-support/page.tsx";
 
 const HIF = must(CATALOG.tabAbilities("sense")[0], "a センス ability");
 const DDR: Memory = ["diamond", "diamond", "rainbow"];
@@ -178,6 +178,25 @@ describe("changing a row whose build the rules reject (saved before the data cha
     expect(root.querySelector('[role="alert"]')).toBeNull();
     expect(section(root, "好調").textContent).not.toContain("開幕時獲得");
     expect(section(root, "好調").textContent).toContain("好調+1");
+  });
+});
+
+describe("changing a row of an N card that cannot be a produce memory (D54)", () => {
+  test("the card counts as not chosen: it is not offered, cannot be saved again, and another card can be picked", async () => {
+    const chosen = cardNamed("挑戦+");
+    await showPage(root, ok(addRow(emptyMemo(), "sense.kocho", "r1", newBuild(chosen.id, chosen, HIF.ability.id))));
+    const row = must(document.getElementById("row-r1"), "row r1");
+    expect(row.textContent).toContain("挑戦+");
+    expect(byLabel(row, "挑戦+").style.backgroundImage).toContain("sense-hski-");
+    await tap(byLabel(section(root, "好調"), "行のメニュー"));
+    await tap(byText(dialog(root), "button", "変更"));
+    expect([...dialog(root).querySelectorAll("button")].some((b) => b.textContent === "この内容で保存")).toBe(false);
+    expect(byText(dialog(root), "button", "3 HIFアビリティ").hasAttribute("disabled")).toBe(true);
+    expect([...dialog(root).querySelectorAll("button[aria-pressed] span:last-child")].map((s) => s.textContent)).not.toContain("挑戦+");
+    await pick(root, "成就+");
+    await tap(byText(dialog(root), "button", "次へ"));
+    await pick(root, HIF.card.name);
+    expect(must(document.getElementById("row-r1"), "row r1").textContent).toContain("成就+");
   });
 });
 
