@@ -46,8 +46,8 @@ describe("rows", () => {
     expect(findRow(m, "r2")?.row.fixed).toEqual({ "%%F": [], "%F%": [], "F%%": [] });
   });
 
-  test("a build already in the tab is refused, naming the section that holds it", () => {
-    expect(addRow(memo(), "sense.common", "r9", build("p_card-01-act-1_022"))).toEqual({ refused: "duplicate", section: "sense.shuchu" });
+  test("a build already in the tab is refused, naming the section and the row that hold it", () => {
+    expect(addRow(memo(), "sense.common", "r9", build("p_card-01-act-1_022"))).toEqual({ refused: "duplicate", section: "sense.shuchu", row: "r3" });
   });
 
   test("the same card with another customization, 開幕時獲得 or H.I.F. ability is another build", () => {
@@ -66,7 +66,7 @@ describe("rows", () => {
     const changed = ok(changeBuild(m, "r1", build("p_card-01-act-3_029", { kaimaku: true })));
     expect(ids(changed, "sense.kocho")).toEqual(["r1", "r2"]);
     expect(findRow(changed, "r1")?.row).toMatchObject({ build: { kaimaku: true }, fixed: { "%%F": [DDR] } });
-    expect(changeBuild(m, "r1", build("p_card-01-act-1_022"))).toEqual({ refused: "duplicate", section: "sense.shuchu" });
+    expect(changeBuild(m, "r1", build("p_card-01-act-1_022"))).toEqual({ refused: "duplicate", section: "sense.shuchu", row: "r3" });
   });
 
   test("changing a row to its own build is not a duplicate", () => {
