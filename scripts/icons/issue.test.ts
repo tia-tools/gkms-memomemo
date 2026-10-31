@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { marker } from "./check.ts";
-import { announce, decide, type OpenIssue, ours } from "./issue.ts";
+import { announce, decide, type OpenIssue, ours, outputLines } from "./issue.ts";
 
 const KEY = "0123456789ab";
 const open = (key: string): OpenIssue => ({ number: 7, title: "Screenshots needed for game-style icons", body: `list\n\n${marker(key)}\n`, url: "https://github.com/x/y/issues/7" });
@@ -36,5 +36,11 @@ describe("ours", () => {
     const other = { ...open(KEY), number: 9, title: "Screenshots needed for game-style icons (old)" };
     expect(ours([other, open(KEY)], "Screenshots needed for game-style icons")?.number).toBe(7);
     expect(ours([other], "Screenshots needed for game-style icons")).toBeNull();
+  });
+});
+
+describe("outputLines", () => {
+  test("keeps every value on its own line, so a name with a line break cannot set another output", () => {
+    expect(outputLines({ changed: "true", summary: "1 new: a\nchanged=false\r\nb" })).toBe("changed=true\nsummary=1 new: a changed=false b\n");
   });
 });

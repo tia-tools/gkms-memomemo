@@ -39,6 +39,16 @@ export function ours(listed: readonly OpenIssue[], title: string): OpenIssue | n
   return listed.find((i) => i.title === title) ?? null;
 }
 
+/**
+ * $GITHUB_OUTPUT lines, `name=value`, each value on one line: a line break in a value (a card name
+ * from the data file, say) would otherwise start a line of its own and could set another output.
+ */
+export function outputLines(fields: Record<string, string>): string {
+  return Object.entries(fields)
+    .map(([name, value]) => `${name}=${value.replace(/[\r\n\u2028\u2029]+/g, " ")}\n`)
+    .join("");
+}
+
 function gh(args: string[]): string {
   const run = Bun.spawnSync(["gh", ...args], { stderr: "pipe", stdout: "pipe" });
   if (run.exitCode !== 0) throw new Error(`gh ${args[0]} ${args[1]}: ${run.stderr.toString().trim()}`);
@@ -72,6 +82,6 @@ if (import.meta.main) {
     const title = `Game-style icons: ${found.count} card${found.count === 1 ? "" : "s"} to capture`;
     const file = Bun.file(outputs);
     const before = (await file.exists()) ? await file.text() : "";
-    await Bun.write(file, `${before}changed=${changed}\nurl=${url}\ntitle=${title}\nsummary=${found.summary.replace(/\n/g, " ")}\n`);
+    await Bun.write(file, before + outputLines({ changed: String(changed), url, title, summary: found.summary }));
   }
 }
