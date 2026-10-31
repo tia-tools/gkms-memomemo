@@ -32,10 +32,14 @@ beforeEach(() => {
 });
 afterEach(() => act(() => render(null, root)));
 
-/** Chooses tiers in the open memory popover, Vo, Da, Vi in order. */
-async function chooseTiers(tiers: readonly string[]): Promise<void> {
-  const lines = [...dialog(root).querySelectorAll("div.flex.items-center.gap-2")];
-  for (const [i, tier] of tiers.entries()) await tap(byText(must(lines[i], `line ${i}`), "button", tier));
+const STAT_NAMES = ["Vo", "Da", "Vi"] as const;
+
+/** Chooses tiers in the open memory popover, Vo, Da, Vi in order, by the buttons' accessible names. */
+async function chooseTiers(tiers: readonly ("ダイヤ" | "虹")[]): Promise<void> {
+  for (const [i, tier] of tiers.entries()) {
+    const name = `${STAT_NAMES[i] ?? ""} ${tier}`;
+    await tap(must(dialog(root).querySelector<HTMLElement>(`button[aria-label^="${name} "]`), name));
+  }
 }
 
 describe("the Purpose scenario", () => {
@@ -45,7 +49,9 @@ describe("the Purpose scenario", () => {
     const kocho = section(root, "好調");
     expect(kocho.textContent).toContain("成就+");
     await tap(byLabel(kocho, "%%F 未所持"));
-    await chooseTiers(["◆ダイヤ 3.5", "◆ダイヤ 3.5", "虹 20"]);
+    const shown = [...dialog(root).querySelectorAll("button[aria-pressed]")].map((b) => b.textContent);
+    expect(shown).toEqual(["3.5", "2.8", "3.5", "2.8", "25", "20"]);
+    await chooseTiers(["ダイヤ", "ダイヤ", "虹"]);
     await tap(byText(dialog(root), "button", "追加"));
     expect(byLabel(kocho, "%%F 3.5 / 3.5 / 20").textContent).toBe("3.53.520");
     expect(kocho.querySelector('[aria-label="%%F 未所持"]')).toBeNull();
@@ -63,16 +69,16 @@ describe("the memory popover", () => {
     await tap(byLabel(section(root, "好調"), "%F% 未所持"));
     const add = byText(dialog(root), "button", "追加");
     expect(add.hasAttribute("disabled")).toBe(true);
-    await chooseTiers(["◆ダイヤ 3.5", "虹 20"]);
+    await chooseTiers(["ダイヤ", "虹"]);
     expect(add.hasAttribute("disabled")).toBe(true);
-    await chooseTiers(["◆ダイヤ 3.5", "虹 20", "虹 2.8"]);
+    await chooseTiers(["ダイヤ", "虹", "虹"]);
     expect(add.hasAttribute("disabled")).toBe(false);
   });
 
   test("a second memory of a pattern stacks under the first, through the ＋ strip", async () => {
     await showPage(root, withJoju());
     await tap(byLabel(section(root, "好調"), "%%Fをもう1件追加"));
-    await chooseTiers(["虹 2.8", "虹 2.8", "虹 20"]);
+    await chooseTiers(["虹", "虹", "虹"]);
     await tap(byText(dialog(root), "button", "追加"));
     const lines = [...section(root, "好調").querySelectorAll('[aria-label^="%%F "]')].map((el) => el.getAttribute("aria-label"));
     expect(lines).toEqual(["%%F 3.5 / 3.5 / 20", "%%F 2.8 / 2.8 / 20"]);
@@ -81,9 +87,9 @@ describe("the memory popover", () => {
   test("an owned line opens with its tiers chosen, and 変更 changes it in place", async () => {
     await showPage(root, withJoju());
     await tap(byLabel(section(root, "好調"), "%%F 3.5 / 3.5 / 20"));
-    const pressed = [...dialog(root).querySelectorAll('button[aria-pressed="true"]')].map((b) => b.textContent);
-    expect(pressed).toEqual(["◆ダイヤ 3.5", "◆ダイヤ 3.5", "虹 20"]);
-    await chooseTiers(["虹 2.8"]);
+    const pressed = [...dialog(root).querySelectorAll('button[aria-pressed="true"]')].map((b) => b.getAttribute("aria-label"));
+    expect(pressed).toEqual(["Vo ダイヤ 3.5", "Da ダイヤ 3.5", "Vi 虹 20"]);
+    await chooseTiers(["虹"]);
     await tap(byText(dialog(root), "button", "変更"));
     const lines = [...section(root, "好調").querySelectorAll('[aria-label^="%%F "]')].map((el) => el.getAttribute("aria-label"));
     expect(lines).toEqual(["%%F 2.8 / 3.5 / 20"]);

@@ -52,10 +52,7 @@ describe("sorting", () => {
     await tap(byText(section(root, "好調"), "button", "並べ替え"));
     await tap(byText(dialog(root), "button", "レアリティ順"));
     await tap(byLabel(section(root, "好調"), "%%F 未所持"));
-    for (const tier of ["◆ダイヤ 3.5", "◆ダイヤ 3.5", "虹 20"]) {
-      const free = must([...dialog(root).querySelectorAll<HTMLElement>("button")].find((b) => b.textContent === tier && b.getAttribute("aria-pressed") === "false"), tier);
-      await tap(free);
-    }
+    for (const tier of ["Vo ダイヤ 3.5", "Da ダイヤ 3.5", "Vi 虹 20"]) await tap(byLabel(dialog(root), tier));
     await tap(byText(dialog(root), "button", "追加"));
     expect(root.querySelector('[role="status"]')).toBeNull();
   });
@@ -66,7 +63,7 @@ describe("extra groups", () => {
     await showPage(root, withRow(emptyMemo(), "r1", "成就+"));
     await tap(byText(section(root, "好調"), "button", "＋追加"));
     await tap(byText(dialog(root), "button", "%%%"));
-    for (const tier of ["虹 2.8", "虹 2.8", "虹 2.8"]) await tap(must([...dialog(root).querySelectorAll<HTMLElement>('button[aria-pressed="false"]')].find((b) => b.textContent === tier), tier));
+    for (const tier of ["Vo 虹 2.8", "Da 虹 2.8", "Vi 虹 2.8"]) await tap(byLabel(dialog(root), tier));
     await tap(byText(dialog(root), "button", "追加"));
     expect(byLabel(section(root, "好調"), "%%% 2.8 / 2.8 / 2.8")).toBeTruthy();
     await tap(byText(section(root, "好調"), "button", "＋追加"));

@@ -11,9 +11,10 @@ function complete(tiers: readonly (Tier | null)[]): Memory | null {
 }
 
 /**
- * The memory popover's contents (D18): a line each for Vo, Da and Vi with ◆ダイヤ and 虹, each
- * showing the value it means. A new memory starts with nothing chosen and 追加 waits for all three,
- * so a half-filled memory cannot exist; an owned one starts with its tiers and offers 削除.
+ * The memory popover's contents (D18): a line each for Vo, Da and Vi with a button per quality,
+ * showing only the value it means in that quality's texture (D52). A new memory starts with nothing
+ * chosen and 追加 waits for all three, so a half-filled memory cannot exist; an owned one starts
+ * with its tiers and offers 削除.
  */
 export function MemoryEditor({
   pattern,
@@ -36,17 +37,21 @@ export function MemoryEditor({
           <span class="w-6 border-t-[3px] text-xs font-bold" style={{ borderColor: stat.color }}>
             {stat.name}
           </span>
-          {TIERS.map((tier) => (
-            <button
-              key={tier}
-              type="button"
-              aria-pressed={tiers[i] === tier}
-              class={`tier-${tier} flex-1 rounded py-2 text-sm ${tiers[i] === tier ? "font-bold ring-2 ring-slate-800" : "opacity-60"}`}
-              onClick={() => setTiers(tiers.with(i, tier))}
-            >
-              {TIER_LABELS[tier]} {CELL_VALUES[kinds[i] ?? "%"][tier]}
-            </button>
-          ))}
+          {TIERS.map((tier) => {
+            const value = CELL_VALUES[kinds[i] ?? "%"][tier];
+            return (
+              <button
+                key={tier}
+                type="button"
+                aria-label={`${stat.name} ${TIER_LABELS[tier]} ${value}`}
+                aria-pressed={tiers[i] === tier}
+                class={`tier-${tier} flex-1 rounded py-2 text-base font-bold ${tiers[i] === tier ? "ring-2 ring-slate-800" : "opacity-50"}`}
+                onClick={() => setTiers(tiers.with(i, tier))}
+              >
+                {value}
+              </button>
+            );
+          })}
         </div>
       ))}
       <div class="flex items-center justify-between gap-2">

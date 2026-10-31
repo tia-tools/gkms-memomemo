@@ -36,7 +36,8 @@ export function columnLabels(pattern: Pattern): [string, string, string] {
   return [`Vo${vo ?? ""}`, `Da${da ?? ""}`, `Vi${vi ?? ""}`];
 }
 
-export const TIER_LABELS: Record<Tier, string> = { diamond: "◆ダイヤ", rainbow: "虹" };
+/** A quality's name, for assistive technology: on screen its texture says it (D52). */
+export const TIER_LABELS: Record<Tier, string> = { diamond: "ダイヤ", rainbow: "虹" };
 
 export const SORT_LABELS: Record<SortKey, string> = { rarity: "レアリティ", type: "アクティブ/メンタル", buff: "バフの種類" };
 
