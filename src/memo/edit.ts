@@ -27,8 +27,8 @@ import {
 } from "./types.ts";
 
 export type Refusal =
-  /** The build is already in the tab, in this section (D13). */
-  | { refused: "duplicate"; section: SectionId }
+  /** The build is already in the tab, in this section and row, which the page offers to jump to (D13). */
+  | { refused: "duplicate"; section: SectionId; row: string }
   /** A row moves only between the sections of its own tab. */
   | { refused: "other-tab" }
   /** The row already has a group of this pattern (D3). */
@@ -96,18 +96,22 @@ function checkNewId(memo: Memo, id: string): void {
   if (findRow(memo, id) !== null) throw new MemoEditError(`row id ${id} is already used`);
 }
 
-/** The section of the tab whose rows hold this build, ignoring the row `except`, or null (D13). */
-export function sectionHolding(memo: Memo, plan: PlanId, build: Build, except?: string): SectionId | null {
+/** The row of the tab that holds this build and its section, ignoring the row `except`, or null (D13). */
+export function rowHolding(memo: Memo, plan: PlanId, build: Build, except?: string): { section: SectionId; row: string } | null {
   const key = buildKey(build);
-  return sectionsOf(plan).find((s) => memo.sections[s].some((r) => r.id !== except && buildKey(r.build) === key)) ?? null;
+  for (const section of sectionsOf(plan)) {
+    const row = memo.sections[section].find((r) => r.id !== except && buildKey(r.build) === key);
+    if (row !== undefined) return { section, row: row.id };
+  }
+  return null;
 }
 
 /** A new row with no memories at the end of the section (D13, D14), unless its build is already in the tab. */
 export function addRow(memo: Memo, section: SectionId, id: string, build: Build): Edited {
   checkNewId(memo, id);
   checkBuild(build);
-  const holder = sectionHolding(memo, planOf(section), build);
-  if (holder !== null) return { refused: "duplicate", section: holder };
+  const holder = rowHolding(memo, planOf(section), build);
+  if (holder !== null) return { refused: "duplicate", ...holder };
   return withSection(memo, section, [...memo.sections[section], emptyRow(id, build)]);
 }
 
@@ -115,8 +119,8 @@ export function addRow(memo: Memo, section: SectionId, id: string, build: Build)
 export function changeBuild(memo: Memo, rowId: string, build: Build): Edited {
   const { section } = locate(memo, rowId);
   checkBuild(build);
-  const holder = sectionHolding(memo, planOf(section), build, rowId);
-  if (holder !== null) return { refused: "duplicate", section: holder };
+  const holder = rowHolding(memo, planOf(section), build, rowId);
+  if (holder !== null) return { refused: "duplicate", ...holder };
   return replaceRow(memo, rowId, (row) => ({ ...row, build }));
 }
 

@@ -1,1 +1,103 @@
 @import "tailwindcss";
+
+/*
+ * Sizes of the memo grid (docs/plans/EXECPLAN_MEMORY_MEMO.md, D17 and Artifacts and Notes): phone
+ * first, the drag strip, the card and the three fixed groups taking 358 px, which with the page's
+ * and the section's 4 px paddings fits a 375 px screen; from 600 px the sizes of the mockup the
+ * user accepted.
+ */
+:root {
+  --cell-w: 28px;
+  --cell-h: 26px;
+  --cell-font: 10px;
+  --cell-gap: 2px;
+  --group-gap: 6px;
+  --controls: 14px;
+  --card-col: 56px;
+  --icon: 40px;
+  --hif-icon: 20px;
+  --pick-icon: 48px;
+  --label-font: 8px;
+}
+
+@media (min-width: 600px) {
+  :root {
+    --cell-w: 40px;
+    --cell-h: 30px;
+    --cell-font: 11px;
+    --cell-gap: 3px;
+    --group-gap: 10px;
+    --controls: 16px;
+    --card-col: 72px;
+    --icon: 56px;
+    --hif-icon: 24px;
+    --pick-icon: 56px;
+    --label-font: 9px;
+  }
+}
+
+.cell {
+  width: var(--cell-w);
+  height: var(--cell-h);
+  font-size: var(--cell-font);
+}
+
+.memo-group {
+  width: calc(3 * var(--cell-w) + 2 * var(--cell-gap));
+}
+
+/*
+ * The two qualities as the game draws its memory abilities (D2, D52; the user's screenshot of the
+ * game, 2026-11-01): UR (diamond) is a field of triangle facets over a pastel prism, SSR (rainbow)
+ * a smooth pastel band. The game has no standalone texture for them (Surprises & Discoveries), so
+ * both are CSS; the facets are an SVG tile of white triangles at varied opacities.
+ */
+.tier-diamond {
+  background-color: #f3e8ff;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='42.00' height='24.25'%3E%3Cpolygon points='0.00,12.12 7.00,0.00 14.00,12.12' fill='white' fill-opacity='0.55'/%3E%3Cpolygon points='7.00,0.00 21.00,0.00 14.00,12.12' fill='white' fill-opacity='0.15'/%3E%3Cpolygon points='14.00,12.12 21.00,0.00 28.00,12.12' fill='white' fill-opacity='0.1'/%3E%3Cpolygon points='21.00,0.00 35.00,0.00 28.00,12.12' fill='white' fill-opacity='0.45'/%3E%3Cpolygon points='28.00,12.12 35.00,0.00 42.00,12.12' fill='white' fill-opacity='0.35'/%3E%3Cpolygon points='35.00,0.00 49.00,0.00 42.00,12.12' fill='white' fill-opacity='0.7'/%3E%3Cpolygon points='-7.00,0.00 7.00,0.00 0.00,12.12' fill='white' fill-opacity='0.7'/%3E%3Cpolygon points='7.00,24.25 14.00,12.12 21.00,24.25' fill='white' fill-opacity='0.2'/%3E%3Cpolygon points='14.00,12.12 28.00,12.12 21.00,24.25' fill='white' fill-opacity='0.4'/%3E%3Cpolygon points='21.00,24.25 28.00,12.12 35.00,24.25' fill='white' fill-opacity='0.6'/%3E%3Cpolygon points='35.00,24.25 42.00,12.12 49.00,24.25' fill='white' fill-opacity='0.05'/%3E%3Cpolygon points='-7.00,24.25 0.00,12.12 7.00,24.25' fill='white' fill-opacity='0.05'/%3E%3Cpolygon points='0.00,12.12 14.00,12.12 7.00,24.25' fill='white' fill-opacity='0.3'/%3E%3C/svg%3E"),
+    linear-gradient(100deg, #fbcfe8 0%, #e9d5ff 30%, #f8fafc 50%, #bfdbfe 72%, #a5f3fc 100%);
+  background-size: 42px 24.25px, 100% 100%;
+  border: 1px solid #c4b5fd;
+}
+
+/* Each cell of a line shows another part of the facets. */
+.tier-diamond:nth-child(2) {
+  background-position: -14px -6px, 0 0;
+}
+
+.tier-diamond:nth-child(3) {
+  background-position: -28px -12px, 0 0;
+}
+
+.tier-rainbow {
+  background: linear-gradient(90deg, #ffd1e6 0%, #fff2c6 28%, #fde1f0 52%, #d5effc 76%, #c8f7ea 100%);
+  border: 1px solid #f0c8de;
+}
+
+.missing {
+  border: 2px dashed #f0a1bf;
+  background: repeating-linear-gradient(45deg, #fdeef4 0 4px, #ffffff 4px 8px);
+  color: #d0477f;
+}
+
+/* A delete button armed by its first tap (D4). */
+@keyframes armed {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+.armed {
+  animation: armed 0.3s ease-in-out 2;
+}
+
+/* A row shown by a jump from the 早見表 or a duplicate refusal. */
+@keyframes highlight {
+  from { background-color: #fde68a; }
+  to { background-color: transparent; }
+}
+
+.highlight {
+  animation: highlight 2s ease-out;
+}
