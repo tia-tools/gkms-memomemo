@@ -2,7 +2,9 @@
  * Reads the skill card file gakumas-supportcards publishes (src/data/contract.ts) from untrusted
  * JSON. Every value is checked against the contract and copied into a fresh object, so a field the
  * contract does not name is dropped. Anything else that does not match refuses the whole file, with
- * the path of the first bad value: the page never works from part of the card list. Adopted from
+ * the path of the first bad value: the page never works from part of the card list. One check goes
+ * beyond the types: an empty card or idol list is refused too (docs/plans/EXECPLAN_MEMORY_MEMO.md,
+ * decision D43). Adopted from
  * gkms-hif-final-stats' src/data/load.ts, which reads support cards the same way.
  */
 
@@ -123,7 +125,7 @@ export function parseSkillCardData(json: unknown): SkillCardDataFile {
       `skill card data format version ${JSON.stringify(version)} is not supported: this page reads version ${SKILLCARD_DATA_FORMAT_VERSION}`,
     );
   }
-  // An empty list would leave the page with no idol to draw icons for (D34) or no card to pick.
+  // Beyond the types (D43): an empty list means a broken publication, and leaves no idol to draw icons for (D34) or no card to pick.
   const idols = req(json, "idols", list(idol), "");
   if (idols.length === 0) fail("idols", "at least one idol");
   const cards = req(json, "cards", list(card), "");
