@@ -10,7 +10,7 @@ After this plan, a player opens `https://gkms-memomemo.tia.run` on a phone or PC
 
 To see it working: open the page, add a row 成就+ in センス → 好調, add a %%F memory with Vo diamond, Da diamond, Vi rainbow, and observe the row showing 3.5% / 3.5% / 20 with diamond, diamond and rainbow textures, the %F% and F%% groups showing 未所持, and the 早見表 showing one ✓ and two dashed squares for that row. Reload the page and observe that it is all still there.
 
-The work is tracked on the project's board (`tia-tools` project 7, see `CLAUDE.md` § Tasks), one issue per branch: Milestone 2 is #3 (the skeleton) and #4 (the data contract), Milestone 3 is #7, Milestone 4 is #9, Milestone 5 is #28, and Milestone 6 is #32 (the Worker's counts) and #33 (the page's counting and ranked pickers, after #32). Milestone 0 and the plan review went in before any issue existed (pull requests #1 and #2).
+The work is tracked on the project's board (`tia-tools` project 7, see `CLAUDE.md` § Tasks), one issue per branch: Milestone 2 is #3 (the skeleton) and #4 (the data contract), Milestone 3 is #7, Milestone 4 is #9, Milestone 5 is #28, Milestone 6 is #32 (the Worker's counts) and #33 (the page's counting and ranked pickers, after #32), and Milestone 7 is #43. Milestone 0 and the plan review went in before any issue existed (pull requests #1 and #2).
 
 ## Progress
 
@@ -114,7 +114,8 @@ The work is tracked on the project's board (`tia-tools` project 7, see `CLAUDE.m
 
     Only these guards and tests changed after it, each an early return, so no second run. `bun test` (457), `bun run type-check`, `bun run lint` and `bun run build` exit 0.
   - [x] (2026-11-01 17:43Z) Pull request #39 into `develop`, its checks passing; the user approved the push (job #38) and merged it (`8eddc38`), closing #33. Milestone 6 is complete, recorded by #40. The database is created and the Worker first deployed in Milestone 7.
-- [ ] Milestone 7: first deployment to `gkms-memomemo.tia.run` and checks of the live site.
+- [ ] Milestone 7: first deployment to `gkms-memomemo.tia.run` and checks of the live site (#43).
+  - [x] (2026-11-01 18:07Z) #43 claimed on `feat/m7-release`, from `develop` at `c124aef`. The account had no D1 database. `bunx wrangler d1 create gkms-memomemo --location apac` (wrangler 4.156.0, the user's login) created it in APAC, id `7e84c483-…`, now in `wrangler.toml`. `d1 migrations apply --remote` applied `0001_counts.sql`, and the remote schema, read back, holds `counts` and `caps` exactly as the migration writes them. `wrangler.test.ts` now requires the binding's id, and was seen to fail without it, since a deploy without one would provision a new database (Surprises & Discoveries). `infra/worker/README.md` § Counts says the database exists, and that `HASH_SALT` can be set only once the Worker does. `bun test` (457), `bun run type-check`, `bun run lint` and `bun run build` exit 0, and `wrangler deploy --dry-run` lists `env.DB (gkms-memomemo)`. The repository has no Actions secrets yet.
 
 ## Surprises & Discoveries
 
@@ -779,3 +780,5 @@ Revision note, 2026-11-01: the Worker's half of Milestone 6 (#32) recorded in Pr
 Revision note, 2026-11-01: #32 marked merged (#37), and the page's half of Milestone 6 (#33) recorded in Progress. Two observations added: `wrangler dev`'s cache keeping one `/counts` answer for both local hosts, and `bun test` reporting no unhandled rejection. D65 records the page's side; the Milestone 6 paragraph's note on a local check follows.
 
 Revision note, 2026-11-01: Milestone 6 marked complete: #33 merged by pull request #39, after #32 by #37 (#40).
+
+Revision note, 2026-11-01: Milestone 7 started (#43): the D1 database created and its migration applied, recorded in Progress; Purpose names the issue.

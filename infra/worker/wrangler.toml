@@ -19,7 +19,7 @@ run_worker_first = ["/img/*", "/data/skillcards.json", "/count", "/counts"]
 
 # The anonymous counts and the per-player daily cap (decision D41), tables in migrations/. The
 # database was created in Milestone 7 (`bunx wrangler d1 create gkms-memomemo --location apac`,
-# 2026-11-02). Without its `database_id`, `wrangler deploy` would provision a new database under
+# 2026-11-01 UTC). Without its `database_id`, `wrangler deploy` would provision a new database under
 # this name instead of binding this one, so wrangler.test.ts requires the id. See README.md § Counts.
 [[d1_databases]]
 binding = "DB"

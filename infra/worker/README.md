@@ -80,7 +80,7 @@ Every answer is JSON `{ "ok": … }` marked `no-store`. The Worker logs the rows
 
 **What it costs on the Free plan.** Measured on a local D1 (the plan's Surprises & Discoveries), a counted event writes 4 rows (1 for the cap, 1 each for the card, the ability and a customization or `none`), and 5 with two customization steps; a refused one writes none. Against D1's 100,000 rows written a day, that is about 20,000 to 25,000 rows created a day across all players. Each request to `/count` or `/counts` is also a Worker request, out of the account's 100,000 a day.
 
-**The database** was created in Milestone 7, on 2026-11-02, by hand with `bunx wrangler login` on the account that holds `tia.run`, and its id is in `wrangler.toml`. A new migration, or the database made again after a loss, goes the same way, from this directory:
+**The database** was created in Milestone 7, on 2026-11-01 (UTC), by hand with `bunx wrangler login` on the account that holds `tia.run`, and its id is in `wrangler.toml`. A new migration, or the database made again after a loss, goes the same way, from this directory:
 
     bunx wrangler d1 create gkms-memomemo --location apac   # only to make it again; then put the new database_id into wrangler.toml
     bunx wrangler d1 migrations apply gkms-memomemo --remote   # applies only the migrations not yet applied
