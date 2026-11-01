@@ -80,15 +80,18 @@ Every answer is JSON `{ "ok": … }` marked `no-store`. The Worker logs the rows
 
 **What it costs on the Free plan.** Measured on a local D1 (the plan's Surprises & Discoveries), a counted event writes 4 rows (1 for the cap, 1 each for the card, the ability and a customization or `none`), and 5 with two customization steps; a refused one writes none. Against D1's 100,000 rows written a day, that is about 20,000 to 25,000 rows created a day across all players. Each request to `/count` or `/counts` is also a Worker request, out of the account's 100,000 a day.
 
-**Created in Milestone 7,** by hand, with `bunx wrangler login` on the account that holds `tia.run`, from this directory:
+**The database** was created in Milestone 7, on 2026-11-02, by hand with `bunx wrangler login` on the account that holds `tia.run`, and its id is in `wrangler.toml`. A new migration, or the database made again after a loss, goes the same way, from this directory:
 
-    bunx wrangler d1 create gkms-memomemo
-    # put the database_id it prints into wrangler.toml's [[d1_databases]]
-    bunx wrangler d1 migrations apply gkms-memomemo --remote
-    bunx wrangler secret put HASH_SALT
-    # paste a long random value, never committed or printed: `openssl rand -base64 48`, for example
+    bunx wrangler d1 create gkms-memomemo --location apac   # only to make it again; then put the new database_id into wrangler.toml
+    bunx wrangler d1 migrations apply gkms-memomemo --remote   # applies only the migrations not yet applied
 
-Until the id is in `wrangler.toml`, the binding has none. `wrangler dev` (a local D1) and `--dry-run` accept that, but `wrangler deploy` provisions a binding without an id: wrangler 4.156.0's source logs "Provisioning" and creates the resource, taking its name from the config. So `main` must not get this change before the id.
+`wrangler.test.ts` requires the binding's `database_id`. Without one, `wrangler dev` (a local D1) and `--dry-run` work, but `wrangler deploy` provisions a new database under the name instead of binding this one: wrangler 4.156.0's source logs "Provisioning" and creates the resource, taking its name from the config.
+
+**The salt** `HASH_SALT` is a Worker secret, so it can be set only once the Worker exists, after its first deployment. Until then, and whenever it is missing, `POST /count` answers 503 and counts nothing. From this directory, without the value ever being shown or written to a file:
+
+    openssl rand -base64 48 | tr -d '\n' | bunx wrangler secret put HASH_SALT
+
+Setting it again changes every player's cap key for the rest of the day, which only resets their count of the day's 200 events.
 
 **Locally,** with a D1 kept outside the repository and a throwaway salt:
 
