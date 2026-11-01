@@ -11,6 +11,7 @@ import { emptyMemo, type Memo, SECTION_IDS } from "../memo/types.ts";
 import { addRowThroughPopover, byLabel, byText, CATALOG, dialog, must, pick, section, settle, showPage, tap, TEST_SHEETS, type } from "../test-support/page.tsx";
 import { cardNamed, kindLabelled } from "../test-support/skillcards.ts";
 import type { Counts, CountsApi, SectionCounts } from "./counts.ts";
+import { MemoPage } from "./MemoPage.tsx";
 
 const JOJU = cardNamed("成就+"); // センス SSR +: 好調+ and コスト値- of one step each, no 開幕時獲得
 const SENSE_CARDS = CATALOG.tabCards("sense");
@@ -32,7 +33,7 @@ function fakeApi(load: () => Promise<Counts | null> = async () => null): CountsA
 }
 
 function counts(of: Partial<Record<(typeof SECTION_IDS)[number], Partial<SectionCounts>>>): Counts {
-  return new Map(SECTION_IDS.map((s) => [s, { card: of[s]?.card ?? new Map(), hif: of[s]?.hif ?? new Map() }]));
+  return new Map(SECTION_IDS.map((s) => [s, { card: of[s]?.card ?? new Map(), hif: of[s]?.hif ?? new Map(), customization: new Map() }]));
 }
 
 function withJoju(): Memo {
@@ -72,6 +73,23 @@ describe("a new row's count event", () => {
     expect(countingSwitch().checked).toBe(true);
     await addRowThroughPopover(root, "集中", "成就", HIF.card.name);
     expect(api.sent.map((e) => [e.section, e.upgrade])).toEqual([["sense.shuchu", 0]]);
+  });
+
+  test("is sent once for a double tap on the ability, which adds one row", async () => {
+    const api = fakeApi();
+    await showPage(root, undefined, TEST_SHEETS, api);
+    await tap(byText(section(root, "好調"), "button", "＋ カードを追加"));
+    await type(byLabel(dialog(root), "カード名"), "成就+");
+    await pick(root, "成就+");
+    await tap(byText(dialog(root), "button", "次へ"));
+    const ability = must([...dialog(root).querySelectorAll<HTMLElement>(".grid > button")][0], "an ability");
+    // Two taps before the page draws again, as no browser delivers them but nothing forbids.
+    await act(() => {
+      ability.click();
+      ability.click();
+    });
+    expect(api.sent.length).toBe(1);
+    expect(section(root, "好調").querySelectorAll("[data-row]").length).toBe(1);
   });
 
   test("is not sent for a build the tab already holds, refused (D13)", async () => {
@@ -158,6 +176,29 @@ describe("the pickers' order", () => {
     await settle();
     await tap(byText(section(root, "好調"), "button", "＋ カードを追加"));
     expect(gridNames()).toEqual(SENSE_CARDS.map((c) => c.name));
+  });
+
+  test("ranks 変更's card step by the row's own section", async () => {
+    const SHUCHU = counts({ "sense.shuchu": { card: new Map([[`${lastPlanCard.id}:${lastPlanCard.upgrade}`, 1]]) } });
+    const inShuchu = addRow(emptyMemo(), "sense.shuchu", "r1", newBuild(JOJU.id, JOJU, HIF.ability.id));
+    if (isRefusal(inShuchu)) throw new Error("refused");
+    await showPage(root, inShuchu, TEST_SHEETS, fakeApi(async () => SHUCHU));
+    await settle();
+    await tap(byLabel(section(root, "集中"), "行のメニュー"));
+    await tap(byText(dialog(root), "button", "変更"));
+    expect(gridNames()[0]).toBe(lastPlanCard.name);
+  });
+
+  test("drops an answer that comes after another CountsApi was given", async () => {
+    let slow: (value: Counts | null) => void = () => undefined;
+    const first = fakeApi(() => new Promise((resolve) => (slow = resolve)));
+    await showPage(root, undefined, TEST_SHEETS, first);
+    await act(() => render(<MemoPage catalog={CATALOG} sheets={TEST_SHEETS} countsApi={fakeApi(async () => KOCHO)} />, root));
+    await settle();
+    await act(() => slow(counts({})));
+    await settle();
+    await tap(byText(section(root, "好調"), "button", "＋ カードを追加"));
+    expect(gridNames()[0]).toBe(lastPlanCard.name);
   });
 
   test("loads the counts once, however often the page draws", async () => {

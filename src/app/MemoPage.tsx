@@ -50,11 +50,20 @@ function useHighlight(): [string | null, (rowId: string) => void] {
   return [highlighted, setHighlighted];
 }
 
-/** The counts, loaded once when the page starts; null until then, and if they cannot be had. */
+/**
+ * The counts, loaded once when the page starts; null until then, and if they cannot be had. An
+ * answer that comes after the page is gone, or after another `api` was given, is dropped.
+ */
 function useCounts(api: CountsApi): Counts | null {
   const [counts, setCounts] = useState<Counts | null>(null);
   useEffect(() => {
-    void api.load().then(setCounts);
+    let current = true;
+    void api.load().then((loaded) => {
+      if (current) setCounts(loaded);
+    });
+    return () => {
+      current = false;
+    };
   }, [api]);
   return counts;
 }

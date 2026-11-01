@@ -1,4 +1,4 @@
-import { useState } from "preact/hooks";
+import { useRef, useState } from "preact/hooks";
 import type { SkillCard } from "../data/contract.ts";
 import { buildProblem, newBuild } from "../memo/build.ts";
 import { addRow, changeBuild, isRefusal, type Refusal } from "../memo/edit.ts";
@@ -63,11 +63,15 @@ export function RowPopover({ plan, section, row, onClose }: { plan: PlanId; sect
   const [step, setStep] = useState<Step>("card");
   const [refusal, setRefusal] = useState<Refusal | null>(null);
   const [broken, setBroken] = useState(false);
+  // A second tap before the popover has closed must not add the row, or count it, twice.
+  const done = useRef(false);
   const finish = (build: Build) => {
+    if (done.current) return;
     if (draft.card && buildProblem(build, draft.card) !== null) return (setBroken(true), setStep("custom"));
     const result = row ? changeBuild(page.memo, row.id, build) : addRow(page.memo, section, newRowId(), build);
     if (isRefusal(result)) return setRefusal(result);
     page.setMemo(result);
+    done.current = true;
     // Only a row created counts, once; a change never does (D11).
     if (!row) page.countRow(section, build);
     onClose();

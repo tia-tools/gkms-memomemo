@@ -11,10 +11,14 @@ import { child, fail, integer, object, req, type Read, ReadError } from "../lib/
 import { type Build, SECTION_IDS, type SectionId } from "../memo/types.ts";
 import type { HifEntry } from "./catalog.ts";
 
-/** A section's counts by counted id: a card at its level (`cardCountId`), an H.I.F. ability by its id. */
+/**
+ * A section's counts by counted id: a card at its level (`cardCountId`), an H.I.F. ability by its
+ * id, a customization step as `kind:step` or `none`. No picker ranks the customization (D11).
+ */
 export interface SectionCounts {
   card: ReadonlyMap<string, number>;
   hif: ReadonlyMap<string, number>;
+  customization: ReadonlyMap<string, number>;
 }
 export type Counts = ReadonlyMap<SectionId, SectionCounts>;
 
@@ -39,13 +43,13 @@ const countMap: Read<ReadonlyMap<string, number>> = (value, path) =>
 
 const sectionCounts: Read<SectionCounts> = (value, path) => {
   const f = object(value, path);
-  return { card: req(f, "card", countMap, path), hif: req(f, "hif", countMap, path) };
+  return { card: req(f, "card", countMap, path), hif: req(f, "hif", countMap, path), customization: req(f, "customization", countMap, path) };
 };
 
 /**
  * `GET /counts`'s answer, checked whole: the format version, and for each of the nine sections its
- * card and H.I.F. ability counts, each a whole number. The customization counts are not read, since
- * no picker ranks them (D11). Throws `ReadError` at the first value that does not match.
+ * card, H.I.F. ability and customization counts, each a whole number. Throws `ReadError` at the first
+ * value that does not match.
  */
 export function readCounts(json: unknown): Counts {
   const f = object(json, "");

@@ -32,6 +32,7 @@ describe("readCounts", () => {
     expect(counts.size).toBe(9);
     expect([...(counts.get("logic.yaruki")?.card ?? [])]).toEqual([["p_card-02-act-1_001:1", 3]]);
     expect([...(counts.get("logic.yaruki")?.hif ?? [])]).toEqual([["memory_ability-x", 2]]);
+    expect([...(counts.get("logic.yaruki")?.customization ?? [])]).toEqual([["none", 5]]);
     expect(counts.get("sense.kocho")?.card.size).toBe(0);
   });
 
@@ -48,6 +49,8 @@ describe("readCounts", () => {
       answer({ "sense.kocho": { card: { a: -1 } } }),
       answer({ "sense.kocho": { card: { a: 1.5 } } }),
       { ...good, sections: { ...good.sections, "sense.kocho": { card: {}, hif: { a: "1" }, customization: {} } } },
+      { ...good, sections: { ...good.sections, "sense.kocho": { card: {}, hif: {} } } },
+      { ...good, sections: { ...good.sections, "sense.kocho": { card: {}, hif: {}, customization: { none: -1 } } } },
       { ...good, sections: { ...good.sections, "sense.kocho": { card: {}, hif: [], customization: {} } } },
     ];
     for (const value of bad) expect(() => readCounts(value)).toThrow();
@@ -88,7 +91,7 @@ describe("rankedCards and rankedAbilities", () => {
   const lastPlan = must(cards[firstFree - 1], "a センス card");
 
   test("rank the plan's cards and the free ones each in their own block", () => {
-    const counts: SectionCounts = { card: new Map([[`${lastFree.id}:${lastFree.upgrade}`, 9], [`${lastPlan.id}:${lastPlan.upgrade}`, 1]]), hif: new Map() };
+    const counts: SectionCounts = { card: new Map([[`${lastFree.id}:${lastFree.upgrade}`, 9], [`${lastPlan.id}:${lastPlan.upgrade}`, 1]]), hif: new Map(), customization: new Map() };
     const order = rankedCards(cards, counts);
     expect(order[0]).toBe(lastPlan);
     expect(order[firstFree]).toBe(lastFree);
@@ -98,7 +101,7 @@ describe("rankedCards and rankedAbilities", () => {
 
   test("count a card at its level: the base card's count does not rank the + card", () => {
     const base = must(cards.find((c) => c.id === JOJU.id && c.upgrade === 0), "成就");
-    const order = rankedCards(cards, { card: new Map([[`${JOJU.id}:0`, 3]]), hif: new Map() });
+    const order = rankedCards(cards, { card: new Map([[`${JOJU.id}:0`, 3]]), hif: new Map(), customization: new Map() });
     expect(order[0]).toBe(base);
     expect(order.filter((c) => c !== base)).toEqual(cards.filter((c) => c !== base));
   });
@@ -112,7 +115,7 @@ describe("rankedCards and rankedAbilities", () => {
   test("rank the abilities by their id", () => {
     const abilities = CATALOG.tabAbilities("sense");
     const last = must(abilities.at(-1), "an ability");
-    expect(rankedAbilities(abilities, { card: new Map(), hif: new Map([[last.ability.id, 1]]) })[0]).toBe(last);
+    expect(rankedAbilities(abilities, { card: new Map(), hif: new Map([[last.ability.id, 1]]), customization: new Map() })[0]).toBe(last);
   });
 });
 
@@ -146,6 +149,8 @@ describe("httpCounts", () => {
     expect(url).toBe("/count");
     expect(init?.method).toBe("POST");
     expect(init?.keepalive).toBe(true);
+    expect(new Headers(init?.headers).get("Content-Type")).toBe("application/json");
+    expect(init?.referrerPolicy).toBeUndefined();
     const body = init?.body;
     expect(typeof body === "string" ? JSON.parse(body) : body).toEqual(EVENT);
   });
