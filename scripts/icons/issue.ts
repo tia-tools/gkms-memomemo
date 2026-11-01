@@ -3,7 +3,11 @@
  * I7): opened when the list becomes non-empty, its body replaced when the list changes, closed
  * when the list is empty. The list's key in a hidden marker tells whether it changed, so a card
  * that waits for its screenshot does not reopen or repost anything day after day. Only an issue
- * the workflow opened (author github-actions, the exact title and the marker) is ever touched.
+ * the workflow opened (by github-actions, with the exact title and the marker) is ever touched;
+ * that is checked here in `ours`, on every open issue, and not with gh's `--author` filter, which
+ * spells the bot differently (`github-actions[bot]`) from the author gh reports
+ * (`app/github-actions`): filtering by the latter matched nothing, and every run opened a
+ * duplicate (#22).
  *
  *     GH_TOKEN=… bun scripts/icons/issue.ts <dir from check.ts>
  *
@@ -18,7 +22,14 @@ export interface OpenIssue {
   title: string;
   body: string;
   url: string;
+  author: { login: string };
 }
+
+/** The author gh reports for an issue the workflow's token opened. */
+export const WORKFLOW_AUTHOR = "app/github-actions";
+
+/** Every open issue with what `ours` needs to tell the workflow's own; 500 reaches past any plausible backlog. */
+export const LIST_ARGS: readonly string[] = ["issue", "list", "--state", "open", "--json", "number,title,body,url,author", "--limit", "500"];
 
 export type Action = { kind: "none" } | { kind: "create" } | { kind: "edit"; issue: OpenIssue } | { kind: "close"; issue: OpenIssue };
 
@@ -35,11 +46,12 @@ export function announce(action: Action): boolean {
 }
 
 /**
- * The workflow's own open issue among those listed: the exact title and the hidden marker check.ts
- * writes, since another workflow of this repository also writes as github-actions.
+ * The workflow's own open issue among those listed: opened by github-actions (anyone can open an
+ * issue on a public repository and copy the title and the marker), with the exact title and the
+ * hidden marker check.ts writes (another workflow of this repository also writes as github-actions).
  */
 export function ours(listed: readonly OpenIssue[], title: string): OpenIssue | null {
-  return listed.find((i) => i.title === title && keyOf(i.body) !== null) ?? null;
+  return listed.find((i) => i.author.login === WORKFLOW_AUTHOR && i.title === title && keyOf(i.body) !== null) ?? null;
 }
 
 /**
@@ -66,7 +78,7 @@ if (import.meta.main) {
   }
   const found: { key: string; count: number; title: string; summary: string } = await Bun.file(`${dir}/needed.json`).json();
   const bodyFile = `${dir}/body.md`;
-  const listed: OpenIssue[] = JSON.parse(gh(["issue", "list", "--state", "open", "--author", "app/github-actions", "--json", "number,title,body,url", "--limit", "500"]));
+  const listed: OpenIssue[] = JSON.parse(gh([...LIST_ARGS]));
   const action = decide(found.count, found.key, ours(listed, found.title));
   let url = "";
   if (action.kind === "create") url = gh(["issue", "create", "--title", found.title, "--body-file", bodyFile]);
