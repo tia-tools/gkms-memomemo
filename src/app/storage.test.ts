@@ -1,7 +1,7 @@
 import { describe, expect, spyOn, test } from "bun:test";
 import { emptyMemo, emptyRow, type Memo } from "../memo/types.ts";
 import { manualTimers, memoryStore } from "../test-support/store.ts";
-import { DEFAULT_SETTINGS, MEMO_KEY, readSaved, readSettings, saving, SETTINGS_KEY, type PersistentStorage, UNREADABLE_PREFIX } from "./storage.ts";
+import { DEFAULT_SETTINGS, MEMO_KEY, openSaved, readSaved, readSettings, saving, SETTINGS_KEY, type PersistentStorage, UNREADABLE_PREFIX } from "./storage.ts";
 
 const NOW = () => new Date("2026-11-01T12:00:00.000Z");
 
@@ -62,6 +62,29 @@ describe("readSaved", () => {
     );
     logged.mockRestore();
     expect(failed).toBe(store.failWith);
+  });
+});
+
+describe("openSaved", () => {
+  test("opens the store and reads what it holds", async () => {
+    const store = memoryStore({ [MEMO_KEY]: withRow() });
+    expect(await openSaved(() => Promise.resolve(store), NOW)).toEqual({ saved: { memo: withRow(), settings: DEFAULT_SETTINGS, notice: null }, store });
+  });
+
+  test("a store that does not open is an empty memo, nothing to save into, and the notice", async () => {
+    const logged = spyOn(console, "error").mockImplementation(() => {});
+    const opened = await openSaved(() => Promise.reject(new Error("no IndexedDB")), NOW);
+    logged.mockRestore();
+    expect(opened).toEqual({ saved: { memo: emptyMemo(), settings: DEFAULT_SETTINGS, notice: "unavailable" }, store: null });
+  });
+
+  test("an unreadable memo that cannot be copied aside leaves no store, so it is never written over", async () => {
+    const store = memoryStore({ [MEMO_KEY]: { formatVersion: 1 } });
+    store.failWith = new Error("quota");
+    const logged = spyOn(console, "error").mockImplementation(() => {});
+    const opened = await openSaved(() => Promise.resolve(store), NOW);
+    logged.mockRestore();
+    expect([opened.store, opened.saved.notice]).toEqual([null, "unavailable"]);
   });
 });
 

@@ -68,6 +68,21 @@ export async function readSaved(store: Store, now: () => Date): Promise<Saved> {
   }
 }
 
+/**
+ * What the page starts from: the saved state and the store to save into. Where the store cannot be
+ * opened or read (no IndexedDB, or an unreadable memo that could not be copied aside), an empty memo
+ * and no store, so nothing is written over what is there, and the notice "unavailable".
+ */
+export async function openSaved(openStore: () => Promise<Store>, now: () => Date): Promise<{ saved: Saved; store: Store | null }> {
+  try {
+    const store = await openStore();
+    return { saved: await readSaved(store, now), store };
+  } catch (error) {
+    console.error("the memo cannot be saved here:", error);
+    return { saved: { memo: emptyMemo(), settings: DEFAULT_SETTINGS, notice: "unavailable" }, store: null };
+  }
+}
+
 /** The page's own timer, passed in so a test can run it by hand: `set` runs `run` after `ms` and returns what cancels it. */
 export interface Timers {
   set(run: () => void, ms: number): () => void;
@@ -98,11 +113,11 @@ export interface SavingOptions {
 
 export interface Saving {
   /** Writes the memo once no other change follows within the delay. */
-  memo(memo: Memo): void;
+  memo: (memo: Memo) => void;
   /** Writes the settings at once: they change one tap at a time. */
-  settings(settings: Settings): void;
+  settings: (settings: Settings) => void;
   /** Writes a memo still waiting, at once; when the page is hidden, since a phone may then close it. */
-  flush(): Promise<void>;
+  flush: () => Promise<void>;
 }
 
 /** How long the memo waits for the next change (D57): a few taps in a row are one write. */
@@ -137,15 +152,15 @@ export function saving(store: Store, options: SavingOptions): Saving {
     await askToKeep(memo).catch(() => undefined);
   };
   return {
-    memo(memo) {
+    memo: (memo) => {
       waiting = memo;
       cancel?.();
       cancel = timers.set(() => void write(), options.delayMs);
     },
-    settings(settings) {
+    settings: (settings) => {
       store.put(SETTINGS_KEY, settings).catch(options.onError);
     },
-    flush() {
+    flush: () => {
       cancel?.();
       return write();
     },
