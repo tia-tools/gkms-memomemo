@@ -23,7 +23,9 @@ The work is issue #10 on the project's board (`tia-tools` project 7, see `CLAUDE
 - [x] (2026-11-01 04:04Z) The icon size on phones (40 px in a row, the issue's open point): the user's ruling is to keep it for now and judge it on a real phone once the site is deployed (I23).
 - [ ] Milestone 5: the daily check for new and changed cards, with an issue and a Discord message.
   - [x] (2026-10-31 22:35Z) The check and its workflow (`1f40493`). `scripts/icons/check.ts` lists the offered cards with no cell (new) and those whose stamp's fingerprint differs from `ProduceCard.yaml` now, or that have no stamp (changed), each with its name, folder and cell, and writes the issue's body with the list's key in a hidden marker; `scripts/icons/issue.ts` opens the workflow's one issue for a new list, rewrites it when the key changes, closes it when nothing is needed, and leaves it alone otherwise, announcing only an opened or rewritten list; `.github/workflows/icons.yml` runs both daily at 11:45 UTC and by hand, then nudge's `notify` (v1.3.0, pinned by commit) when the list changed. Against the live data file and the table at `fc6afb8b5ba4` the check found nothing (`every offered card has an up-to-date icon`), and `issue.ts` run locally answered `none`, listing issues only. Ten mutations each turned a test red. `bun test` (257), `uv run pytest` (47), `bun run type-check`, `bun run lint` and `bun run build` exit 0.
-  - [ ] Run the workflow by hand once it is on `develop` (GitHub offers a workflow to run by hand only from the default branch), with a card missing from a test copy of the index or for real, and see the issue opened and the Discord message arrive, then a second run change nothing.
+  - [x] (2026-11-01 05:59Z) Run by hand on `develop` after the merge (`a67dec8`, pull request #19, which closed #10): runs 41277490713 and 41277539859 both found every offered card up to date (`none`, notify skipped, no issue).
+  - [ ] The issue and Discord path, at the user's request, from a throwaway branch `test/icons-issue-path` whose index hides ファンサ (base) (completed: run 41278814301 opened #20, listing ファンサ under `base/R`, and nudge posted "Game-style icons: 1 card to capture"; remaining: the fix of #22 below, then a rerun from the test branch leaving #20 alone, a run on `develop` closing it, and the test branch deleted). The second run from the test branch (41278855371) opened a duplicate, #21, and a run on `develop` (41278886596) did not close #20: the issue step found no issue of its own (Surprises & Discoveries). #21 was closed by hand as a duplicate; #20 is left open for the workflow to close.
+  - [x] (2026-11-01 05:59Z) The fix (#22, branch `fix/icons-issue-author`): `issue.ts` lists the open issues by `--author github-actions[bot]` (the spelling gh's filter matches) with their author, and `ours()` checks the author in either spelling, the title and the marker (I24); listed against the repository's real issues it finds #20 and decides `close` for `develop` and `none` for the test branch. Tests for a stranger's copy, both spellings and the listing's arguments, each seen to fail when its rule is broken. `/codex-review` of the fix: CHANGES REQUESTED with three findings; the server-side filter (it suggested `--app github-actions`, which matched nothing here) and both spellings were taken, and one was declined (I24); a second, focused run raised only the 500-issue cap again, declined for the same reason.
 
 ## Surprises & Discoveries
 
@@ -72,6 +74,9 @@ The work is issue #10 on the project's board (`tia-tools` project 7, see `CLAUDE
 
 - Observation: the sheets are 345–361 KB each at WebP quality 75 (13.8 MB for 39), against 514–542 KB at 88, with no difference visible at the 40–56 px the page draws. A cell costs about 2.7 KB against 1.8 KB in supportcards' plain-art sheets.
   Evidence: `39 sheets, 13.8 MB, 345–361 KB each (quality 75)`; `39 sheets, 20.7 MB, 514–542 KB each (quality 88)`; the two side by side at twice the cell size in `out/check/`.
+
+- Observation: gh's issue list cannot be filtered by the author it reports for a workflow's issues. An issue opened with a workflow's token shows `author.login` `app/github-actions` in `gh issue list --json author`, but `--author app/github-actions` matches nothing; the filter wants `github-actions[bot]`. Milestone 5's issue step filtered with the former, so on GitHub it never found its own issue, and every run with cards to capture opened another; the unit tests passed because they tested the decision on issues handed to them, not the filter given to gh.
+  Evidence: `gh issue list --state open --author app/github-actions` → `[]` while #20 and #21 were open; `--author "github-actions[bot]"` → both; the plain list's JSON → `21 app/github-actions …`, `20 app/github-actions …` (2026-11-01).
 ## Decision Log
 
 The decisions are numbered I1, I2, … so they cannot be confused with the D numbers of `docs/plans/EXECPLAN_MEMORY_MEMO.md`, which this plan cites.
@@ -167,6 +172,10 @@ The decisions are numbered I1, I2, … so they cannot be confused with the D num
 - Decision: I23 — the phone row's card icon stays 40 px for now; the user judges it on a real phone once the site is deployed, and a change is one CSS variable (`--icon`), its own issue if wanted.
   Rationale: the user's ruling when shown that the values read but small at 40 px in Chrome at 390 px.
   Date/Author: 2026-11-01, user.
+
+- Decision: I24 — the issue step lists open issues with `--author github-actions[bot]`, the spelling gh's filter matches, and `ours()` takes an issue as its own only by the author in either spelling gh uses (`app/github-actions`, `github-actions[bot]`), the exact title and the marker. Declined from Codex's reviews of #22: that another workflow of this repository writing as github-actions could copy the title and the marker (none writes issues, and one would have to copy the hidden marker on purpose), and that more than 500 open issues by the bot would hide the workflow's own (only this workflow opens issues as the bot, and it keeps one open).
+  Rationale: #22, where the reported spelling given to the filter matched nothing; Codex's review, that a list of every open issue capped at 500 could miss the workflow's own and that the reported spelling is not a contract. Neither spelling can be a person's login, which allows no `/` or `[]`. `--app github-actions`, which Codex suggested, matched nothing on 2026-11-01.
+  Date/Author: 2026-11-01, agent, from #22 and Codex's review.
 
 ## Outcomes & Retrospective
 
@@ -325,3 +334,5 @@ Revision note, 2026-11-01: Milestone 5's check, issue step and workflow recorded
 Revision note, 2026-11-01: Codex's review of the branch recorded in Progress, with decisions I20 (the upload reads back every named sheet), I21 (the issue step needs its marker) and I22 (a finding declined, with why).
 
 Revision note, 2026-11-01: the user's ruling on the phone icon size recorded as I23, closing that step of Progress.
+
+Revision note, 2026-11-01: the runs after the merge recorded: two on `develop` with nothing to capture, the issue and Discord path from a throwaway branch, the duplicate it opened and its cause (an observation), and the fix (#22).
