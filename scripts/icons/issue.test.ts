@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { marker } from "./check.ts";
-import { announce, decide, LIST_ARGS, type OpenIssue, ours, outputLines, WORKFLOW_AUTHOR } from "./issue.ts";
+import { announce, decide, LIST_ARGS, type OpenIssue, ours, outputLines } from "./issue.ts";
 
 const KEY = "0123456789ab";
 const open = (key: string): OpenIssue => ({
@@ -51,11 +51,15 @@ describe("ours", () => {
     expect(ours([copied, open(KEY)], "Screenshots needed for game-style icons")?.number).toBe(7);
   });
 
-  test("the listing asks gh for every open issue with its author, filtering nothing by gh's own author syntax", () => {
-    // gh's --author takes github-actions[bot] while its JSON says app/github-actions; `--author app/github-actions` matched nothing (#22).
-    expect(LIST_ARGS).not.toContain("--author");
+  test("knows the bot in either spelling gh uses for it", () => {
+    expect(ours([{ ...open(KEY), author: { login: "github-actions[bot]" } }], "Screenshots needed for game-style icons")?.number).toBe(7);
+  });
+
+  test("the listing filters by the bot as gh's filter spells it, and asks for the author to check it again", () => {
+    // gh reports the author as app/github-actions but its filter matches only github-actions[bot]: the former found nothing (#22).
+    expect(LIST_ARGS.join(" ")).toContain("--author github-actions[bot]");
+    expect(LIST_ARGS).not.toContain("app/github-actions");
     expect(LIST_ARGS.join(" ")).toContain("--json number,title,body,url,author");
-    expect(WORKFLOW_AUTHOR).toBe("app/github-actions");
   });
 });
 

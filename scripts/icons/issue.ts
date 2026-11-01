@@ -3,11 +3,11 @@
  * I7): opened when the list becomes non-empty, its body replaced when the list changes, closed
  * when the list is empty. The list's key in a hidden marker tells whether it changed, so a card
  * that waits for its screenshot does not reopen or repost anything day after day. Only an issue
- * the workflow opened (by github-actions, with the exact title and the marker) is ever touched;
- * that is checked here in `ours`, on every open issue, and not with gh's `--author` filter, which
- * spells the bot differently (`github-actions[bot]`) from the author gh reports
- * (`app/github-actions`): filtering by the latter matched nothing, and every run opened a
- * duplicate (#22).
+ * the workflow opened (by github-actions, with the exact title and the marker) is ever touched.
+ * gh spells that bot one way in its `--author` filter (`github-actions[bot]`) and another in the
+ * author it reports (`app/github-actions`): filtering by the latter matched nothing, so every run
+ * opened a duplicate (#22). The listing now filters by the former, and `ours` checks the author
+ * again, in either spelling, with the title and the marker.
  *
  *     GH_TOKEN=… bun scripts/icons/issue.ts <dir from check.ts>
  *
@@ -25,11 +25,18 @@ export interface OpenIssue {
   author: { login: string };
 }
 
-/** The author gh reports for an issue the workflow's token opened. */
-export const WORKFLOW_AUTHOR = "app/github-actions";
+/**
+ * The author of an issue the workflow's token opened, as gh reports it (`app/github-actions`, seen on
+ * 2026-11-01) or as its filter spells it. Neither can be a person's login, which allows no `/` or `[]`.
+ */
+export const WORKFLOW_AUTHORS: readonly string[] = ["app/github-actions", "github-actions[bot]"];
 
-/** Every open issue with what `ours` needs to tell the workflow's own; 500 reaches past any plausible backlog. */
-export const LIST_ARGS: readonly string[] = ["issue", "list", "--state", "open", "--json", "number,title,body,url,author", "--limit", "500"];
+/**
+ * The open issues github-actions opened, with what `ours` needs. `--author github-actions[bot]` is the
+ * spelling gh's filter matches (`app/github-actions` and `--app github-actions` both matched nothing
+ * on 2026-11-01), so the 500 counts only that bot's issues.
+ */
+export const LIST_ARGS: readonly string[] = ["issue", "list", "--state", "open", "--author", "github-actions[bot]", "--json", "number,title,body,url,author", "--limit", "500"];
 
 export type Action = { kind: "none" } | { kind: "create" } | { kind: "edit"; issue: OpenIssue } | { kind: "close"; issue: OpenIssue };
 
@@ -51,7 +58,7 @@ export function announce(action: Action): boolean {
  * hidden marker check.ts writes (another workflow of this repository also writes as github-actions).
  */
 export function ours(listed: readonly OpenIssue[], title: string): OpenIssue | null {
-  return listed.find((i) => i.author.login === WORKFLOW_AUTHOR && i.title === title && keyOf(i.body) !== null) ?? null;
+  return listed.find((i) => WORKFLOW_AUTHORS.includes(i.author.login) && i.title === title && keyOf(i.body) !== null) ?? null;
 }
 
 /**
