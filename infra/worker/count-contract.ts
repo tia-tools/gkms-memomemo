@@ -26,7 +26,8 @@ export const NO_CUSTOMIZATION = "none";
  * or deleted (D11): the section it was created in, its card (ProduceCard id) and level, its H.I.F.
  * ability (MemoryAbility id), and its customization as `kind:step` strings (ProduceCardCustomize
  * id and customizeCount), empty for none. Nothing else: no contents of the memo and no
- * per-browser identifier (D12).
+ * per-browser identifier (D12). Sent from the page's own origin with the default referrer policy:
+ * a request carrying another `Origin`, `null` included, is refused (D63).
  */
 export interface CountEvent {
   section: SectionId;

@@ -85,6 +85,8 @@ describe("handleCount", () => {
     const refusals: [Request, Partial<CountDeps>, number][] = [
       [new Request(`${SITE}/count`), {}, 405],
       [post(EVENT, { "CF-Connecting-IP": IP, Origin: "https://example.com" }), {}, 403],
+      [post(EVENT, { "CF-Connecting-IP": IP, Origin: "null" }), {}, 403],
+      [post(EVENT, { "CF-Connecting-IP": IP, Origin: "http://gkms-memomemo.tia.run" }), {}, 403],
       [post("x".repeat(1025)), {}, 413],
       [post("{"), {}, 400],
       [post({ ...EVENT, section: "sense" }), {}, 400],

@@ -71,7 +71,8 @@ function messageOf(error: unknown): string {
 
 /**
  * A browser sends `Origin` with every POST, and another site's page could otherwise have each of its
- * visitors count under their own cap. A request without it (not from a browser) is still capped.
+ * visitors count under their own cap (D63). A request without it (not from a browser) is still
+ * capped. Under a `no-referrer` policy a browser sends `Origin: null`, which is refused too.
  */
 function fromAnotherSite(request: Request): boolean {
   const origin = request.headers.get("Origin");
