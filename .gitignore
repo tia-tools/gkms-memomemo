@@ -20,3 +20,6 @@ dist
 scripts/icons/.venv/
 scripts/icons/out/
 __pycache__/
+
+# wrangler's working directory (local D1 state and build scratch, from `wrangler dev` and `--dry-run` in infra/worker); local to this machine
+.wrangler/
