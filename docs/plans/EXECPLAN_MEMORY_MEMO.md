@@ -130,6 +130,12 @@ The work is tracked on the project's board (`tia-tools` project 7, see `CLAUDE.m
     - `POST /count` with `{}` answers `{"ok":false}` 400.
 
     `GET /counts` was left unread, since its first answer is kept an hour and a row created on the live page must show in it. The deploy token and the repository's secrets are the user's, job #46.
+  - [x] (2026-11-01 20:03Z) The user's part, and the first live count.
+    - **The deploy token:** made in Cloudflare's Workers roles (Editor scoped to this one Worker, and Workers Routes Write on `tia.run`). The user corrected the agent's first wording, the legacy Workers Scripts: Edit, and README § Deploy follows. Both repository secrets were set at 19:52Z (job #46), and `gh secret list` names them.
+    - **The real iPhone (job #47):** the user reported all six checks done. They were the Purpose scenario with a reload, the hint in Safari, the home-screen install with its own empty memo, the memo moved in by 引き継ぎコード, opening offline with a quick relaunch, and the icons at 40 px in a row.
+    - **The first live count:** D1 holds the user's row from 好調, read with `wrangler d1 execute --remote`: 成就+ (`p_card-01-act-3_029:1`), its H.I.F. ability and `none`, one each. `POST /count` therefore runs with the salt in production.
+    - **`GET /counts`** still answered the empty sections cached at 19:53Z, when the phone first opened the page, before the row. It arrived with `max-age=14400`, not the Worker's 3600 (Surprises & Discoveries; #49 in Triage).
+    - **Pull request #48** into `develop`, with its checks passing; the user approved the push (job #45).
 
 ## Surprises & Discoveries
 
@@ -270,6 +276,9 @@ The observations below are Milestone 0's. Unless stated otherwise their evidence
 
 - Observation, for Milestone 6: `bun test` reports no unhandled promise rejection, not even through `process.on("unhandledRejection")`. A mutation that dropped the `.catch` on a failed send passed every test until the test counted the rejection handlers attached to the fake fetch's promise.
   Evidence: `src/app/counts.test.ts`, Bun 1.4.3, 2026-11-01.
+
+- Observation, for Milestone 7: on the live site, `GET /counts` came out of the Worker's Cache API with `cache-control: public, max-age=14400`, four hours, though the Worker stores and returns `public, max-age=3600`. `/data/skillcards.json`, a fresh Worker answer, kept its own `max-age=3600`, and the static assets kept `max-age=0, must-revalidate`. The likely cause is the zone's Browser Cache TTL, whose default is four hours, raising a lower `max-age`. Cloudflare's pages state that rule without saying whether it applies to a Cache API answer, and the rule as written would have raised the other two routes too. So a returning player's browser may rank the pickers by counts up to four hours old, while the Worker's own copy is kept an hour. #49 (Triage) holds the options.
+  Evidence: `curl -sI https://gkms-memomemo.tia.run/counts` at 2026-11-01 20:01Z gave `cf-cache-status: HIT`, `age: 452`, `cache-control: public, max-age=14400`. The same minute, `/data/skillcards.json` gave `public, max-age=3600`, and `/`, `/sw.js` and the script `public, max-age=0, must-revalidate`. The docs read were `developers.cloudflare.com/cache/how-to/edge-browser-cache-ttl/` (dated 2026-08-14: a Browser Cache TTL of 4 hours by default on every plan, overriding an origin's lower value), `…/cache/concepts/cache-control/` (2026-06-30: "Cloudflare respects whichever value is higher: the Browser Cache TTL in Cloudflare or the `max-age` header") and `…/workers/runtime-apis/cache/` (2026-10-29), which says nothing of the Browser Cache TTL.
 
 - Observation, for Milestone 5: Chrome answered `persist()` with false on the local test origin, by its own heuristics (bookmarks, installs, engagement), so persistence was not seen granted here. The page asks once and goes on either way (D57).
   Evidence: `navigator.storage.persisted()` after the ask, `127.0.0.1:4173`, 2026-11-01.
@@ -798,3 +807,5 @@ Revision note, 2026-11-01: Milestone 6 marked complete: #33 merged by pull reque
 Revision note, 2026-11-01: Milestone 7 started (#43): the D1 database created and its migration applied, recorded in Progress; Purpose names the issue.
 
 Revision note, 2026-11-01: Codex's review of the database's binding, and the first deployment by hand with the salt and the live site's checks, recorded in Progress (#43); the Milestone 7 paragraph gained a note on the order.
+
+Revision note, 2026-11-01: the user's part of Milestone 7 (the deploy token, the secrets, the iPhone checks), the first live count and pull request #48 recorded in Progress; an observation on `GET /counts`'s four-hour browser cache, with #49 filed in Triage.
