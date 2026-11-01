@@ -12,6 +12,7 @@ import { addRowThroughPopover, byLabel, byText, CATALOG, dialog, must, pick, sec
 import { cardNamed, kindLabelled } from "../test-support/skillcards.ts";
 import type { Counts, CountsApi, SectionCounts } from "./counts.ts";
 import { MemoPage } from "./MemoPage.tsx";
+import { atLevel } from "./picker.ts";
 
 const JOJU = cardNamed("成就+"); // センス SSR +: 好調+ and コスト値- of one step each, no 開幕時獲得
 const SENSE_CARDS = CATALOG.tabCards("sense");
@@ -121,9 +122,11 @@ describe("a new row's count event", () => {
 });
 
 describe("the pickers' order", () => {
-  const lastPlanCard = must(SENSE_CARDS.filter((c) => c.plan === "sense").at(-1), "the last センス card");
-  const lastFreeCard = must(SENSE_CARDS.at(-1), "the last free card");
-  const firstFree = SENSE_CARDS.findIndex((c) => c.plan === "free");
+  /** The cards the card step opens on: the enhanced ones (D66). */
+  const OPENING = atLevel(SENSE_CARDS, 1);
+  const lastPlanCard = must(OPENING.filter((c) => c.plan === "sense").at(-1), "the last センス card");
+  const lastFreeCard = must(OPENING.at(-1), "the last free card");
+  const firstFree = OPENING.findIndex((c) => c.plan === "free");
   const lastAbility = must(SENSE_ABILITIES.at(-1), "the last センス ability");
   const KOCHO = counts({
     "sense.kocho": {
@@ -142,7 +145,7 @@ describe("the pickers' order", () => {
     const names = gridNames();
     expect(names[0]).toBe(lastPlanCard.name);
     expect(names[firstFree]).toBe(lastFreeCard.name);
-    expect(names.length).toBe(SENSE_CARDS.length);
+    expect(names.length).toBe(OPENING.length);
     await pick(root, "成就+");
     await tap(byText(dialog(root), "button", "次へ"));
     expect(gridNames()[0]).toBe(lastAbility.card.name);
@@ -152,7 +155,7 @@ describe("the pickers' order", () => {
     await showPage(root, undefined, TEST_SHEETS, fakeApi(async () => KOCHO));
     await settle();
     await tap(byText(section(root, "集中"), "button", "＋ カードを追加"));
-    expect(gridNames()).toEqual(SENSE_CARDS.map((c) => c.name));
+    expect(gridNames()).toEqual(OPENING.map((c) => c.name));
   });
 
   test("ranks within a search and a rarity filter too", async () => {
@@ -167,7 +170,7 @@ describe("the pickers' order", () => {
     let arrive: (value: Counts | null) => void = () => undefined;
     await showPage(root, undefined, TEST_SHEETS, fakeApi(() => new Promise((resolve) => (arrive = resolve))));
     await tap(byText(section(root, "好調"), "button", "＋ カードを追加"));
-    expect(gridNames()[0]).toBe(SENSE_CARDS[0]?.name);
+    expect(gridNames()[0]).toBe(OPENING[0]?.name);
     await act(() => arrive(KOCHO));
     await settle();
     expect(gridNames()[0]).toBe(lastPlanCard.name);
@@ -175,7 +178,7 @@ describe("the pickers' order", () => {
     await showPage(root, undefined, TEST_SHEETS, fakeApi(async () => null));
     await settle();
     await tap(byText(section(root, "好調"), "button", "＋ カードを追加"));
-    expect(gridNames()).toEqual(SENSE_CARDS.map((c) => c.name));
+    expect(gridNames()).toEqual(OPENING.map((c) => c.name));
   });
 
   test("ranks 変更's card step by the row's own section", async () => {

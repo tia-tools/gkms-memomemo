@@ -2,8 +2,8 @@
  * The row popover's pickers (docs/plans/EXECPLAN_MEMORY_MEMO.md, D19, D56). Search: a name matches
  * when it contains the query once both are folded, full-width letters and digits to half-width and
  * katakana to hiragana, so ふぁんさ finds ファンサ and ＋ finds +. The card step's rarity filter: a
- * toggle per rarity, the cards of the rarities on, every card while none is on. The order is the
- * caller's (the game's order until Milestone 6 ranks by counts).
+ * toggle per rarity, the cards of the rarities on, every card while none is on. Its level switch
+ * (D66): base or enhanced, one at a time. The order is the caller's (ranked by counts, D65).
  */
 
 import type { SkillCardRarity } from "../data/contract.ts";
@@ -34,6 +34,22 @@ export const FILTER_RARITIES = ["SSR", "SR", "R", "N"] as const satisfies readon
 /** The cards of the rarities that are on; every card when none is on. */
 export function byRarity<T extends { rarity: SkillCardRarity }>(cards: readonly T[], on: ReadonlySet<SkillCardRarity>): T[] {
   return on.size === 0 ? [...cards] : cards.filter((card) => on.has(card.rarity));
+}
+
+/** The level switch's choices, in the game's order: base (upgradeCount 0), then enhanced (1, D37). */
+export const LEVELS = [
+  { upgrade: 0, label: "基本" },
+  { upgrade: 1, label: "強化" },
+] as const;
+
+/** The level the switch starts at: the chosen card's, else enhanced (D66). */
+export function startLevel(chosen: { upgrade: number } | undefined): number {
+  return chosen?.upgrade ?? 1;
+}
+
+/** The cards at that level, in their order. */
+export function atLevel<T extends { upgrade: number }>(cards: readonly T[], upgrade: number): T[] {
+  return cards.filter((card) => card.upgrade === upgrade);
 }
 
 /** The set with the value switched: added when it was off, removed when it was on. */
