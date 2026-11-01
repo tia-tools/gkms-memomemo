@@ -114,7 +114,7 @@ The work is tracked on the project's board (`tia-tools` project 7, see `CLAUDE.m
 
     Only these guards and tests changed after it, each an early return, so no second run. `bun test` (457), `bun run type-check`, `bun run lint` and `bun run build` exit 0.
   - [x] (2026-11-01 17:43Z) Pull request #39 into `develop`, its checks passing; the user approved the push (job #38) and merged it (`8eddc38`), closing #33. Milestone 6 is complete, recorded by #40. The database is created and the Worker first deployed in Milestone 7.
-- [ ] Milestone 7: first deployment to `gkms-memomemo.tia.run` and checks of the live site (#43).
+- [x] Milestone 7: first deployment to `gkms-memomemo.tia.run` and checks of the live site (#43; released by pull request #52).
   - [x] (2026-11-01 18:07Z) #43 claimed on `feat/m7-release`, from `develop` at `c124aef`. The account had no D1 database. `bunx wrangler d1 create gkms-memomemo --location apac` (wrangler 4.156.0, the user's login) created it in APAC, id `7e84c483-…`, now in `wrangler.toml`. `d1 migrations apply --remote` applied `0001_counts.sql`, and the remote schema, read back, holds `counts` and `caps` exactly as the migration writes them. `wrangler.test.ts` now requires the binding's id, and was seen to fail without it, since a deploy without one would provision a new database (Surprises & Discoveries). `infra/worker/README.md` § Counts says the database exists, and that `HASH_SALT` can be set only once the Worker does. `bun test` (457), `bun run type-check`, `bun run lint` and `bun run build` exit 0, and `wrangler deploy --dry-run` lists `env.DB (gkms-memomemo)`. The repository has no Actions secrets yet.
   - [x] (2026-11-01 18:10Z) `/codex-review` of the branch (`origin/develop...3f96556`, codex-cli 0.150.1, read-only in a snapshot; the sandbox held, the repository's refs were unchanged, and only `.git` itself was touched, by the editor's git integration): CHANGES REQUESTED with one low finding. It found the binding, the test and the salt's command correct, and confirmed from Cloudflare's documentation that `wrangler deploy` applies no migration.
     - **Fixed (low):** the Milestone 7 paragraph in Plan of Work still set the salt before the first deployment. It now has a note on the order.
@@ -136,6 +136,16 @@ The work is tracked on the project's board (`tia-tools` project 7, see `CLAUDE.m
     - **The first live count:** D1 holds the user's row from 好調, read with `wrangler d1 execute --remote`: 成就+ (`p_card-01-act-3_029:1`), its H.I.F. ability and `none`, one each. `POST /count` therefore runs with the salt in production.
     - **`GET /counts`** still answered the empty sections cached at 19:53Z, when the phone first opened the page, before the row. It arrived with `max-age=14400`, not the Worker's 3600 (Surprises & Discoveries; #49 in Triage).
     - **Pull request #48** into `develop`, with its checks passing; the user approved the push (job #45).
+  - [x] (2026-11-01 20:55Z) The release, and Milestone 7's acceptance.
+    - **Pull request #48:** the user approved the last push (job #50) and merged it into `develop` (`4d4dc22`).
+    - **The gates on that commit:** `bun test` (457), `bun run type-check`, `bun run lint` and `bun run build` exit 0 in a clean worktree after `bun install --frozen-lockfile`. Its build hashed the same as the live files.
+    - **Pull request #52,** `develop` into `main`: the user merged it at 20:14:57Z (`bd3708b`, job #53).
+    - **`deploy.yml`'s first run** (41345874984) passed every gate and deployed under the account-owned token, with no warning. Wrangler found no asset to upload, bound `env.DB`, `env.IMAGES` and `env.ASSETS`, and attached the custom domain and the schedule again (version `7ebf64d9-…`). So the token's two permissions are enough.
+    - **After it:** `HASH_SALT` is still listed, and the live site answers the page, the data file (361 cards) and a sheet.
+    - **`GET /counts`,** read at 20:55Z once the cached answer had expired, shows the user's row in 好調: 成就+ (`p_card-01-act-3_029:1`), its H.I.F. ability and `none`, one each. That fresh answer carried the Worker's own `max-age=3600` (#49).
+    - **The user's choice on the icons:** 40 px kept (job #51), recorded in `docs/plans/EXECPLAN_GAME_STYLE_ICONS.md` § Decision Log, I23.
+
+    Every point of Milestone 7's acceptance holds: the page is served, the Purpose scenario works on a real phone, `/img/…` answers an icon, `/data/skillcards.json` answers the data, and a row created there appears in `GET /counts`. Milestone 5's checks passed on a real iPhone (job #47). The user filed two improvements after the release: #54, the column labels without Vo Da Vi, and #55, the row menu's place.
 
 ## Surprises & Discoveries
 
@@ -809,3 +819,5 @@ Revision note, 2026-11-01: Milestone 7 started (#43): the D1 database created an
 Revision note, 2026-11-01: Codex's review of the database's binding, and the first deployment by hand with the salt and the live site's checks, recorded in Progress (#43); the Milestone 7 paragraph gained a note on the order.
 
 Revision note, 2026-11-01: the user's part of Milestone 7 (the deploy token, the secrets, the iPhone checks), the first live count and pull request #48 recorded in Progress; an observation on `GET /counts`'s four-hour browser cache, with #49 filed in Triage.
+
+Revision note, 2026-11-01: Milestone 7 marked complete: the release into `main` (#52), `deploy.yml`'s first run and the user's row in `GET /counts` recorded in Progress; the user's improvements #54 and #55 noted.
