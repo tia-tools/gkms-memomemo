@@ -121,6 +121,15 @@ The work is tracked on the project's board (`tia-tools` project 7, see `CLAUDE.m
     - **Corrected beside it:** Codex said a secret needs an existing Worker, and the README said it can be set only once the Worker exists. Neither holds. wrangler 4.156.0's `secret put` creates an empty Worker of the name when there is none, which the README now says.
 
     Only text changed after it, so no second run.
+  - [x] (2026-11-01 18:45Z) The first deployment, by hand, the user's choice (job #44, A). It was made from `feat/m7-release` at `0f0672c`, whose page and Worker are `develop`'s with the database's id added. `bun run build`, then `bunx wrangler deploy` with the user's login uploaded the 10 built files and bound `env.DB (gkms-memomemo)`, `env.IMAGES (tia-assets)` and `env.ASSETS`. It attached the custom domain `gkms-memomemo.tia.run` and the schedule `5 0 * * *` (version `49233cd0-…`). `HASH_SALT` was then set from `openssl rand -base64 48`, piped, never shown, and `wrangler secret list` names it. On the live site, README § Verify's checks passed:
+    - `/` answers 200 `text/html`;
+    - `/data/skillcards.json` answers format 1 with 361 cards;
+    - all 39 sheets the bundled index names answer 200 `image/webp`, immutable;
+    - `frames112.webp`, `sw.js` with its manifest, and `manifest.webmanifest` (`/`, `standalone`) are served;
+    - a master is refused (404, `no-store`);
+    - `POST /count` with `{}` answers `{"ok":false}` 400.
+
+    `GET /counts` was left unread, since its first answer is kept an hour and a row created on the live page must show in it. The deploy token and the repository's secrets are the user's, job #46.
 
 ## Surprises & Discoveries
 
@@ -787,3 +796,5 @@ Revision note, 2026-11-01: #32 marked merged (#37), and the page's half of Miles
 Revision note, 2026-11-01: Milestone 6 marked complete: #33 merged by pull request #39, after #32 by #37 (#40).
 
 Revision note, 2026-11-01: Milestone 7 started (#43): the D1 database created and its migration applied, recorded in Progress; Purpose names the issue.
+
+Revision note, 2026-11-01: Codex's review of the database's binding, and the first deployment by hand with the salt and the live site's checks, recorded in Progress (#43); the Milestone 7 paragraph gained a note on the order.
