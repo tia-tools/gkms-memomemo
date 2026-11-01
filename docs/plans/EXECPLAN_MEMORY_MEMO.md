@@ -66,7 +66,7 @@ The work is tracked on the project's board (`tia-tools` project 7, see `CLAUDE.m
 
     One launch failed offline before the clean one, from WebKit and not the page (Surprises & Discoveries). `bun test` (378), `bun run type-check`, `bun run lint` and `bun run build` exit 0.
   - [x] (2026-11-01 16:13Z) Pull request #31 into `develop`, its checks passing; the user approved the push (job #30) and merged it (`ab81792`), closing #28. The app icon and its name (D60) stand as drawn until the user says otherwise.
-- [ ] Milestone 6: anonymous counts and ranked pickers (#32 the Worker's counts in D1; #33 the page's counting and ranked pickers, blocked by #32).
+- [x] Milestone 6: anonymous counts and ranked pickers (#32 the Worker's counts in D1, merged by pull request #37; #33 the page's counting and ranked pickers, merged by pull request #39).
   - [x] (2026-11-01 16:40Z) The Worker's counts (#32), on `feat/m6-counts-worker`, each module with its co-located test, in `infra/worker/`:
     - `migrations/0001_counts.sql`: `counts` and `caps`, both `WITHOUT ROWID` (D64);
     - `count-contract.ts`: the event, the answer and the routes, for #33;
@@ -113,6 +113,7 @@ The work is tracked on the project's board (`tia-tools` project 7, see `CLAUDE.m
     - **Declined:** a test that a rejected build sends nothing. Only 変更 can meet one, and 変更 never sends.
 
     Only these guards and tests changed after it, each an early return, so no second run. `bun test` (457), `bun run type-check`, `bun run lint` and `bun run build` exit 0.
+  - [x] (2026-11-01 17:43Z) Pull request #39 into `develop`, its checks passing; the user approved the push (job #38) and merged it (`8eddc38`), closing #33. Milestone 6 is complete, recorded by #40. The database is created and the Worker first deployed in Milestone 7.
 - [ ] Milestone 7: first deployment to `gkms-memomemo.tia.run` and checks of the live site.
 
 ## Surprises & Discoveries
@@ -776,3 +777,5 @@ Revision note, 2026-11-01: Milestone 5 marked merged (#31), and Milestone 6's tw
 Revision note, 2026-11-01: the Worker's half of Milestone 6 (#32) recorded in Progress. Three observations added: the rows a count writes on a local D1, wrangler provisioning a binding that has no id, and `bun test`'s UTC time zone. The agent's defaults are D63 (what an event must name, other sites' pages, IPv6 by /64, the order of the answers) and D64 (`WITHOUT ROWID`, the answer's shape and cache, the data file's rules per isolate, the cron's time, the binding without its id). Milestone 6 gains a note for #33's local check, and Interfaces and Dependencies the count contract.
 
 Revision note, 2026-11-01: #32 marked merged (#37), and the page's half of Milestone 6 (#33) recorded in Progress. Two observations added: `wrangler dev`'s cache keeping one `/counts` answer for both local hosts, and `bun test` reporting no unhandled rejection. D65 records the page's side; the Milestone 6 paragraph's note on a local check follows.
+
+Revision note, 2026-11-01: Milestone 6 marked complete: #33 merged by pull request #39, after #32 by #37 (#40).
