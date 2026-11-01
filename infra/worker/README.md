@@ -87,7 +87,7 @@ Every answer is JSON `{ "ok": … }` marked `no-store`. The Worker logs the rows
 
 `wrangler.test.ts` requires the binding's `database_id`. Without one, `wrangler dev` (a local D1) and `--dry-run` work, but `wrangler deploy` provisions a new database under the name instead of binding this one: wrangler 4.156.0's source logs "Provisioning" and creates the resource, taking its name from the config.
 
-**The salt** `HASH_SALT` is a Worker secret, so it can be set only once the Worker exists, after its first deployment. Until then, and whenever it is missing, `POST /count` answers 503 and counts nothing. From this directory, without the value ever being shown or written to a file:
+**The salt** `HASH_SALT` is a Worker secret, set after the Worker's first deployment. Run before it, `wrangler secret put` does not fail: wrangler 4.156.0 (`createDraftWorker` in its source) creates an empty Worker of this name to hold the secret, without asking when no terminal is attached. Until the salt is set, and whenever it is missing, `POST /count` answers 503 and counts nothing. Setting it deploys a new version of the Worker at once. From this directory, without the value ever being shown or written to a file:
 
     openssl rand -base64 48 | tr -d '\n' | bunx wrangler secret put HASH_SALT
 
