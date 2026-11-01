@@ -34,6 +34,10 @@ describe("wrangler.toml", () => {
     expect(db["binding"]).toBe("DB");
     expect(db["database_name"]).toBe("gkms-memomemo");
     expect(db["migrations_dir"]).toBe("migrations");
+    // Without an id, `wrangler deploy` provisions a new database under the name rather than binding
+    // the one Milestone 7 created (the plan's Surprises & Discoveries), so production would count
+    // into an empty database with no tables.
+    expect(String(db["database_id"])).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
     const files = await Array.fromAsync(new Bun.Glob("*.sql").scan({ cwd: new URL("./migrations/", import.meta.url).pathname }));
     expect(files.length).toBeGreaterThan(0);
     for (const file of files) expect(file).toMatch(/^\d{4}_[a-z0-9_]+\.sql$/);

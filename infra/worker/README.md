@@ -28,8 +28,10 @@ It needs two repository secrets, set once by a person in the repository's settin
 
 | Scope | Permission | Used by |
 |---|---|---|
-| Workers, only the Worker `gkms-memomemo` | **Editor** | the script and the static assets |
-| Zone, only `tia.run` | **Workers Routes: Write** | the custom domain in `wrangler.toml` |
+| Workers, scope **Individual Workers**: only `gkms-memomemo` | role **Editor** | the script and the static assets |
+| Zone, only `tia.run` | **Workers Routes: Write** | the custom domain in `wrangler.toml`; Cloudflare has no per-Worker role for custom domains yet |
+
+The Workers row is Cloudflare's newer Workers roles, not the legacy permission **Workers Scripts: Edit**, which the token page marks Legacy. That one's replacement is Editor at the whole Workers product's scope, every Worker in the account.
 
 Editor can deploy and update an existing Worker but cannot create one: creating a Worker needs **Admin** at the Workers product level, and a token can name a Worker only once it exists. So the first deployment is either:
 - by hand (below), by an account member with that access;
@@ -37,7 +39,7 @@ Editor can deploy and update an existing Worker but cannot create one: creating 
 
 Changing `name` in `wrangler.toml` does not rename the deployed Worker: the next deploy creates a new one, which is a first deployment again (gkms-hif-final-stats' `infra/worker/README.md` § Deploy gives the order it took there).
 
-Binding the R2 bucket needs no R2 permission: deploying a Worker never needs permissions on the resources it binds. Source: Cloudflare's [Workers roles and permissions](https://developers.cloudflare.com/workers/authorization/workers/), as read for gkms-hif-final-stats on 2026-10-29. If a deploy still fails with a permissions error, the message names the missing permission. Add that one, and record which.
+Binding the R2 bucket and the D1 database needs no R2 or D1 permission: deploying a Worker never needs permissions on the resources it binds. Source: Cloudflare's [Workers roles and permissions](https://developers.cloudflare.com/workers/authorization/workers/) (its roles, Legacy Workers permissions, Bindings and Routes sections), last read on 2026-11-01, when the page was dated 2026-09-15. If a deploy still fails with a permissions error, the message names the missing permission. Add that one, and record which.
 
 By hand, for the first deployment or an emergency, with `bunx wrangler login` on the account that holds `tia.run`. Run from the repository root:
 
@@ -80,15 +82,18 @@ Every answer is JSON `{ "ok": … }` marked `no-store`. The Worker logs the rows
 
 **What it costs on the Free plan.** Measured on a local D1 (the plan's Surprises & Discoveries), a counted event writes 4 rows (1 for the cap, 1 each for the card, the ability and a customization or `none`), and 5 with two customization steps; a refused one writes none. Against D1's 100,000 rows written a day, that is about 20,000 to 25,000 rows created a day across all players. Each request to `/count` or `/counts` is also a Worker request, out of the account's 100,000 a day.
 
-**Created in Milestone 7,** by hand, with `bunx wrangler login` on the account that holds `tia.run`, from this directory:
+**The database** was created in Milestone 7, on 2026-11-01 (UTC), by hand with `bunx wrangler login` on the account that holds `tia.run`, and its id is in `wrangler.toml`. A new migration, or the database made again after a loss, goes the same way, from this directory:
 
-    bunx wrangler d1 create gkms-memomemo
-    # put the database_id it prints into wrangler.toml's [[d1_databases]]
-    bunx wrangler d1 migrations apply gkms-memomemo --remote
-    bunx wrangler secret put HASH_SALT
-    # paste a long random value, never committed or printed: `openssl rand -base64 48`, for example
+    bunx wrangler d1 create gkms-memomemo --location apac   # only to make it again; then put the new database_id into wrangler.toml
+    bunx wrangler d1 migrations apply gkms-memomemo --remote   # applies only the migrations not yet applied
 
-Until the id is in `wrangler.toml`, the binding has none. `wrangler dev` (a local D1) and `--dry-run` accept that, but `wrangler deploy` provisions a binding without an id: wrangler 4.156.0's source logs "Provisioning" and creates the resource, taking its name from the config. So `main` must not get this change before the id.
+`wrangler.test.ts` requires the binding's `database_id`. Without one, `wrangler dev` (a local D1) and `--dry-run` work, but `wrangler deploy` provisions a new database under the name instead of binding this one: wrangler 4.156.0's source logs "Provisioning" and creates the resource, taking its name from the config.
+
+**The salt** `HASH_SALT` is a Worker secret, set after the Worker's first deployment. Run before it, `wrangler secret put` does not fail: wrangler 4.156.0 (`createDraftWorker` in its source) creates an empty Worker of this name to hold the secret, without asking when no terminal is attached. Until the salt is set, and whenever it is missing, `POST /count` answers 503 and counts nothing. Setting it deploys a new version of the Worker at once. From this directory, without the value ever being shown or written to a file:
+
+    openssl rand -base64 48 | tr -d '\n' | bunx wrangler secret put HASH_SALT
+
+Setting it again changes every player's cap key for the rest of the day, which only resets their count of the day's 200 events.
 
 **Locally,** with a D1 kept outside the repository and a throwaway salt:
 
