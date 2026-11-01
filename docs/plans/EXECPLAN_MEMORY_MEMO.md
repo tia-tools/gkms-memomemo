@@ -82,6 +82,10 @@ The work is tracked on the project's board (`tia-tools` project 7, see `CLAUDE.m
     - three type guards stay, since other checks already refuse what they guard.
 
     On a local D1 under `wrangler dev` (`infra/worker/README.md` § Counts): `POST /count` answered 200, 403 for another site's `Origin` and 400 for a card its section's tab does not offer. `GET /counts` showed the counts and was then served from the cache, a query string too. The 201st event of the day got 429 and counted nothing. The Cron Trigger deleted only a past day's cap row. Each step logged its `rows_written` (Surprises & Discoveries).
+  - [x] (2026-11-01 17:05Z) `/codex-review` of the branch (`origin/develop...e07a0a0`, codex-cli 0.150.1, read-only in a snapshot; the sandbox held, the repository's refs were unchanged, and only `.git/index` was refreshed, by the editor's git integration): CHANGES REQUESTED with one medium finding. It found the upserts, the cache key, the answers, the cron and the routes otherwise correct.
+    - **Declined, with the README fixed:** the cap's place is committed before the counts' batch, so a failure of that batch loses the player one of the day's 200 places with nothing counted. D63 already accepts this. Making the two one transaction would need each count to know whether this event's upsert raised `n`, which only a chain of SQLite `changes()` inside a D1 batch could tell. A refund would fail exactly when D1 fails. When D1 is out altogether, the cap upsert fails first and nothing is lost. The README now says what such a failure leaves.
+
+    Only the README and the plan changed after it, so no second run.
 - [ ] Milestone 7: first deployment to `gkms-memomemo.tia.run` and checks of the live site.
 
 ## Surprises & Discoveries

@@ -70,7 +70,7 @@ Both are `WITHOUT ROWID`, so a new row is one row written, not two.
 6. 400 without `CF-Connecting-IP`;
 7. 503 when the skill card file cannot be had, and 400 for an event naming anything the section's tab does not offer (`count-event.ts`, checked against the file `/data/skillcards.json` passes through, kept in the isolate for an hour by `count-data.ts`);
 8. 429 when the player's cap row for the day has reached 200 events. The cap is one upsert whose `n` rises only under the cap, so it is exact, and a refused event writes nothing;
-9. otherwise 200, after one batch of upserts adds 1 to each count. A D1 failure is a 503.
+9. otherwise 200, after one batch of upserts adds 1 to each count. A D1 failure is a 503. One in that batch, after the cap has taken its place, leaves the place taken with nothing counted; the page does not retry, so nothing is ever counted twice (D63).
 
 Every answer is JSON `{ "ok": … }` marked `no-store`. The Worker logs the rows each step wrote (`count: rows written 1 for the cap, 3 for 3 counts`).
 
