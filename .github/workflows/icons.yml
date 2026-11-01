@@ -1,0 +1,59 @@
+# Guards: the game-style icons' completeness (docs/plans/EXECPLAN_GAME_STYLE_ICONS.md, I7). Daily,
+# after gakumas-supportcards' data update (11:30 UTC), it lists the cards the page offers that have
+# no game-style icon (new cards, drawn as their empty frame) and those the game changed since their
+# screenshot (which keep their old icon), keeps one open issue listing them, and posts to the
+# user's Discord through nudge when that list changes. It builds and uploads nothing, since the
+# screenshots are taken by hand, and holds no secret: the issue is written with this run's own
+# token, the post goes with a GitHub OIDC token (Taka499/nudge). infra/workflows.test.ts pins its
+# shape. GitHub stops a public repository's schedule after 60 days without activity; re-enable it
+# from the Actions tab if the daily runs stop.
+name: Icons
+
+on:
+  schedule:
+    - cron: "45 11 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: icons
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    outputs:
+      changed: ${{ steps.issue.outputs.changed }}
+      url: ${{ steps.issue.outputs.url }}
+      title: ${{ steps.issue.outputs.title }}
+      summary: ${{ steps.issue.outputs.summary }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: "1.4.3"
+      - run: bun install --frozen-lockfile
+      - run: bun scripts/icons/check.ts --out "$RUNNER_TEMP/icons"
+      - id: issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bun scripts/icons/issue.ts "$RUNNER_TEMP/icons"
+
+  notify:
+    needs: check
+    if: needs.check.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - uses: Taka499/nudge/actions/notify@ae2116bc8fd8229c5d30c495d7c89e5f05617c99 # v1.3.0
+        with:
+          endpoint: https://nudge.tia.run
+          title: ${{ needs.check.outputs.title }}
+          body: ${{ needs.check.outputs.summary }}
+          url: ${{ needs.check.outputs.url }}

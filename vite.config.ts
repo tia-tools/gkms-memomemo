@@ -11,9 +11,9 @@ const SIBLING = process.env["SUPPORTCARDS_DIR"] ?? join(import.meta.dirname, "..
 
 /**
  * What the Worker answers in production, from local files: the skill card data from the sibling's
- * built file when there is one, else this repository's fixture, and `/img/*` (the sprite sheets
- * and their index) from the sibling's extracted image library, under the Worker's own `imageKey`
- * rule. Adopted from gkms-hif-final-stats' vite.config.ts.
+ * built file when there is one, else this repository's fixture, and `/img/*` (this app's sprite
+ * sheets) from the icon pipeline's local build in scripts/icons/out, under the Worker's own
+ * `imageKey` rule. Adopted from gkms-hif-final-stats' vite.config.ts.
  */
 function localFile(path: string): { file: string; type: string } | null {
   if (path === SKILLCARDS_ROUTE) {
@@ -23,9 +23,8 @@ function localFile(path: string): { file: string; type: string } | null {
     return file === undefined ? null : { file, type: "application/json; charset=utf-8" };
   }
   const key = imageKey(path);
-  const file = key === null ? null : join(SIBLING, "scripts/images/out", key);
-  const type = key?.endsWith(".json") === true ? "application/json; charset=utf-8" : "image/webp";
-  return file !== null && existsSync(file) ? { file, type } : null;
+  const file = key === null ? null : join(import.meta.dirname, "scripts/icons/out", key);
+  return file !== null && existsSync(file) ? { file, type: "image/webp" } : null;
 }
 
 /** Dev server only: the Worker's routes from local files (infra/worker/worker.ts in production). */

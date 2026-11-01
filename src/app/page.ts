@@ -8,11 +8,11 @@ import { createContext } from "preact";
 import { useContext } from "preact/hooks";
 import type { Memo } from "../memo/types.ts";
 import type { Catalog } from "./catalog.ts";
-import type { SheetIndex } from "./sheets.ts";
+import type { IconIndex } from "./sheets.ts";
 
 export interface Page {
   catalog: Catalog;
-  sheets: SheetIndex;
+  sheets: IconIndex;
   /** The idol of 「カードの絵柄」 (D20), and the one whose art stands in when that idol has none (D34). */
   idol: string;
   defaultIdol: string;

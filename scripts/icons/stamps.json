@@ -1,0 +1,1401 @@
+{
+ "formatVersion": 1,
+ "cells": {
+  "p_card-00-act-2_009:0": {
+   "shot": "361d24d8",
+   "fingerprint": "32614ade"
+  },
+  "p_card-00-act-2_009:1": {
+   "shot": "08aab292",
+   "fingerprint": "03d896c6"
+  },
+  "p_card-00-men-0_003:0": {
+   "shot": "6768a47c",
+   "fingerprint": "c62c6c8e"
+  },
+  "p_card-00-men-1_005:0": {
+   "shot": "7e3451a2",
+   "fingerprint": "e65dac89"
+  },
+  "p_card-00-men-1_005:1": {
+   "shot": "f0868379",
+   "fingerprint": "e04782e4"
+  },
+  "p_card-00-men-1_007:0": {
+   "shot": "3c93c0f3",
+   "fingerprint": "98c82d4d"
+  },
+  "p_card-00-men-1_007:1": {
+   "shot": "324d6b78",
+   "fingerprint": "df0e5072"
+  },
+  "p_card-00-men-2_012:0": {
+   "shot": "b321bf39",
+   "fingerprint": "a7ff5a41"
+  },
+  "p_card-00-men-2_012:1": {
+   "shot": "809a34c3",
+   "fingerprint": "ce580c20"
+  },
+  "p_card-00-men-2_014:0": {
+   "shot": "6ce44c23",
+   "fingerprint": "251b86e4"
+  },
+  "p_card-00-men-2_014:1": {
+   "shot": "562a8778",
+   "fingerprint": "7316a6c9"
+  },
+  "p_card-00-men-3_003:0": {
+   "shot": "961d651e",
+   "fingerprint": "9b15617a"
+  },
+  "p_card-00-men-3_003:1": {
+   "shot": "885c50a7",
+   "fingerprint": "1f608768"
+  },
+  "p_card-00-men-3_005:0": {
+   "shot": "b44e92f7",
+   "fingerprint": "93248881"
+  },
+  "p_card-00-men-3_005:1": {
+   "shot": "26c13077",
+   "fingerprint": "34ffea1f"
+  },
+  "p_card-00-men-3_011:0": {
+   "shot": "ec2ca1db",
+   "fingerprint": "b9a99d9a"
+  },
+  "p_card-00-men-3_011:1": {
+   "shot": "66126715",
+   "fingerprint": "109f6055"
+  },
+  "p_card-00-men-3_012:0": {
+   "shot": "2ed6860e",
+   "fingerprint": "a8f994e6"
+  },
+  "p_card-00-men-3_012:1": {
+   "shot": "8131edd9",
+   "fingerprint": "9dd5c8ad"
+  },
+  "p_card-01-act-1_001:0": {
+   "shot": "ba1983fa",
+   "fingerprint": "60fe312d"
+  },
+  "p_card-01-act-1_001:1": {
+   "shot": "d5df50ef",
+   "fingerprint": "908df539"
+  },
+  "p_card-01-act-1_002:0": {
+   "shot": "b853f4dd",
+   "fingerprint": "8e486a05"
+  },
+  "p_card-01-act-1_002:1": {
+   "shot": "718115c8",
+   "fingerprint": "85b5c07b"
+  },
+  "p_card-01-act-1_019:0": {
+   "shot": "e7188ff6",
+   "fingerprint": "bff878f0"
+  },
+  "p_card-01-act-1_019:1": {
+   "shot": "939e748b",
+   "fingerprint": "50cbbe31"
+  },
+  "p_card-01-act-1_020:0": {
+   "shot": "3e8539e8",
+   "fingerprint": "14f53d55"
+  },
+  "p_card-01-act-1_020:1": {
+   "shot": "4d9fe29d",
+   "fingerprint": "6981b2dc"
+  },
+  "p_card-01-act-1_021:0": {
+   "shot": "c605af26",
+   "fingerprint": "f3ff2d93"
+  },
+  "p_card-01-act-1_021:1": {
+   "shot": "c42a95c1",
+   "fingerprint": "2da00f27"
+  },
+  "p_card-01-act-1_022:0": {
+   "shot": "6a59e0db",
+   "fingerprint": "e7ca71e2"
+  },
+  "p_card-01-act-1_022:1": {
+   "shot": "f43794f2",
+   "fingerprint": "fbe2ad72"
+  },
+  "p_card-01-act-1_023:0": {
+   "shot": "4a12b765",
+   "fingerprint": "f2ad0f2a"
+  },
+  "p_card-01-act-1_023:1": {
+   "shot": "d5022a50",
+   "fingerprint": "2a34d391"
+  },
+  "p_card-01-act-1_036:0": {
+   "shot": "ccdf96ac",
+   "fingerprint": "bfa23d8f"
+  },
+  "p_card-01-act-1_036:1": {
+   "shot": "a26b7d0c",
+   "fingerprint": "04c69341"
+  },
+  "p_card-01-act-1_068:0": {
+   "shot": "f93fe5d3",
+   "fingerprint": "7c1c115c"
+  },
+  "p_card-01-act-1_068:1": {
+   "shot": "e1331a7d",
+   "fingerprint": "33260192"
+  },
+  "p_card-01-act-1_069:0": {
+   "shot": "59b5e58a",
+   "fingerprint": "1521d690"
+  },
+  "p_card-01-act-1_069:1": {
+   "shot": "041c4c54",
+   "fingerprint": "e5e5858e"
+  },
+  "p_card-01-act-1_074:0": {
+   "shot": "7e4b26a3",
+   "fingerprint": "6f3195c4"
+  },
+  "p_card-01-act-1_074:1": {
+   "shot": "271c0309",
+   "fingerprint": "f61cdfab"
+  },
+  "p_card-01-act-2_001:0": {
+   "shot": "13c91b01",
+   "fingerprint": "bfb857fc"
+  },
+  "p_card-01-act-2_001:1": {
+   "shot": "62fc736f",
+   "fingerprint": "3100c368"
+  },
+  "p_card-01-act-2_002:0": {
+   "shot": "8f527ea6",
+   "fingerprint": "d2888e2e"
+  },
+  "p_card-01-act-2_002:1": {
+   "shot": "142f08c7",
+   "fingerprint": "490d5ba2"
+  },
+  "p_card-01-act-2_003:0": {
+   "shot": "a8ab2b44",
+   "fingerprint": "2358d5b2"
+  },
+  "p_card-01-act-2_003:1": {
+   "shot": "02fed417",
+   "fingerprint": "b27a6070"
+  },
+  "p_card-01-act-2_030:0": {
+   "shot": "5ff4cce4",
+   "fingerprint": "50656d2f"
+  },
+  "p_card-01-act-2_030:1": {
+   "shot": "f26703f7",
+   "fingerprint": "064216d9"
+  },
+  "p_card-01-act-2_031:0": {
+   "shot": "ee0bf3b3",
+   "fingerprint": "57b573d1"
+  },
+  "p_card-01-act-2_031:1": {
+   "shot": "be60a01a",
+   "fingerprint": "1eb95eab"
+  },
+  "p_card-01-act-2_032:0": {
+   "shot": "d6d44fa3",
+   "fingerprint": "c44da2dc"
+  },
+  "p_card-01-act-2_032:1": {
+   "shot": "56663f1c",
+   "fingerprint": "bb1a39de"
+  },
+  "p_card-01-act-2_033:0": {
+   "shot": "10f0bb1b",
+   "fingerprint": "dcd20997"
+  },
+  "p_card-01-act-2_033:1": {
+   "shot": "321b2a9e",
+   "fingerprint": "c80c759f"
+  },
+  "p_card-01-act-2_042:0": {
+   "shot": "20ec8bb0",
+   "fingerprint": "e06a9036"
+  },
+  "p_card-01-act-2_042:1": {
+   "shot": "6606b549",
+   "fingerprint": "74640bfd"
+  },
+  "p_card-01-act-2_059:0": {
+   "shot": "e3a4ce0a",
+   "fingerprint": "15cd71ec"
+  },
+  "p_card-01-act-2_059:1": {
+   "shot": "c2e0ccae",
+   "fingerprint": "1c111b0f"
+  },
+  "p_card-01-act-2_061:0": {
+   "shot": "97f89271",
+   "fingerprint": "4168c47e"
+  },
+  "p_card-01-act-2_061:1": {
+   "shot": "33816a64",
+   "fingerprint": "065f6ff8"
+  },
+  "p_card-01-act-2_108:0": {
+   "shot": "a9d20710",
+   "fingerprint": "c2f9ddad"
+  },
+  "p_card-01-act-2_108:1": {
+   "shot": "44546581",
+   "fingerprint": "1576b94b"
+  },
+  "p_card-01-act-2_113:0": {
+   "shot": "bee54a25",
+   "fingerprint": "a8b967e1"
+  },
+  "p_card-01-act-2_113:1": {
+   "shot": "18811f22",
+   "fingerprint": "bbb66575"
+  },
+  "p_card-01-act-3_010:0": {
+   "shot": "f42bbf63",
+   "fingerprint": "ee0ebfe1"
+  },
+  "p_card-01-act-3_010:1": {
+   "shot": "f6d05ec8",
+   "fingerprint": "de787a62"
+  },
+  "p_card-01-act-3_029:0": {
+   "shot": "6fcecf69",
+   "fingerprint": "0b6e372c"
+  },
+  "p_card-01-act-3_029:1": {
+   "shot": "61fcce3a",
+   "fingerprint": "fddc0c3d"
+  },
+  "p_card-01-act-3_030:0": {
+   "shot": "3522f1d0",
+   "fingerprint": "941570f2"
+  },
+  "p_card-01-act-3_030:1": {
+   "shot": "5291c2bc",
+   "fingerprint": "d5c24c93"
+  },
+  "p_card-01-act-3_031:0": {
+   "shot": "cb06a513",
+   "fingerprint": "a55b17aa"
+  },
+  "p_card-01-act-3_031:1": {
+   "shot": "d6c277d8",
+   "fingerprint": "ac16b1fe"
+  },
+  "p_card-01-act-3_032:0": {
+   "shot": "6b2425eb",
+   "fingerprint": "2d8ee9a0"
+  },
+  "p_card-01-act-3_032:1": {
+   "shot": "f90722ae",
+   "fingerprint": "6f4c77a3"
+  },
+  "p_card-01-act-3_049:0": {
+   "shot": "0987f7ee",
+   "fingerprint": "58bf6933"
+  },
+  "p_card-01-act-3_049:1": {
+   "shot": "95e23c5a",
+   "fingerprint": "36b675f0"
+  },
+  "p_card-01-act-3_184:0": {
+   "shot": "7500d423",
+   "fingerprint": "a22f33cf"
+  },
+  "p_card-01-act-3_184:1": {
+   "shot": "6ac48a17",
+   "fingerprint": "a93436fb"
+  },
+  "p_card-01-act-3_185:0": {
+   "shot": "d14dd12e",
+   "fingerprint": "4e6476f3"
+  },
+  "p_card-01-act-3_185:1": {
+   "shot": "6f29537e",
+   "fingerprint": "772597cc"
+  },
+  "p_card-01-men-1_008:0": {
+   "shot": "02f2a2a6",
+   "fingerprint": "7e9fec0b"
+  },
+  "p_card-01-men-1_008:1": {
+   "shot": "8e3b928a",
+   "fingerprint": "d353c80e"
+  },
+  "p_card-01-men-1_024:0": {
+   "shot": "d1188944",
+   "fingerprint": "0bf2147f"
+  },
+  "p_card-01-men-1_024:1": {
+   "shot": "76a6944e",
+   "fingerprint": "dba45b89"
+  },
+  "p_card-01-men-1_025:0": {
+   "shot": "1424f61f",
+   "fingerprint": "14d24e34"
+  },
+  "p_card-01-men-1_025:1": {
+   "shot": "3c3b0b93",
+   "fingerprint": "1a6bbc34"
+  },
+  "p_card-01-men-1_026:0": {
+   "shot": "4be659cb",
+   "fingerprint": "0448b659"
+  },
+  "p_card-01-men-1_026:1": {
+   "shot": "b807700b",
+   "fingerprint": "14c76082"
+  },
+  "p_card-01-men-1_034:0": {
+   "shot": "86a2997e",
+   "fingerprint": "1814142c"
+  },
+  "p_card-01-men-1_034:1": {
+   "shot": "a0dc57ad",
+   "fingerprint": "10322d15"
+  },
+  "p_card-01-men-1_091:0": {
+   "shot": "4ebc024f",
+   "fingerprint": "e6082597"
+  },
+  "p_card-01-men-1_091:1": {
+   "shot": "c769d5f8",
+   "fingerprint": "fdbb5335"
+  },
+  "p_card-01-men-2_011:0": {
+   "shot": "6ecb5fe8",
+   "fingerprint": "5b4b8e91"
+  },
+  "p_card-01-men-2_011:1": {
+   "shot": "0c2cc445",
+   "fingerprint": "02dbd26b"
+  },
+  "p_card-01-men-2_034:0": {
+   "shot": "c6ebfb5c",
+   "fingerprint": "6c589c81"
+  },
+  "p_card-01-men-2_034:1": {
+   "shot": "0dde6c00",
+   "fingerprint": "524c58f5"
+  },
+  "p_card-01-men-2_035:0": {
+   "shot": "254115fe",
+   "fingerprint": "2df6eb72"
+  },
+  "p_card-01-men-2_035:1": {
+   "shot": "7cfa5779",
+   "fingerprint": "e9485e60"
+  },
+  "p_card-01-men-2_036:0": {
+   "shot": "7e5ea825",
+   "fingerprint": "117113c2"
+  },
+  "p_card-01-men-2_036:1": {
+   "shot": "29dd7d85",
+   "fingerprint": "22f8e039"
+  },
+  "p_card-01-men-2_037:0": {
+   "shot": "f8151a3e",
+   "fingerprint": "a28e5da1"
+  },
+  "p_card-01-men-2_037:1": {
+   "shot": "3a6eff1a",
+   "fingerprint": "fac01209"
+  },
+  "p_card-01-men-2_038:0": {
+   "shot": "96507708",
+   "fingerprint": "ac8f4be0"
+  },
+  "p_card-01-men-2_038:1": {
+   "shot": "18bb054a",
+   "fingerprint": "f25c963b"
+  },
+  "p_card-01-men-2_039:0": {
+   "shot": "4049d80e",
+   "fingerprint": "71fabe69"
+  },
+  "p_card-01-men-2_039:1": {
+   "shot": "941325dc",
+   "fingerprint": "bb57d2b6"
+  },
+  "p_card-01-men-2_040:0": {
+   "shot": "154ceb9e",
+   "fingerprint": "e896b8d5"
+  },
+  "p_card-01-men-2_040:1": {
+   "shot": "df752893",
+   "fingerprint": "8922b6f9"
+  },
+  "p_card-01-men-2_041:0": {
+   "shot": "deff5f36",
+   "fingerprint": "e573e91e"
+  },
+  "p_card-01-men-2_041:1": {
+   "shot": "d167f642",
+   "fingerprint": "3ffa2731"
+  },
+  "p_card-01-men-2_043:0": {
+   "shot": "f6e7c7f5",
+   "fingerprint": "94550816"
+  },
+  "p_card-01-men-2_043:1": {
+   "shot": "2d48c680",
+   "fingerprint": "f5230ce7"
+  },
+  "p_card-01-men-2_098:0": {
+   "shot": "0f443b21",
+   "fingerprint": "022bfc17"
+  },
+  "p_card-01-men-2_098:1": {
+   "shot": "8f042726",
+   "fingerprint": "ccbe82e1"
+  },
+  "p_card-01-men-2_099:0": {
+   "shot": "85cfa3e6",
+   "fingerprint": "770a08a4"
+  },
+  "p_card-01-men-2_099:1": {
+   "shot": "0a2a98a5",
+   "fingerprint": "d877e9a9"
+  },
+  "p_card-01-men-2_104:0": {
+   "shot": "46009171",
+   "fingerprint": "3dc0a0e2"
+  },
+  "p_card-01-men-2_104:1": {
+   "shot": "7eaf9068",
+   "fingerprint": "987ce4b8"
+  },
+  "p_card-01-men-2_110:0": {
+   "shot": "e3f2db66",
+   "fingerprint": "88f127a0"
+  },
+  "p_card-01-men-2_110:1": {
+   "shot": "15c6cc08",
+   "fingerprint": "00b8ec15"
+  },
+  "p_card-01-men-3_006:0": {
+   "shot": "c451d619",
+   "fingerprint": "f6d6d98f"
+  },
+  "p_card-01-men-3_006:1": {
+   "shot": "c612d4e7",
+   "fingerprint": "ec3b9ff4"
+  },
+  "p_card-01-men-3_033:0": {
+   "shot": "08621ebc",
+   "fingerprint": "54a3112d"
+  },
+  "p_card-01-men-3_033:1": {
+   "shot": "2cbefd69",
+   "fingerprint": "b81ae28d"
+  },
+  "p_card-01-men-3_034:0": {
+   "shot": "df7741d0",
+   "fingerprint": "d9550b47"
+  },
+  "p_card-01-men-3_034:1": {
+   "shot": "0e936780",
+   "fingerprint": "0dbc3686"
+  },
+  "p_card-01-men-3_035:0": {
+   "shot": "d0ad749c",
+   "fingerprint": "0d727c0b"
+  },
+  "p_card-01-men-3_035:1": {
+   "shot": "0a3e5594",
+   "fingerprint": "68d4cc07"
+  },
+  "p_card-01-men-3_036:0": {
+   "shot": "7e12f777",
+   "fingerprint": "4eae2b2e"
+  },
+  "p_card-01-men-3_036:1": {
+   "shot": "db310c6d",
+   "fingerprint": "438734c4"
+  },
+  "p_card-02-act-1_003:0": {
+   "shot": "a5be307e",
+   "fingerprint": "980a97f2"
+  },
+  "p_card-02-act-1_003:1": {
+   "shot": "345da06a",
+   "fingerprint": "ca0bf959"
+  },
+  "p_card-02-act-1_004:0": {
+   "shot": "0dd570f9",
+   "fingerprint": "880f5be5"
+  },
+  "p_card-02-act-1_004:1": {
+   "shot": "e8a0f883",
+   "fingerprint": "0008e0f3"
+  },
+  "p_card-02-act-1_027:0": {
+   "shot": "05456a4f",
+   "fingerprint": "4885338c"
+  },
+  "p_card-02-act-1_027:1": {
+   "shot": "1d28cb06",
+   "fingerprint": "1e0eb32a"
+  },
+  "p_card-02-act-1_028:0": {
+   "shot": "cf5762da",
+   "fingerprint": "51913a39"
+  },
+  "p_card-02-act-1_028:1": {
+   "shot": "9c59e71d",
+   "fingerprint": "eacd920d"
+  },
+  "p_card-02-act-1_029:0": {
+   "shot": "6c8f8e67",
+   "fingerprint": "dd0313e3"
+  },
+  "p_card-02-act-1_029:1": {
+   "shot": "abd56458",
+   "fingerprint": "396c54a7"
+  },
+  "p_card-02-act-1_037:0": {
+   "shot": "f4ab82a4",
+   "fingerprint": "5946cee2"
+  },
+  "p_card-02-act-1_037:1": {
+   "shot": "1c71c4f1",
+   "fingerprint": "5ec36e66"
+  },
+  "p_card-02-act-1_070:0": {
+   "shot": "e0eb96f8",
+   "fingerprint": "66da6876"
+  },
+  "p_card-02-act-1_070:1": {
+   "shot": "bfbb0c76",
+   "fingerprint": "680e5ec0"
+  },
+  "p_card-02-act-1_071:0": {
+   "shot": "be428076",
+   "fingerprint": "bde61a30"
+  },
+  "p_card-02-act-1_071:1": {
+   "shot": "523fb304",
+   "fingerprint": "027fa472"
+  },
+  "p_card-02-act-2_044:0": {
+   "shot": "e3cb16e0",
+   "fingerprint": "0c070cc7"
+  },
+  "p_card-02-act-2_044:1": {
+   "shot": "cd0a220e",
+   "fingerprint": "33e2a8a6"
+  },
+  "p_card-02-act-2_045:0": {
+   "shot": "751d3ae6",
+   "fingerprint": "3ce7f93a"
+  },
+  "p_card-02-act-2_045:1": {
+   "shot": "70d15caa",
+   "fingerprint": "fcd53509"
+  },
+  "p_card-02-act-2_046:0": {
+   "shot": "30900e27",
+   "fingerprint": "1e24a592"
+  },
+  "p_card-02-act-2_046:1": {
+   "shot": "596885fb",
+   "fingerprint": "07d17c89"
+  },
+  "p_card-02-act-2_047:0": {
+   "shot": "012e0a62",
+   "fingerprint": "76af5a23"
+  },
+  "p_card-02-act-2_047:1": {
+   "shot": "82c1778e",
+   "fingerprint": "6aacc4ef"
+  },
+  "p_card-02-act-2_048:0": {
+   "shot": "bcdd7b49",
+   "fingerprint": "a6a82c76"
+  },
+  "p_card-02-act-2_048:1": {
+   "shot": "4e620566",
+   "fingerprint": "d596f942"
+  },
+  "p_card-02-act-2_049:0": {
+   "shot": "99f35c6c",
+   "fingerprint": "708ea639"
+  },
+  "p_card-02-act-2_049:1": {
+   "shot": "b6b9b489",
+   "fingerprint": "dedc43b4"
+  },
+  "p_card-02-act-2_062:0": {
+   "shot": "c23e51cc",
+   "fingerprint": "f94202b3"
+  },
+  "p_card-02-act-2_062:1": {
+   "shot": "5c1aaa78",
+   "fingerprint": "163dcd5e"
+  },
+  "p_card-02-act-2_116:0": {
+   "shot": "25c733f9",
+   "fingerprint": "2c0f9d12"
+  },
+  "p_card-02-act-2_116:1": {
+   "shot": "8027c8fc",
+   "fingerprint": "8d3b4b6b"
+  },
+  "p_card-02-act-3_001:0": {
+   "shot": "bb7f499e",
+   "fingerprint": "7fbde35b"
+  },
+  "p_card-02-act-3_001:1": {
+   "shot": "17816fea",
+   "fingerprint": "07a72842"
+  },
+  "p_card-02-act-3_038:0": {
+   "shot": "0fd58e66",
+   "fingerprint": "fb0916d5"
+  },
+  "p_card-02-act-3_038:1": {
+   "shot": "19f85ca3",
+   "fingerprint": "8c1ce8dc"
+  },
+  "p_card-02-act-3_039:0": {
+   "shot": "278c2474",
+   "fingerprint": "2fe50601"
+  },
+  "p_card-02-act-3_039:1": {
+   "shot": "df31475b",
+   "fingerprint": "9395eadf"
+  },
+  "p_card-02-act-3_045:0": {
+   "shot": "d9201a06",
+   "fingerprint": "75baae66"
+  },
+  "p_card-02-act-3_045:1": {
+   "shot": "8ae06991",
+   "fingerprint": "d1591356"
+  },
+  "p_card-02-act-3_050:0": {
+   "shot": "af558ba9",
+   "fingerprint": "f0762b63"
+  },
+  "p_card-02-act-3_050:1": {
+   "shot": "8e70f249",
+   "fingerprint": "074628e0"
+  },
+  "p_card-02-act-3_052:0": {
+   "shot": "14182b34",
+   "fingerprint": "7d1c7b82"
+  },
+  "p_card-02-act-3_052:1": {
+   "shot": "4f39cefc",
+   "fingerprint": "15f3d479"
+  },
+  "p_card-02-act-3_186:0": {
+   "shot": "e88b15e6",
+   "fingerprint": "57431665"
+  },
+  "p_card-02-act-3_186:1": {
+   "shot": "5852cdce",
+   "fingerprint": "5f76ae7c"
+  },
+  "p_card-02-act-3_187:0": {
+   "shot": "757ed32b",
+   "fingerprint": "49dbccab"
+  },
+  "p_card-02-act-3_187:1": {
+   "shot": "74f35614",
+   "fingerprint": "9df9386f"
+  },
+  "p_card-02-men-1_006:0": {
+   "shot": "2718ef7b",
+   "fingerprint": "fc3140c3"
+  },
+  "p_card-02-men-1_006:1": {
+   "shot": "3b25e735",
+   "fingerprint": "bd4b173f"
+  },
+  "p_card-02-men-1_009:0": {
+   "shot": "ca6e79b6",
+   "fingerprint": "547752dd"
+  },
+  "p_card-02-men-1_009:1": {
+   "shot": "fb7bb84c",
+   "fingerprint": "86ee303f"
+  },
+  "p_card-02-men-1_030:0": {
+   "shot": "8b1fefaa",
+   "fingerprint": "919c3145"
+  },
+  "p_card-02-men-1_030:1": {
+   "shot": "83188d61",
+   "fingerprint": "4d7c1ac8"
+  },
+  "p_card-02-men-1_031:0": {
+   "shot": "76139d6a",
+   "fingerprint": "3f716d5d"
+  },
+  "p_card-02-men-1_031:1": {
+   "shot": "9b860fc3",
+   "fingerprint": "1f607b2a"
+  },
+  "p_card-02-men-1_032:0": {
+   "shot": "4604db88",
+   "fingerprint": "1d7a02ab"
+  },
+  "p_card-02-men-1_032:1": {
+   "shot": "ba961244",
+   "fingerprint": "14dc998a"
+  },
+  "p_card-02-men-1_033:0": {
+   "shot": "2776b785",
+   "fingerprint": "7b2823e6"
+  },
+  "p_card-02-men-1_033:1": {
+   "shot": "416302e2",
+   "fingerprint": "86e189ec"
+  },
+  "p_card-02-men-1_035:0": {
+   "shot": "3dc3d7af",
+   "fingerprint": "408af611"
+  },
+  "p_card-02-men-1_035:1": {
+   "shot": "c527953e",
+   "fingerprint": "c7b23f4d"
+  },
+  "p_card-02-men-1_076:0": {
+   "shot": "fe262c5b",
+   "fingerprint": "aaab5b42"
+  },
+  "p_card-02-men-1_076:1": {
+   "shot": "263b0cb1",
+   "fingerprint": "528249bc"
+  },
+  "p_card-02-men-1_093:0": {
+   "shot": "e71e6ed3",
+   "fingerprint": "1bdcc44d"
+  },
+  "p_card-02-men-1_093:1": {
+   "shot": "e21f567e",
+   "fingerprint": "f8fd3c47"
+  },
+  "p_card-02-men-1_094:0": {
+   "shot": "69328e62",
+   "fingerprint": "a3783398"
+  },
+  "p_card-02-men-1_094:1": {
+   "shot": "d390c2be",
+   "fingerprint": "9ccca442"
+  },
+  "p_card-02-men-2_004:0": {
+   "shot": "5497231e",
+   "fingerprint": "a0e1e4bc"
+  },
+  "p_card-02-men-2_004:1": {
+   "shot": "0ea1ef80",
+   "fingerprint": "6728c8cc"
+  },
+  "p_card-02-men-2_008:0": {
+   "shot": "addfec81",
+   "fingerprint": "cef433d3"
+  },
+  "p_card-02-men-2_008:1": {
+   "shot": "74b0cd79",
+   "fingerprint": "85f96df9"
+  },
+  "p_card-02-men-2_050:0": {
+   "shot": "0a16ee70",
+   "fingerprint": "c3a2dd33"
+  },
+  "p_card-02-men-2_050:1": {
+   "shot": "5b9f8fab",
+   "fingerprint": "653d383a"
+  },
+  "p_card-02-men-2_051:0": {
+   "shot": "0fbb0ba9",
+   "fingerprint": "a5aab0bc"
+  },
+  "p_card-02-men-2_051:1": {
+   "shot": "5240f049",
+   "fingerprint": "66c10036"
+  },
+  "p_card-02-men-2_052:0": {
+   "shot": "0e470435",
+   "fingerprint": "4be839c6"
+  },
+  "p_card-02-men-2_052:1": {
+   "shot": "5f806570",
+   "fingerprint": "7be44603"
+  },
+  "p_card-02-men-2_053:0": {
+   "shot": "cc7e6de4",
+   "fingerprint": "efbc9cd6"
+  },
+  "p_card-02-men-2_053:1": {
+   "shot": "02a79963",
+   "fingerprint": "e5fee393"
+  },
+  "p_card-02-men-2_054:0": {
+   "shot": "742eb9e6",
+   "fingerprint": "00956a34"
+  },
+  "p_card-02-men-2_054:1": {
+   "shot": "8cc65396",
+   "fingerprint": "90c9d908"
+  },
+  "p_card-02-men-2_055:0": {
+   "shot": "0a25256b",
+   "fingerprint": "e71f9ca0"
+  },
+  "p_card-02-men-2_055:1": {
+   "shot": "1f3d59b0",
+   "fingerprint": "faaf1a28"
+  },
+  "p_card-02-men-2_056:0": {
+   "shot": "e0c0afb1",
+   "fingerprint": "1f4dd517"
+  },
+  "p_card-02-men-2_056:1": {
+   "shot": "3912ba32",
+   "fingerprint": "1f857e7b"
+  },
+  "p_card-02-men-2_057:0": {
+   "shot": "1a784920",
+   "fingerprint": "46f745f6"
+  },
+  "p_card-02-men-2_057:1": {
+   "shot": "4e3ea8dc",
+   "fingerprint": "4bb294e4"
+  },
+  "p_card-02-men-2_058:0": {
+   "shot": "399aac14",
+   "fingerprint": "6cc5f96d"
+  },
+  "p_card-02-men-2_058:1": {
+   "shot": "940f658d",
+   "fingerprint": "a27457e3"
+  },
+  "p_card-02-men-2_060:0": {
+   "shot": "dcfe68c3",
+   "fingerprint": "cb4b8737"
+  },
+  "p_card-02-men-2_060:1": {
+   "shot": "a9a26fa5",
+   "fingerprint": "d2d2b3dc"
+  },
+  "p_card-02-men-2_100:0": {
+   "shot": "70f39e20",
+   "fingerprint": "fd781b91"
+  },
+  "p_card-02-men-2_100:1": {
+   "shot": "780ee814",
+   "fingerprint": "ffbc295c"
+  },
+  "p_card-02-men-2_101:0": {
+   "shot": "57275760",
+   "fingerprint": "ae80e50a"
+  },
+  "p_card-02-men-2_101:1": {
+   "shot": "fba324f1",
+   "fingerprint": "f6dd904b"
+  },
+  "p_card-02-men-2_111:0": {
+   "shot": "15c7cdb9",
+   "fingerprint": "98b7a8db"
+  },
+  "p_card-02-men-2_111:1": {
+   "shot": "65c52f97",
+   "fingerprint": "26269f4c"
+  },
+  "p_card-02-men-3_002:0": {
+   "shot": "15537d5f",
+   "fingerprint": "dde7a107"
+  },
+  "p_card-02-men-3_002:1": {
+   "shot": "1deb1b94",
+   "fingerprint": "66e7a3f5"
+  },
+  "p_card-02-men-3_004:0": {
+   "shot": "3c891420",
+   "fingerprint": "9b28f653"
+  },
+  "p_card-02-men-3_004:1": {
+   "shot": "cbb87796",
+   "fingerprint": "0074512a"
+  },
+  "p_card-02-men-3_040:0": {
+   "shot": "f77c4c9d",
+   "fingerprint": "914642bb"
+  },
+  "p_card-02-men-3_040:1": {
+   "shot": "8c9bf28c",
+   "fingerprint": "723b160a"
+  },
+  "p_card-02-men-3_041:0": {
+   "shot": "9495346c",
+   "fingerprint": "a455f057"
+  },
+  "p_card-02-men-3_041:1": {
+   "shot": "57304884",
+   "fingerprint": "52b36f06"
+  },
+  "p_card-02-men-3_042:0": {
+   "shot": "d60d574a",
+   "fingerprint": "7c3df3bd"
+  },
+  "p_card-02-men-3_042:1": {
+   "shot": "5dc603ed",
+   "fingerprint": "c9c897ea"
+  },
+  "p_card-02-men-3_043:0": {
+   "shot": "22599936",
+   "fingerprint": "3d4de749"
+  },
+  "p_card-02-men-3_043:1": {
+   "shot": "62eae3d0",
+   "fingerprint": "b63551fd"
+  },
+  "p_card-02-men-3_044:0": {
+   "shot": "86744db5",
+   "fingerprint": "0619713e"
+  },
+  "p_card-02-men-3_044:1": {
+   "shot": "c39cafa1",
+   "fingerprint": "41b2f4b2"
+  },
+  "p_card-03-act-1_038:0": {
+   "shot": "ee9f182d",
+   "fingerprint": "03e2ff3d"
+  },
+  "p_card-03-act-1_038:1": {
+   "shot": "8cb75f97",
+   "fingerprint": "9cb672dd"
+  },
+  "p_card-03-act-1_040:0": {
+   "shot": "ace8a876",
+   "fingerprint": "289cb9b8"
+  },
+  "p_card-03-act-1_040:1": {
+   "shot": "1376f250",
+   "fingerprint": "e25f05d1"
+  },
+  "p_card-03-act-1_041:0": {
+   "shot": "278fb6e4",
+   "fingerprint": "28dbfbc7"
+  },
+  "p_card-03-act-1_041:1": {
+   "shot": "c91d5c07",
+   "fingerprint": "1acc7511"
+  },
+  "p_card-03-act-1_042:0": {
+   "shot": "53e11bba",
+   "fingerprint": "644ee019"
+  },
+  "p_card-03-act-1_042:1": {
+   "shot": "0370644e",
+   "fingerprint": "480be62b"
+  },
+  "p_card-03-act-1_043:0": {
+   "shot": "e6a33d14",
+   "fingerprint": "d279f115"
+  },
+  "p_card-03-act-1_043:1": {
+   "shot": "2117528b",
+   "fingerprint": "ce88892b"
+  },
+  "p_card-03-act-1_044:0": {
+   "shot": "cbe2c0e5",
+   "fingerprint": "316e10c7"
+  },
+  "p_card-03-act-1_044:1": {
+   "shot": "18edfa80",
+   "fingerprint": "3e672505"
+  },
+  "p_card-03-act-1_046:0": {
+   "shot": "777f5f88",
+   "fingerprint": "d9a0d489"
+  },
+  "p_card-03-act-1_046:1": {
+   "shot": "1cf88c4c",
+   "fingerprint": "c6ca21fb"
+  },
+  "p_card-03-act-1_072:0": {
+   "shot": "c1ee608b",
+   "fingerprint": "f79528a8"
+  },
+  "p_card-03-act-1_072:1": {
+   "shot": "a15b3292",
+   "fingerprint": "aa4061a2"
+  },
+  "p_card-03-act-1_073:0": {
+   "shot": "14672f6d",
+   "fingerprint": "b623e868"
+  },
+  "p_card-03-act-1_073:1": {
+   "shot": "0faa1fe4",
+   "fingerprint": "02c0ab81"
+  },
+  "p_card-03-act-2_063:0": {
+   "shot": "8d81d259",
+   "fingerprint": "3a08b13c"
+  },
+  "p_card-03-act-2_063:1": {
+   "shot": "dcc6b20e",
+   "fingerprint": "932a7458"
+  },
+  "p_card-03-act-2_065:0": {
+   "shot": "53e6c06f",
+   "fingerprint": "b26c9075"
+  },
+  "p_card-03-act-2_065:1": {
+   "shot": "47302e54",
+   "fingerprint": "90b447b5"
+  },
+  "p_card-03-act-2_067:0": {
+   "shot": "09b3ee5f",
+   "fingerprint": "b3af6c11"
+  },
+  "p_card-03-act-2_067:1": {
+   "shot": "e447ce35",
+   "fingerprint": "8ffcf893"
+  },
+  "p_card-03-act-2_068:0": {
+   "shot": "b0cc0421",
+   "fingerprint": "426d1e3c"
+  },
+  "p_card-03-act-2_068:1": {
+   "shot": "aeead7bf",
+   "fingerprint": "9c77d7d6"
+  },
+  "p_card-03-act-2_069:0": {
+   "shot": "27debcbb",
+   "fingerprint": "c1f198d5"
+  },
+  "p_card-03-act-2_069:1": {
+   "shot": "24f6867f",
+   "fingerprint": "fb6025cc"
+  },
+  "p_card-03-act-2_070:0": {
+   "shot": "4bde611c",
+   "fingerprint": "860a42eb"
+  },
+  "p_card-03-act-2_070:1": {
+   "shot": "e551aa0f",
+   "fingerprint": "778fec6f"
+  },
+  "p_card-03-act-2_071:0": {
+   "shot": "b6e1f9d4",
+   "fingerprint": "ab01aa10"
+  },
+  "p_card-03-act-2_071:1": {
+   "shot": "8dd50a50",
+   "fingerprint": "a1786191"
+  },
+  "p_card-03-act-2_072:0": {
+   "shot": "ccab9552",
+   "fingerprint": "23793550"
+  },
+  "p_card-03-act-2_072:1": {
+   "shot": "334f7ca1",
+   "fingerprint": "3dc39096"
+  },
+  "p_card-03-act-2_073:0": {
+   "shot": "ae35ff60",
+   "fingerprint": "fe85e1d3"
+  },
+  "p_card-03-act-2_073:1": {
+   "shot": "7eb61697",
+   "fingerprint": "77f02f4a"
+  },
+  "p_card-03-act-2_081:0": {
+   "shot": "86c0d571",
+   "fingerprint": "6b48384d"
+  },
+  "p_card-03-act-2_081:1": {
+   "shot": "3ebd5340",
+   "fingerprint": "abf6294e"
+  },
+  "p_card-03-act-2_082:0": {
+   "shot": "a93636ee",
+   "fingerprint": "820dd16a"
+  },
+  "p_card-03-act-2_082:1": {
+   "shot": "7e966b67",
+   "fingerprint": "e4732f2a"
+  },
+  "p_card-03-act-2_102:0": {
+   "shot": "919f47ce",
+   "fingerprint": "8542e50e"
+  },
+  "p_card-03-act-2_102:1": {
+   "shot": "55286d79",
+   "fingerprint": "50e6e3bf"
+  },
+  "p_card-03-act-2_106:0": {
+   "shot": "9a1f6539",
+   "fingerprint": "b82e8a4b"
+  },
+  "p_card-03-act-2_106:1": {
+   "shot": "d3fdf988",
+   "fingerprint": "8ed17f85"
+  },
+  "p_card-03-act-2_118:0": {
+   "shot": "1c50ff06",
+   "fingerprint": "205a06b0"
+  },
+  "p_card-03-act-2_118:1": {
+   "shot": "384563c4",
+   "fingerprint": "f62dc1a3"
+  },
+  "p_card-03-act-2_120:0": {
+   "shot": "526ed0de",
+   "fingerprint": "51a9d272"
+  },
+  "p_card-03-act-2_120:1": {
+   "shot": "2e23d5f9",
+   "fingerprint": "c62972a6"
+  },
+  "p_card-03-act-3_053:0": {
+   "shot": "a71ad924",
+   "fingerprint": "84f6b271"
+  },
+  "p_card-03-act-3_053:1": {
+   "shot": "40c27c0f",
+   "fingerprint": "89b2871b"
+  },
+  "p_card-03-act-3_054:0": {
+   "shot": "a5416c78",
+   "fingerprint": "1a78fbbf"
+  },
+  "p_card-03-act-3_054:1": {
+   "shot": "47fcd8a3",
+   "fingerprint": "297c13d9"
+  },
+  "p_card-03-act-3_055:0": {
+   "shot": "a56fc8bf",
+   "fingerprint": "80ee924e"
+  },
+  "p_card-03-act-3_055:1": {
+   "shot": "62712ccd",
+   "fingerprint": "fb6ec658"
+  },
+  "p_card-03-act-3_056:0": {
+   "shot": "3fff3d0c",
+   "fingerprint": "41786ed0"
+  },
+  "p_card-03-act-3_056:1": {
+   "shot": "a0934445",
+   "fingerprint": "0addb724"
+  },
+  "p_card-03-act-3_057:0": {
+   "shot": "50201114",
+   "fingerprint": "984b207d"
+  },
+  "p_card-03-act-3_057:1": {
+   "shot": "652a4cda",
+   "fingerprint": "fd196797"
+  },
+  "p_card-03-act-3_065:0": {
+   "shot": "3d74bab9",
+   "fingerprint": "ad43d6fd"
+  },
+  "p_card-03-act-3_065:1": {
+   "shot": "311fe0a0",
+   "fingerprint": "8f59d8e2"
+  },
+  "p_card-03-act-3_188:0": {
+   "shot": "9e7403ce",
+   "fingerprint": "da46e5ac"
+  },
+  "p_card-03-act-3_188:1": {
+   "shot": "be1a2f26",
+   "fingerprint": "fe4a760c"
+  },
+  "p_card-03-act-3_189:0": {
+   "shot": "eb5120e6",
+   "fingerprint": "eab277a4"
+  },
+  "p_card-03-act-3_189:1": {
+   "shot": "6553dc6c",
+   "fingerprint": "b39a6071"
+  },
+  "p_card-03-men-1_039:0": {
+   "shot": "9383dffc",
+   "fingerprint": "51e8bd08"
+  },
+  "p_card-03-men-1_039:1": {
+   "shot": "e88255b6",
+   "fingerprint": "662ddf35"
+  },
+  "p_card-03-men-1_048:0": {
+   "shot": "0ec6fb76",
+   "fingerprint": "dd5a6be2"
+  },
+  "p_card-03-men-1_048:1": {
+   "shot": "5e1c3b1a",
+   "fingerprint": "88564dbf"
+  },
+  "p_card-03-men-1_049:0": {
+   "shot": "2e91b05d",
+   "fingerprint": "eaee7f5a"
+  },
+  "p_card-03-men-1_049:1": {
+   "shot": "1fe68a40",
+   "fingerprint": "9f70c164"
+  },
+  "p_card-03-men-1_050:0": {
+   "shot": "af1fc171",
+   "fingerprint": "52ec6a3d"
+  },
+  "p_card-03-men-1_050:1": {
+   "shot": "f8975309",
+   "fingerprint": "dfc05675"
+  },
+  "p_card-03-men-1_051:0": {
+   "shot": "9211a203",
+   "fingerprint": "fcf1f535"
+  },
+  "p_card-03-men-1_051:1": {
+   "shot": "813277ac",
+   "fingerprint": "57485d20"
+  },
+  "p_card-03-men-2_064:0": {
+   "shot": "713832a8",
+   "fingerprint": "f0002dc4"
+  },
+  "p_card-03-men-2_064:1": {
+   "shot": "2a23428f",
+   "fingerprint": "b6947b8c"
+  },
+  "p_card-03-men-2_066:0": {
+   "shot": "2387ba14",
+   "fingerprint": "c03fe316"
+  },
+  "p_card-03-men-2_066:1": {
+   "shot": "dcb9b85c",
+   "fingerprint": "dc42dcc9"
+  },
+  "p_card-03-men-2_074:0": {
+   "shot": "13e7b837",
+   "fingerprint": "4f5f682c"
+  },
+  "p_card-03-men-2_074:1": {
+   "shot": "cc4f872c",
+   "fingerprint": "cf8c0390"
+  },
+  "p_card-03-men-2_075:0": {
+   "shot": "e4d79142",
+   "fingerprint": "e510a2de"
+  },
+  "p_card-03-men-2_075:1": {
+   "shot": "0b21a6b1",
+   "fingerprint": "146bacb8"
+  },
+  "p_card-03-men-2_076:0": {
+   "shot": "826a1a1f",
+   "fingerprint": "9881e09f"
+  },
+  "p_card-03-men-2_076:1": {
+   "shot": "27befbf4",
+   "fingerprint": "48a8af31"
+  },
+  "p_card-03-men-2_077:0": {
+   "shot": "477ca302",
+   "fingerprint": "85965969"
+  },
+  "p_card-03-men-2_077:1": {
+   "shot": "628afeed",
+   "fingerprint": "eb19b37a"
+  },
+  "p_card-03-men-2_078:0": {
+   "shot": "2825d5a6",
+   "fingerprint": "5e218f40"
+  },
+  "p_card-03-men-2_078:1": {
+   "shot": "bfa0935c",
+   "fingerprint": "7480d9f3"
+  },
+  "p_card-03-men-2_079:0": {
+   "shot": "b9a46efa",
+   "fingerprint": "886e383b"
+  },
+  "p_card-03-men-2_079:1": {
+   "shot": "e5bbb749",
+   "fingerprint": "b5c9d8b0"
+  },
+  "p_card-03-men-2_080:0": {
+   "shot": "6ab34f4a",
+   "fingerprint": "6e34d6fd"
+  },
+  "p_card-03-men-2_080:1": {
+   "shot": "d6137d53",
+   "fingerprint": "be40e7fe"
+  },
+  "p_card-03-men-2_103:0": {
+   "shot": "9d8794cb",
+   "fingerprint": "e7a8b53b"
+  },
+  "p_card-03-men-2_103:1": {
+   "shot": "4a7cbee3",
+   "fingerprint": "3df261f9"
+  },
+  "p_card-03-men-2_112:0": {
+   "shot": "f5ff4bee",
+   "fingerprint": "df245021"
+  },
+  "p_card-03-men-2_112:1": {
+   "shot": "99d4ef3a",
+   "fingerprint": "d4dea4c7"
+  },
+  "p_card-03-men-3_058:0": {
+   "shot": "986feccb",
+   "fingerprint": "ba660d2f"
+  },
+  "p_card-03-men-3_058:1": {
+   "shot": "0dc601e2",
+   "fingerprint": "ec805936"
+  },
+  "p_card-03-men-3_060:0": {
+   "shot": "0b3e2eb9",
+   "fingerprint": "a30827e5"
+  },
+  "p_card-03-men-3_060:1": {
+   "shot": "e89512b1",
+   "fingerprint": "e3a3d307"
+  },
+  "p_card-03-men-3_061:0": {
+   "shot": "ab4f9ea7",
+   "fingerprint": "32a28d5b"
+  },
+  "p_card-03-men-3_061:1": {
+   "shot": "e7da1e15",
+   "fingerprint": "96bbe521"
+  },
+  "p_card-03-men-3_062:0": {
+   "shot": "aa8c0015",
+   "fingerprint": "5bff548f"
+  },
+  "p_card-03-men-3_062:1": {
+   "shot": "4685111e",
+   "fingerprint": "12916e9d"
+  },
+  "p_card-03-men-3_063:0": {
+   "shot": "69bef565",
+   "fingerprint": "b69bea04"
+  },
+  "p_card-03-men-3_063:1": {
+   "shot": "c48ccc51",
+   "fingerprint": "f3ff003f"
+  }
+ }
+}

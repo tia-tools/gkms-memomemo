@@ -1,11 +1,11 @@
 /**
- * `/img/*`: the skill card sprite sheets and their index, read from the R2 bucket `tia-assets` that
- * gakumas-supportcards fills (docs/adr/0001; decision D42 of docs/plans/EXECPLAN_MEMORY_MEMO.md).
- * This app only reads it. Pure request → response over a bucket passed in, so it runs under
- * `bun test` with a fake bucket. The bucket type is the slice of Cloudflare's R2Bucket this handler
- * uses, which keeps the Workers type package out of the project. Adopted from
- * gkms-hif-final-stats' infra/worker/img.ts, with the sheets and the index in place of its card
- * thumbnails and item icons.
+ * `/img/*`: this app's game-style skill card sprite sheets, read from the R2 bucket `tia-assets`
+ * under this app's own prefix, where the icon pipeline in scripts/icons uploads them
+ * (docs/adr/0002; docs/plans/EXECPLAN_GAME_STYLE_ICONS.md, I3 and I11). Their index is not served:
+ * it is committed and bundled into the page. Pure request → response over a bucket passed in, so
+ * it runs under `bun test` with a fake bucket. The bucket type is the slice of Cloudflare's
+ * R2Bucket this handler uses, which keeps the Workers type package out of the project. Adopted
+ * from gkms-hif-final-stats' infra/worker/img.ts.
  */
 
 export interface StoredImage {
@@ -20,28 +20,23 @@ export interface ImageBucket {
   get(key: string): Promise<StoredImageBody | null>;
 }
 
-/** The sheets' prefix, named for their cell width (decision D35). */
-export const SHEETS = "sheet112";
+/** The sheets' prefix in the bucket: this app's own, then the cell width. */
+export const SHEETS = "gkms-memomemo/sheet112";
 
 /**
- * Only two kinds of object are ever looked up. A sheet, `sheet112/<plan>-<idol id>-<8 hex>.webp`,
- * whose name ends in a hash of its bytes, so it never changes meaning; and the index of the
- * current sheets, `sheet112/index.v1.json`, which changes whenever a sheet is rebuilt. The single
- * icons, the lossless masters under `master/` and every other object in the bucket are never
- * reachable from here. The pattern spells the prefix out, since a RegExp built from a string is a
- * lint error (security/detect-non-literal-regexp); img.test.ts keeps the two in step.
+ * Only sheets are ever looked up: `gkms-memomemo/sheet112/<plan>-<idol id>-<8 hex>.webp`, whose
+ * name ends in a hash of its bytes, so it never changes meaning. gakumas-supportcards' sheets and
+ * index, the single icons, the lossless masters under `master/` and every other object in the
+ * bucket are never reachable from here. The pattern spells the prefix out, since a RegExp built
+ * from a string is a lint error (security/detect-non-literal-regexp); img.test.ts keeps the two in step.
  */
-const SHEET_PATH = /^\/img\/(sheet112\/(?:sense|logic|anomaly)-[a-z0-9]{4}-[0-9a-f]{8}\.webp)$/;
-export const INDEX_KEY = `${SHEETS}/index.v1.json`;
+const SHEET_PATH = /^\/img\/(gkms-memomemo\/sheet112\/(?:sense|logic|anomaly)-[a-z0-9]{4}-[0-9a-f]{8}\.webp)$/;
 
 /** A sheet's name never changes meaning, so a served sheet is cacheable forever. */
 export const IMMUTABLE = "public, max-age=31536000, immutable";
-/** The index names the current sheets; an hour, like the data file, keeps a new card's wait short. */
-export const INDEX_CACHE = "public, max-age=3600";
 
-/** The bucket key for a request path, or null when the path is neither a sheet nor the index. */
+/** The bucket key for a request path, or null when the path is not a sheet's. */
 export function imageKey(pathname: string): string | null {
-  if (pathname === `/img/${INDEX_KEY}`) return INDEX_KEY;
   return SHEET_PATH.exec(pathname)?.[1] ?? null;
 }
 
@@ -58,18 +53,13 @@ export function notModified(ifNoneMatch: string | null, etag: string): boolean {
   return ifNoneMatch.split(",").some((tag) => opaque(tag) === opaque(etag));
 }
 
-/** A miss is never cached, so a sheet the sibling uploads later shows at once. */
+/** A miss is never cached, so a sheet uploaded later shows at once. */
 function notFound(): Response {
   return new Response("Not found", { status: 404, headers: { "Cache-Control": "no-store" } });
 }
 
-function headersFor(key: string, image: StoredImage): Headers {
-  const isIndex = key === INDEX_KEY;
-  return new Headers({
-    "Content-Type": isIndex ? "application/json; charset=utf-8" : "image/webp",
-    "Cache-Control": isIndex ? INDEX_CACHE : IMMUTABLE,
-    ETag: image.httpEtag,
-  });
+function headersFor(image: StoredImage): Headers {
+  return new Headers({ "Content-Type": "image/webp", "Cache-Control": IMMUTABLE, ETag: image.httpEtag });
 }
 
 export async function serveImage(request: Request, bucket: ImageBucket): Promise<Response> {
@@ -83,7 +73,7 @@ export async function serveImage(request: Request, bucket: ImageBucket): Promise
   if (request.method === "HEAD") {
     const meta = await bucket.head(key);
     if (meta === null) return notFound();
-    const headers = headersFor(key, meta);
+    const headers = headersFor(meta);
     if (notModified(ifNoneMatch, meta.httpEtag)) return new Response(null, { status: 304, headers });
     headers.set("Content-Length", String(meta.size));
     return new Response(null, { status: 200, headers });
@@ -91,7 +81,7 @@ export async function serveImage(request: Request, bucket: ImageBucket): Promise
 
   const object = await bucket.get(key);
   if (object === null) return notFound();
-  const headers = headersFor(key, object);
+  const headers = headersFor(object);
   if (notModified(ifNoneMatch, object.httpEtag)) return new Response(null, { status: 304, headers });
   return new Response(object.body, { status: 200, headers });
 }

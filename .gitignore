@@ -12,3 +12,11 @@ dist
 
 # The cf CLI's per-directory cache (the account it last used); local to this machine
 .cloudflare/
+
+# The user's game screenshots, the icon pipeline's input (docs/plans/EXECPLAN_GAME_STYLE_ICONS.md, I12)
+/temp/
+
+# The icon pipeline's Python environment and output (scripts/icons/)
+scripts/icons/.venv/
+scripts/icons/out/
+__pycache__/

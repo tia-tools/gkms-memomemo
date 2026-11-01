@@ -27,12 +27,15 @@ function steps(workflow: Record<string, unknown>, job: string): Step[] {
   return list.filter((s): s is Step => typeof s === "object" && s !== null);
 }
 
-/** The only actions either workflow may use, in this order, before any `run` step. */
+/** The only actions the Bun jobs may use, in this order, before any `run` step. */
 const ACTIONS = ["actions/checkout", "oven-sh/setup-bun"];
+/** The only actions the icon pipeline's job may use, in this order. */
+const UV_ACTIONS = ["actions/checkout", "astral-sh/setup-uv"];
 
 const GATES = ["bun install --frozen-lockfile", "bun test", "bun run type-check", "bun run lint", "bun run build"];
 const check = await load("check.yml");
 const deploy = await load("deploy.yml");
+const icons = await load("icons.yml");
 
 describe("the workflows", () => {
   test("neither may write to the repository, and no job widens that", () => {
@@ -42,17 +45,18 @@ describe("the workflows", () => {
     }
   });
 
-  test("each job is a single job using only checkout and setup-bun, first, then run steps", () => {
-    for (const [w, job] of [[check, "check"], [deploy, "deploy"]] as const) {
-      expect(Object.keys(jobs(w))).toEqual([job]);
+  test("each job uses only its actions, first, then run steps; check has the icon pipeline's job beside its own", () => {
+    expect(Object.keys(jobs(deploy))).toEqual(["deploy"]);
+    expect(Object.keys(jobs(check))).toEqual(["check", "icons"]);
+    for (const [w, job, actions] of [[check, "check", ACTIONS], [deploy, "deploy", ACTIONS], [check, "icons", UV_ACTIONS]] as const) {
       const list = steps(w, job);
-      expect(list.slice(0, ACTIONS.length).map((s) => s.uses?.split("@")[0])).toEqual(ACTIONS);
-      expect(list.slice(ACTIONS.length).filter((s) => s.uses !== undefined)).toEqual([]);
+      expect(list.slice(0, actions.length).map((s) => s.uses?.split("@")[0])).toEqual([...actions]);
+      expect(list.slice(actions.length).filter((s) => s.uses !== undefined)).toEqual([]);
     }
   });
 
   test("every action is pinned to a full commit hash, and CI runs this Bun", () => {
-    for (const [w, job] of [[check, "check"], [deploy, "deploy"]] as const) {
+    for (const [w, job] of [[check, "check"], [deploy, "deploy"], [check, "icons"]] as const) {
       for (const s of steps(w, job)) {
         if (s.uses !== undefined) expect(s.uses).toMatch(/^[\w.-]+\/[\w.-]+@[0-9a-f]{40}$/);
         if (s.uses?.startsWith("oven-sh/setup-bun@") === true) expect(s.with?.["bun-version"]).toBe(Bun.version);
@@ -60,9 +64,11 @@ describe("the workflows", () => {
     }
   });
 
-  test("check runs every gate on each pull request into develop", () => {
+  test("check runs every gate on each pull request into develop, and the icon pipeline's tests from its lockfile", () => {
     expect(check["on"]).toEqual({ pull_request: { branches: ["develop"] } });
     expect(steps(check, "check").flatMap((s) => (s.run === undefined ? [] : [s.run]))).toEqual(GATES);
+    const icons = steps(check, "icons").filter((s) => s.run !== undefined);
+    expect(icons.map((s) => [s.run, s["working-directory"]])).toEqual([["uv run --frozen pytest", "scripts/icons"]]);
   });
 
   test("deploy runs from main, every gate first, then wrangler with the two secrets", () => {
@@ -78,5 +84,44 @@ describe("the workflows", () => {
     expect(last?.["working-directory"]).toBe("infra/worker");
     expect(last?.env).toEqual({ CLOUDFLARE_API_TOKEN: "${{ secrets.CLOUDFLARE_API_TOKEN }}", CLOUDFLARE_ACCOUNT_ID: "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" });
     expect(deploy["concurrency"]).toEqual({ group: "deploy-production", "cancel-in-progress": false });
+  });
+});
+
+describe("the icons workflow", () => {
+
+  test("runs daily after gakumas-supportcards' data update, and by hand", () => {
+    expect(icons["on"]).toEqual({ schedule: [{ cron: "45 11 * * *" }], workflow_dispatch: null });
+  });
+
+  test("reads by default; only the check writes, and only issues; only the post asks for an OIDC token; no secret", () => {
+    expect(icons["permissions"]).toEqual({ contents: "read" });
+    const all = jobs(icons);
+    expect(Object.keys(all)).toEqual(["check", "notify"]);
+    expect(all["check"]?.["permissions"]).toEqual({ contents: "read", issues: "write" });
+    expect(all["notify"]?.["permissions"]).toEqual({ "id-token": "write" });
+    expect(JSON.stringify(icons)).not.toContain("secrets.");
+  });
+
+  test("checks with this Bun, then keeps the issue with the run's own token", () => {
+    const list = steps(icons, "check");
+    expect(list.slice(0, ACTIONS.length).map((s) => s.uses?.split("@")[0])).toEqual(ACTIONS);
+    expect(list.flatMap((s) => (s.run === undefined ? [] : [s.run]))).toEqual([
+      "bun install --frozen-lockfile",
+      'bun scripts/icons/check.ts --out "$RUNNER_TEMP/icons"',
+      'bun scripts/icons/issue.ts "$RUNNER_TEMP/icons"',
+    ]);
+    expect(list.at(-1)?.env).toEqual({ GH_TOKEN: "${{ github.token }}" });
+  });
+
+  test("posts through nudge only when the list changed, its action pinned to a commit", () => {
+    expect(jobs(icons)["notify"]?.["if"]).toBe("needs.check.outputs.changed == 'true'");
+    const [post, ...rest] = steps(icons, "notify");
+    expect(rest).toEqual([]);
+    expect(post?.uses).toMatch(/^Taka499\/nudge\/actions\/notify@[0-9a-f]{40}$/);
+    expect(post?.with?.["endpoint"]).toBe("https://nudge.tia.run");
+    for (const s of steps(icons, "check")) {
+      if (s.uses !== undefined) expect(s.uses).toMatch(/^[\w.-]+\/[\w.-]+@[0-9a-f]{40}$/);
+      if (s.uses?.startsWith("oven-sh/setup-bun@") === true) expect(s.with?.["bun-version"]).toBe(Bun.version);
+    }
   });
 });
