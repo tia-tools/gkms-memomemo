@@ -28,8 +28,10 @@ It needs two repository secrets, set once by a person in the repository's settin
 
 | Scope | Permission | Used by |
 |---|---|---|
-| Workers, only the Worker `gkms-memomemo` | **Editor** | the script and the static assets |
-| Zone, only `tia.run` | **Workers Routes: Write** | the custom domain in `wrangler.toml` |
+| Workers, scope **Individual Workers**: only `gkms-memomemo` | role **Editor** | the script and the static assets |
+| Zone, only `tia.run` | **Workers Routes: Write** | the custom domain in `wrangler.toml`; Cloudflare has no per-Worker role for custom domains yet |
+
+The Workers row is Cloudflare's newer Workers roles, not the legacy permission **Workers Scripts: Edit**, which the token page marks Legacy. That one's replacement is Editor at the whole Workers product's scope, every Worker in the account.
 
 Editor can deploy and update an existing Worker but cannot create one: creating a Worker needs **Admin** at the Workers product level, and a token can name a Worker only once it exists. So the first deployment is either:
 - by hand (below), by an account member with that access;
@@ -37,7 +39,7 @@ Editor can deploy and update an existing Worker but cannot create one: creating 
 
 Changing `name` in `wrangler.toml` does not rename the deployed Worker: the next deploy creates a new one, which is a first deployment again (gkms-hif-final-stats' `infra/worker/README.md` § Deploy gives the order it took there).
 
-Binding the R2 bucket needs no R2 permission: deploying a Worker never needs permissions on the resources it binds. Source: Cloudflare's [Workers roles and permissions](https://developers.cloudflare.com/workers/authorization/workers/), as read for gkms-hif-final-stats on 2026-10-29. If a deploy still fails with a permissions error, the message names the missing permission. Add that one, and record which.
+Binding the R2 bucket and the D1 database needs no R2 or D1 permission: deploying a Worker never needs permissions on the resources it binds. Source: Cloudflare's [Workers roles and permissions](https://developers.cloudflare.com/workers/authorization/workers/) (its roles, Legacy Workers permissions, Bindings and Routes sections), last read on 2026-11-01, when the page was dated 2026-09-15. If a deploy still fails with a permissions error, the message names the missing permission. Add that one, and record which.
 
 By hand, for the first deployment or an emergency, with `bunx wrangler login` on the account that holds `tia.run`. Run from the repository root:
 
