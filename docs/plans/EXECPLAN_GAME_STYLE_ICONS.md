@@ -174,6 +174,7 @@ The decisions are numbered I1, I2, … so they cannot be confused with the D num
 - Decision: I23 — the phone row's card icon stays 40 px for now; the user judges it on a real phone once the site is deployed, and a change is one CSS variable (`--icon`), its own issue if wanted.
   Rationale: the user's ruling when shown that the values read but small at 40 px in Chrome at 390 px.
   Date/Author: 2026-11-01, user.
+  Settled 2026-11-01: the user saw the site on a real iPhone and kept 40 px (job #51, A).
 
 - Decision: I24 — the issue step lists open issues with `--author github-actions[bot]`, the spelling gh's filter matches, and `ours()` takes an issue as its own only by the author in either spelling gh uses (`app/github-actions`, `github-actions[bot]`), the exact title and the marker. Declined from Codex's reviews of #22: that another workflow of this repository writing as github-actions could copy the title and the marker (none writes issues, and one would have to copy the hidden marker on purpose), and that more than 500 open issues by the bot would hide the workflow's own (only this workflow opens issues as the bot, and it keeps one open).
   Rationale: #22, where the reported spelling given to the filter matched nothing; Codex's review, that a list of every open issue capped at 500 could miss the workflow's own and that the reported spelling is not a contract. Neither spelling can be a person's login, which allows no `/` or `[]`. `--app github-actions`, which Codex suggested, matched nothing on 2026-11-01.
@@ -182,6 +183,8 @@ The decisions are numbered I1, I2, … so they cannot be confused with the D num
 ## Outcomes & Retrospective
 
 2026-11-01, Milestones 1 to 5 done. The page draws every card it offers as the game draws it, base and ＋ apart, in the art of the idol 「カードの絵柄」 chooses, with the H.I.F. ability as its card's base icon. The 349 cells come from the user's screenshots through the pipeline in `scripts/icons/`, as 39 sheets under `gkms-memomemo/sheet112/` in `tia-assets`. The daily workflow keeps one issue and posts to Discord when cards need a screenshot, seen working on GitHub. What the purpose asked for is there, except what only the live site can show: the checks of `infra/worker/README.md` § Verify wait for its first deployment (the memo plan's Milestone 7), and the icon size waits for the user's look on a real phone (I23).
+
+2026-11-01, after the memo plan's Milestone 7 deployed the site (#43): on `https://gkms-memomemo.tia.run` all 39 sheets the bundled index names answer 200 as immutable WebP, and a master is refused with a 404. The user checked the page on a real iPhone and kept the 40 px icon (I23). Nothing this plan's purpose asked for is left open.
 
 Lessons. A shape fitted on the screenshots was wrong exactly where badges hid it; the larger, badge-free frames of `temp/image.png` gave the true windows, so geometry is best measured where nothing covers it (I19). Near a fitted edge, a rule taken from the shape leaks one idol's art into the others; measuring each pixel as a mix of the outline and the art does not (I14). The tests of the issue step passed while the real `gh` call matched nothing: a call into an external tool is only proven by one run against the real service, which is what the user's request to test the path found (#22). A closing keyword in a pull request's description closes an issue even inside a negation, which cost two extra test issues. And twice a time was written into Progress before the clock was read, and corrected afterwards.
 
@@ -342,3 +345,5 @@ Revision note, 2026-11-01: the user's ruling on the phone icon size recorded as 
 Revision note, 2026-11-01: the runs after the merge recorded: two on `develop` with nothing to capture, the issue and Discord path from a throwaway branch, the duplicate it opened and its cause (an observation), and the fix (#22).
 
 Revision note, 2026-11-01: the issue and Discord path's live runs recorded and Milestone 5 checked; an observation on closing keywords in pull request descriptions; the first Outcomes & Retrospective entry, with what waits for the live site.
+
+Revision note, 2026-11-01: the live site's sheet checks and the user's ruling to keep 40 px (job #51) recorded in Outcomes and I23.
