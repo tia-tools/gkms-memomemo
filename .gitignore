@@ -1,0 +1,25 @@
+# dependencies (bun install)
+node_modules
+
+# build output
+dist
+
+# OS
+.DS_Store
+
+# MulmoTerminal's per-directory settings (header colour); local to this machine
+.mulmoterminal.json
+
+# The cf CLI's per-directory cache (the account it last used); local to this machine
+.cloudflare/
+
+# The user's game screenshots, the icon pipeline's input (docs/plans/EXECPLAN_GAME_STYLE_ICONS.md, I12)
+/temp/
+
+# The icon pipeline's Python environment and output (scripts/icons/)
+scripts/icons/.venv/
+scripts/icons/out/
+__pycache__/
+
+# wrangler's working directory (local D1 state and build scratch, from `wrangler dev` and `--dry-run` in infra/worker); local to this machine
+.wrangler/
