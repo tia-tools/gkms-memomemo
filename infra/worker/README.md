@@ -2,13 +2,15 @@
 
 One Cloudflare Worker serves the whole page: the built page as static assets, this app's game-style skill card sprite sheets from the R2 bucket `tia-assets`, read only, and gakumas-supportcards' skill card data at this origin (`docs/adr/0002`; `docs/plans/EXECPLAN_MEMORY_MEMO.md`, decisions D22, D24 and D42; `docs/plans/EXECPLAN_GAME_STYLE_ICONS.md`). The sheets are built and uploaded from a person's machine by the icon pipeline in `scripts/icons/`; the Worker never writes to the bucket. The sheets' index is not served: it is committed as `src/icons/index.v1.json` and bundled into the page. `wrangler.toml` runs the Worker's code only for `/img/*` and `/data/skillcards.json` (`run_worker_first`); every other path is answered by the assets directly. Both come from one list, `WORKER_FIRST` in `worker.ts`: `route` answers exactly its paths and sends the rest to the assets, and `wrangler.test.ts` keeps `run_worker_first` equal to it.
 
-That split matters on the Workers Free plan the `tia.run` account is on. Requests answered by the assets are free and unlimited. Every request that runs the Worker counts toward the account's 100,000 a day, which every `tia.run` Worker shares, and past it those requests fail until 00:00 UTC. That is why the page loads a few sprite sheets rather than one image per icon (D42; the plan's Surprises & Discoveries).
+That split matters on the Workers Free plan the `tia.run` account is on. Requests answered by the assets are free and unlimited. Every request that runs the Worker counts toward the account's 100,000 a day, which every `tia.run` Worker shares, and past it those requests fail until 00:00 UTC. That is why the page loads a few sprite sheets rather than one image per icon (D42; the plan's Surprises & Discoveries). The page's service worker keeps every sheet it has shown, and answers it from its cache from then on, so a returning player's sheets cost no Worker request; the data file it asks for on every visit, through the browser's hour-long HTTP cache, and keeps the last copy for when there is no network (D58).
 
 | Route | Serves |
 |---|---|
 | `https://gkms-memomemo.tia.run/` | the page built by `bun run build` (`dist/`) |
 | `/img/gkms-memomemo/sheet112/<plan>-<idol id>-<8 hex digits>.webp` | a sprite sheet from `tia-assets`, through `img.ts`, as immutable WebP; its name ends in a hash of its bytes, so it never changes meaning. A matching `If-None-Match` (a list, a weak tag or `*`, for GET and HEAD) is a 304 |
 | `/icons/frames112.webp` | the placeholder frames, a static asset from `public/icons/` (no Worker request) |
+| `/sw.js` | the service worker, built from `src/sw/` by `bun run build`, a static asset (no Worker request) |
+| `/manifest.webmanifest`, `/icons/app-192.png`, `/icons/app-512.png`, `/icons/app-maskable-512.png`, `/icons/apple-touch-icon.png` | the web app manifest and the home-screen icons, static assets from `public/` (no Worker request) |
 | any other `/img/` path | a 404 marked `no-store`: gakumas-supportcards' own sheets and index under `sheet112/`, the single icons under `w112/`, the private `master/` prefix and everything else in the bucket are never served |
 | `/data/skillcards.json` | gakumas-supportcards' `https://gakumas-supportcards.tia.run/data/skillcards.v1.json`, passed through with an hour's cache; a failure upstream is a 502 marked `no-store` (`data.ts`) |
 
@@ -63,6 +65,10 @@ Once deployed, and once the sheets the committed index names are uploaded (`scri
     # -> HTTP/2 200, content-type: image/webp, cache-control: public, max-age=31536000, immutable
     curl -sI https://gkms-memomemo.tia.run/icons/frames112.webp | head -3
     # -> HTTP/2 200, content-type: image/webp (a static asset)
+    curl -s https://gkms-memomemo.tia.run/sw.js | grep -c '"precache"'
+    # -> 1: the worker carries the manifest the build wrote into it
+    curl -s https://gkms-memomemo.tia.run/manifest.webmanifest | jq -r '.start_url, .display'
+    # -> /, then standalone
     curl -sI https://gkms-memomemo.tia.run/img/master/img_general_skillcard_men-0_003.webp
     # -> HTTP/2 404, cache-control: no-store   (a master must be refused even where it exists)
 
