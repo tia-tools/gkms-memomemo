@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "preact/hooks";
 import type { SkillCardDataFile } from "../data/contract.ts";
 import { makeCatalog } from "./catalog.ts";
+import { type CountsApi, NO_COUNTS } from "./counts.ts";
 import { MemoPage } from "./MemoPage.tsx";
 import { bundledIcons } from "./sheets.ts";
 import { NOT_SAVING, type Notice, openSaved, type PersistentStorage, SAVE_DELAY_MS, type Saved, type Saving, saving, type Store } from "./storage.ts";
@@ -20,9 +21,20 @@ export const NOTICE_TEXT: Record<Notice, string> = {
  * the page (docs/plans/EXECPLAN_GAME_STYLE_ICONS.md, I3), so only the card file is fetched. What
  * reaches outside the page is passed in, so a test needs no network and no IndexedDB: `load` gets
  * the card file (src/data/load.ts), `openStore` the browser's store (src/app/idb.ts), and `storage`
- * is `navigator.storage`, asked to keep it (src/app/storage.ts).
+ * is `navigator.storage`, asked to keep it (src/app/storage.ts), and `countsApi` the Worker's counts
+ * (src/app/counts.ts).
  */
-export function App({ load, openStore, storage }: { load: () => Promise<SkillCardDataFile>; openStore: () => Promise<Store>; storage?: PersistentStorage }) {
+export function App({
+  load,
+  openStore,
+  storage,
+  countsApi = NO_COUNTS,
+}: {
+  load: () => Promise<SkillCardDataFile>;
+  openStore: () => Promise<Store>;
+  storage?: PersistentStorage;
+  countsApi?: CountsApi;
+}) {
   const [state, setState] = useState<Start>({ status: "loading" });
   const [notice, setNotice] = useState<Notice | null>(null);
   const sheets = useMemo(() => bundledIcons(), []);
@@ -54,7 +66,7 @@ export function App({ load, openStore, storage }: { load: () => Promise<SkillCar
           {NOTICE_TEXT[notice]}
         </p>
       )}
-      {catalog && state.status === "ready" && <MemoPage catalog={catalog} sheets={sheets} initial={state.saved.memo} settings={state.saved.settings} save={state.save} />}
+      {catalog && state.status === "ready" && <MemoPage catalog={catalog} sheets={sheets} initial={state.saved.memo} settings={state.saved.settings} save={state.save} countsApi={countsApi} />}
       {state.status === "failed" && <p class="text-sm text-rose-600">カードデータを読み込めませんでした</p>}
     </main>
   );

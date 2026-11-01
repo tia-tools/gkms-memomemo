@@ -68,6 +68,8 @@ export function RowPopover({ plan, section, row, onClose }: { plan: PlanId; sect
     const result = row ? changeBuild(page.memo, row.id, build) : addRow(page.memo, section, newRowId(), build);
     if (isRefusal(result)) return setRefusal(result);
     page.setMemo(result);
+    // Only a row created counts, once; a change never does (D11).
+    if (!row) page.countRow(section, build);
     onClose();
   };
   const pickCard = (card: SkillCard) => {
@@ -88,9 +90,9 @@ export function RowPopover({ plan, section, row, onClose }: { plan: PlanId; sect
             </Choice>
           ))}
         </div>
-        {step === "card" && <CardStep plan={plan} chosen={draft.card} onPick={pickCard} />}
+        {step === "card" && <CardStep plan={plan} section={section} chosen={draft.card} onPick={pickCard} />}
         {step === "custom" && draft.card && <CustomizeStep card={draft.card} build={draft.build} onBuild={(build) => (setDraft({ ...draft, build }), setBroken(false))} onNext={() => setStep("hif")} />}
-        {step === "hif" && <HifStep plan={plan} chosen={draft.build.hif} onPick={(hif) => finish({ ...draft.build, hif })} />}
+        {step === "hif" && <HifStep plan={plan} section={section} chosen={draft.build.hif} onPick={(hif) => finish({ ...draft.build, hif })} />}
         {refusal && <RefusalNote refusal={refusal} onJump={jump} />}
         {broken && (
           <p role="alert" class="text-xs text-rose-600">

@@ -7,7 +7,9 @@ import { act } from "preact/test-utils";
 import { parseSkillCardData, SkillCardDataError } from "../data/load.ts";
 import { addRowThroughPopover, byText, CATALOG, must, section } from "../test-support/page.tsx";
 import { type MemoryStore, memoryStore } from "../test-support/store.ts";
+import type { CountEvent } from "../../infra/worker/count-contract.ts";
 import { App, NOTICE_TEXT } from "./App.tsx";
+import type { CountsApi } from "./counts.ts";
 import { MEMO_KEY, SETTINGS_KEY, type Store, UNREADABLE_PREFIX } from "./storage.ts";
 
 const DATA = parseSkillCardData(JSON.parse(await Bun.file(new URL("../data/fixtures/skillcards.v1.json", import.meta.url)).text()));
@@ -191,5 +193,18 @@ describe("saving (Milestone 5, D57)", () => {
     });
     logged.mockRestore();
     expect(root.textContent).toContain(NOTICE_TEXT["save-failed"]);
+  });
+});
+
+describe("App's counts", () => {
+  test("loads the counts once and sends a new row's event through the counts it is given (Milestone 6)", async () => {
+    let loads = 0;
+    const sent: CountEvent[] = [];
+    const countsApi: CountsApi = { load: async () => (loads++, null), send: (event) => void sent.push(event) };
+    await act(() => render(<App load={() => Promise.resolve(DATA)} openStore={() => Promise.resolve(memoryStore())} countsApi={countsApi} />, root));
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+    await addRowThroughPopover(root, "好調", "成就+", HIF_CARD);
+    expect(loads).toBe(1);
+    expect(sent.map((e) => [e.section, e.card])).toEqual([["sense.kocho", must(DATA.cards.find((c) => c.name === "成就+"), "成就+").id]]);
   });
 });

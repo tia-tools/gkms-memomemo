@@ -7,6 +7,7 @@
 import { render } from "preact";
 import { act } from "preact/test-utils";
 import { makeCatalog } from "../app/catalog.ts";
+import type { CountsApi } from "../app/counts.ts";
 import { MemoPage } from "../app/MemoPage.tsx";
 import type { IconIndex } from "../app/sheets.ts";
 import { type Memo, PLAN_IDS } from "../memo/types.ts";
@@ -34,8 +35,8 @@ export function must<T>(value: T | null | undefined, what: string): T {
   return value;
 }
 
-export async function showPage(root: HTMLElement, initial?: Memo, sheets: IconIndex = TEST_SHEETS): Promise<void> {
-  await act(() => render(<MemoPage catalog={CATALOG} sheets={sheets} initial={initial} />, root));
+export async function showPage(root: HTMLElement, initial?: Memo, sheets: IconIndex = TEST_SHEETS, countsApi?: CountsApi): Promise<void> {
+  await act(() => render(<MemoPage catalog={CATALOG} sheets={sheets} initial={initial} countsApi={countsApi} />, root));
 }
 
 /** The element inside `within` matching the selector whose text is exactly `text`. */

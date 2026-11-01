@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from "preact/hooks";
 import type { Idol } from "../data/contract.ts";
 import { hasGaps } from "../memo/coverage.ts";
 import { findRow } from "../memo/edit.ts";
-import { emptyMemo, type Memo, PLAN_IDS, planOf, type PlanId, sectionsOf } from "../memo/types.ts";
+import { type Build, emptyMemo, type Memo, PLAN_IDS, planOf, type PlanId, type SectionId, sectionsOf } from "../memo/types.ts";
 import type { Catalog } from "./catalog.ts";
+import { countEvent, type Counts, type CountsApi, NO_COUNTS } from "./counts.ts";
 import { PLAN_LABELS } from "./labels.ts";
 import { type Page, PageContext } from "./page.ts";
 import { QuickTable } from "./QuickTable.tsx";
@@ -49,6 +50,15 @@ function useHighlight(): [string | null, (rowId: string) => void] {
   return [highlighted, setHighlighted];
 }
 
+/** The counts, loaded once when the page starts; null until then, and if they cannot be had. */
+function useCounts(api: CountsApi): Counts | null {
+  const [counts, setCounts] = useState<Counts | null>(null);
+  useEffect(() => {
+    void api.load().then(setCounts);
+  }, [api]);
+  return counts;
+}
+
 /** The saved idol where the data file still has it, else the default (D20's fallback, D34). */
 function startIdol(saved: string | null, idols: readonly Idol[]): string {
   return idols.find((i) => i.id === saved)?.id ?? idols[0]?.id ?? "";
@@ -58,7 +68,8 @@ function startIdol(saved: string | null, idols: readonly Idol[]): string {
  * The memo page (Milestones 4 and 5): the three tabs, each with its 早見表, the 「未所持がある行だけ
  * 表示」 toggle and its sections, and the settings with the 引き継ぎコード. It starts from the memo
  * and the settings saved (`initial`, `settings`) and saves each change through `save`; a link's
- * code is offered at the top of the page.
+ * code is offered at the top of the page. `countsApi` loads the counts that rank the pickers and
+ * sends a new row's event while counting is on (Milestone 6).
  */
 export function MemoPage({
   catalog,
@@ -66,12 +77,14 @@ export function MemoPage({
   initial,
   settings = DEFAULT_SETTINGS,
   save = NOT_SAVING,
+  countsApi = NO_COUNTS,
 }: {
   catalog: Catalog;
   sheets: IconIndex;
   initial?: Memo;
   settings?: SavedSettings;
   save?: Saving;
+  countsApi?: CountsApi;
 }) {
   const defaultIdol = catalog.data.idols[0]?.id ?? "";
   const [memo, setMemo] = useState<Memo>(() => initial ?? emptyMemo());
@@ -83,6 +96,7 @@ export function MemoPage({
   useLinkImport(importing.offer);
   const [gapsOnly, setGapsOnly] = useState(false);
   const [highlighted, highlight] = useHighlight();
+  const counts = useCounts(countsApi);
   const page = useMemo<Page>(() => {
     const jumpTo = (rowId: string) => {
       const place = findRow(memo, rowId);
@@ -91,8 +105,11 @@ export function MemoPage({
       if (!hasGaps(place.row)) setGapsOnly(false);
       highlight(rowId);
     };
-    return { catalog, sheets, idol, defaultIdol, memo, setMemo, jumpTo, highlighted };
-  }, [catalog, sheets, idol, defaultIdol, memo, highlighted, highlight]);
+    const countRow = (section: SectionId, build: Build) => {
+      if (counting) countsApi.send(countEvent(section, build));
+    };
+    return { catalog, sheets, idol, defaultIdol, memo, setMemo, jumpTo, highlighted, counts, countRow };
+  }, [catalog, sheets, idol, defaultIdol, memo, highlighted, highlight, counts, counting, countsApi]);
   return (
     <PageContext.Provider value={page}>
       <ImportPanel importing={importing} from="link" />
