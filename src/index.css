@@ -1,6 +1,18 @@
 @import "tailwindcss";
 
 /*
+ * Every field at 16 px or more: iOS Safari zooms the page in when a field under 16 px takes focus,
+ * and the zoom stays, pushing the field's own buttons (the paste box's 読み込む) off the screen (the
+ * user's check in the iOS simulator, 2026-11-02; docs/plans/EXECPLAN_MEMORY_MEMO.md, D62). Outside
+ * any layer, so it wins over Tailwind's text-* utilities, which are in a layer, on every field.
+ */
+input,
+select,
+textarea {
+  font-size: max(16px, 1em);
+}
+
+/*
  * Sizes of the memo grid (docs/plans/EXECPLAN_MEMORY_MEMO.md, D17 and Artifacts and Notes): phone
  * first, the drag strip, the card and the three fixed groups taking 358 px, which with the page's
  * and the section's 4 px paddings fits a 375 px screen; from 600 px the sizes of the mockup the

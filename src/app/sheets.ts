@@ -11,7 +11,7 @@ import { imageKey, SHEETS } from "../../infra/worker/img.ts";
 import type { SkillCardRarity, SkillCardType } from "../data/contract.ts";
 import { child, fail, integer, isFields, list, object, oneOf, type Read, ReadError, req, string } from "../lib/read.ts";
 import { PLAN_IDS, type PlanId } from "../memo/types.ts";
-import committed from "../icons/index.v1.json";
+import committed from "../icons/index.v1.json" with { type: "json" };
 
 export interface PlanSheets {
   plan: PlanId;
@@ -54,7 +54,7 @@ function sheetOf(plan: PlanId): Read<{ idol: string; file: string }> {
     const f = object(value, path);
     const idol = req(f, "idol", string, path);
     const file = req(f, "file", string, path);
-    if (imageKey(`/img/${file}`) !== file || !file.startsWith(`${SHEETS}/${plan}-${idol}-`)) fail(child(path, "file"), `the sheet of ${plan} and ${idol}`);
+    if (imageKey(`${SHEET_URL_PREFIX}${file}`) !== file || !file.startsWith(`${SHEETS}/${plan}-${idol}-`)) fail(child(path, "file"), `the sheet of ${plan} and ${idol}`);
     return { idol, file };
   };
 }
@@ -89,6 +89,9 @@ export function bundledIcons(json: unknown = committed): IconIndex {
   }
 }
 
+/** Where the page asks for a sheet: the Worker's `/img/*` (infra/worker/img.ts), then the sheet's file. */
+export const SHEET_URL_PREFIX = "/img/";
+
 /** Where an icon is: its sheet's URL and layout, and its cell's place in it. */
 export interface IconCell {
   url: string;
@@ -113,7 +116,7 @@ export function iconCell(index: IconIndex, plan: PlanId, card: CardRef, idol: st
   if (found === undefined || at < 0) return null;
   const sheet = found.sheets.find((s) => s.idol === idol) ?? found.sheets.find((s) => s.idol === defaultIdol);
   if (sheet === undefined) return null;
-  return { url: `/img/${sheet.file}`, columns: index.columns, rows: Math.ceil(found.cells.length / index.columns), index: at };
+  return { url: `${SHEET_URL_PREFIX}${sheet.file}`, columns: index.columns, rows: Math.ceil(found.cells.length / index.columns), index: at };
 }
 
 /** The placeholder frames, a static file of the page: one row, in this order (scripts/icons/frames.py). */

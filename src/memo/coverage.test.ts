@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { hasGaps, rowCoverage } from "./coverage.ts";
-import { emptyRow, type Memory, type Row } from "./types.ts";
+import { hasGaps, memoSize, rowCoverage } from "./coverage.ts";
+import { emptyMemo, emptyRow, type Memo, type Memory, type Row } from "./types.ts";
 
 const DDR: Memory = ["diamond", "diamond", "rainbow"];
 const RRR: Memory = ["rainbow", "rainbow", "rainbow"];
@@ -34,5 +34,23 @@ describe("hasGaps", () => {
     expect(hasGaps(row({}))).toBe(true);
     expect(hasGaps(row({ "%%F": [DDR], "%F%": [DDR] }, [{ pattern: "F%F", memories: [DDR] }]))).toBe(true);
     expect(hasGaps(row({ "%%F": [DDR], "%F%": [RRR], "F%%": [DDR, DDR] }))).toBe(false);
+  });
+});
+
+describe("memoSize", () => {
+  test("an empty memo holds nothing", () => {
+    expect(memoSize(emptyMemo())).toEqual({ rows: 0, memories: 0 });
+  });
+
+  test("counts rows in every section of every tab, and memories in fixed and extra groups alike", () => {
+    const memo: Memo = {
+      ...emptyMemo(),
+      sections: {
+        ...emptyMemo().sections,
+        "sense.kocho": [row({ "%%F": [DDR, DDR] }, [{ pattern: "%%%", memories: [RRR] }]), row({})],
+        "anomaly.common": [row({ "F%%": [RRR] }, [{ pattern: "FFF", memories: [] }])],
+      },
+    };
+    expect(memoSize(memo)).toEqual({ rows: 3, memories: 4 });
   });
 });

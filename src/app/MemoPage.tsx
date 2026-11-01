@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "preact/hooks";
+import type { Idol } from "../data/contract.ts";
 import { hasGaps } from "../memo/coverage.ts";
 import { findRow } from "../memo/edit.ts";
 import { emptyMemo, type Memo, PLAN_IDS, planOf, type PlanId, sectionsOf } from "../memo/types.ts";
@@ -7,8 +8,12 @@ import { PLAN_LABELS } from "./labels.ts";
 import { type Page, PageContext } from "./page.ts";
 import { QuickTable } from "./QuickTable.tsx";
 import { SectionView } from "./Section.tsx";
-import { Settings } from "./Settings.tsx";
+import { HomeScreenHint, Settings } from "./Settings.tsx";
 import type { IconIndex } from "./sheets.ts";
+import { DEFAULT_SETTINGS, NOT_SAVING, type Saving, type Settings as SavedSettings } from "./storage.ts";
+import { ImportPanel, Transfer } from "./Transfer.tsx";
+import { useImport, useLinkImport } from "./useImport.ts";
+import { useSaving } from "./useSaving.ts";
 
 /** How long a jumped-to row stays highlighted. */
 export const HIGHLIGHT_MS = 2000;
@@ -44,16 +49,38 @@ function useHighlight(): [string | null, (rowId: string) => void] {
   return [highlighted, setHighlighted];
 }
 
+/** The saved idol where the data file still has it, else the default (D20's fallback, D34). */
+function startIdol(saved: string | null, idols: readonly Idol[]): string {
+  return idols.find((i) => i.id === saved)?.id ?? idols[0]?.id ?? "";
+}
+
 /**
- * The memo page (Milestone 4): the three tabs, each with its 早見表, the 「未所持がある行だけ表示」
- * toggle and its sections, and the settings. The memo lives here, in memory; Milestone 5 saves it.
+ * The memo page (Milestones 4 and 5): the three tabs, each with its 早見表, the 「未所持がある行だけ
+ * 表示」 toggle and its sections, and the settings with the 引き継ぎコード. It starts from the memo
+ * and the settings saved (`initial`, `settings`) and saves each change through `save`; a link's
+ * code is offered at the top of the page.
  */
-export function MemoPage({ catalog, sheets, initial }: { catalog: Catalog; sheets: IconIndex; initial?: Memo }) {
+export function MemoPage({
+  catalog,
+  sheets,
+  initial,
+  settings = DEFAULT_SETTINGS,
+  save = NOT_SAVING,
+}: {
+  catalog: Catalog;
+  sheets: IconIndex;
+  initial?: Memo;
+  settings?: SavedSettings;
+  save?: Saving;
+}) {
   const defaultIdol = catalog.data.idols[0]?.id ?? "";
   const [memo, setMemo] = useState<Memo>(() => initial ?? emptyMemo());
   const [tab, setTab] = useState<PlanId>("sense");
-  const [idol, setIdol] = useState(defaultIdol);
-  const [counting, setCounting] = useState(true);
+  const [idol, setIdol] = useState(() => startIdol(settings.idol, catalog.data.idols));
+  const [counting, setCounting] = useState(settings.counting);
+  useSaving(save, memo, idol, counting);
+  const importing = useImport(memo, setMemo);
+  useLinkImport(importing.offer);
   const [gapsOnly, setGapsOnly] = useState(false);
   const [highlighted, highlight] = useHighlight();
   const page = useMemo<Page>(() => {
@@ -68,6 +95,7 @@ export function MemoPage({ catalog, sheets, initial }: { catalog: Catalog; sheet
   }, [catalog, sheets, idol, defaultIdol, memo, highlighted, highlight]);
   return (
     <PageContext.Provider value={page}>
+      <ImportPanel importing={importing} from="link" />
       <Tabs tab={tab} onTab={setTab} />
       <div class="flex flex-col gap-3 pt-3">
         <QuickTable plan={tab} />
@@ -79,7 +107,10 @@ export function MemoPage({ catalog, sheets, initial }: { catalog: Catalog; sheet
           <SectionView key={section} section={section} plan={tab} gapsOnly={gapsOnly} />
         ))}
       </div>
-      <Settings idols={catalog.data.idols} idol={idol} onIdol={setIdol} counting={counting} onCounting={setCounting} />
+      <Settings idols={catalog.data.idols} idol={idol} onIdol={setIdol} counting={counting} onCounting={setCounting}>
+        <HomeScreenHint />
+        <Transfer importing={importing} />
+      </Settings>
     </PageContext.Provider>
   );
 }
