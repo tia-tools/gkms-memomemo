@@ -106,6 +106,13 @@ The work is tracked on the project's board (`tia-tools` project 7, see `CLAUDE.m
     - then, with the local cache cleared (Surprises & Discoveries), 好調's card step opened with ファンサ+ and 成就+, one count each in the game's order, and its ability step with 勢い任せ's, counted twice;
     - 集中's card step kept the game's order, and so did the free block;
     - no console errors.
+  - [x] (2026-11-01 17:50Z) `/codex-review` of the branch (`origin/develop...8821181`, codex-cli 0.150.1, read-only in a snapshot; the sandbox held, the repository's refs were unchanged, and only `.git` was touched, by the editor's git integration): CHANGES REQUESTED with three findings. All were fixed in `dea7d17`, each with a test seen to fail without its fix, except one part declined:
+    - **Fixed (medium):** `readCounts` did not read the customization counts, so a bad one passed. They are now read and checked like the others.
+    - **Fixed (low):** `useCounts` set its state whenever an answer came. An answer that comes after the page is gone, or after another `CountsApi` was given, is now dropped.
+    - **Fixed (low), from its point on the tests:** two taps on an ability before the page drew again added the row twice and counted it twice. No browser delivers that, but the popover now finishes once. Tests now also show 変更 ranking by its row's section, and the POST's `Content-Type`.
+    - **Declined:** a test that a rejected build sends nothing. Only 変更 can meet one, and 変更 never sends.
+
+    Only these guards and tests changed after it, each an early return, so no second run. `bun test` (457), `bun run type-check`, `bun run lint` and `bun run build` exit 0.
 - [ ] Milestone 7: first deployment to `gkms-memomemo.tia.run` and checks of the live site.
 
 ## Surprises & Discoveries
@@ -556,7 +563,8 @@ All decisions D1–D25 were made by the user in the /grill-me session of 2026-10
   - **Which section ranks:** the section the popover was opened in, for 変更 too, since a row's section is where the player is picking for. Ranking comes before the search and the rarity filter, so they keep the ranked order.
   - **The blocks:** the card step ranks its plan's cards and its free cards each on its own (D19's "each ranked"). The customization counts are not read (D11).
   - **The event:** sent with `keepalive`, so it still goes out if the page is closed right after. It is sent only after the row is in the memo, so a refused or broken build sends nothing. A failure is dropped without a retry and without a message.
-  - **An answer that does not read:** refused whole, with a console warning, and the pickers keep the game's order.
+  - **An answer that does not read:** refused whole, with a console warning, and the pickers keep the game's order. An answer that comes after the page is gone, or after another `CountsApi` was given, is dropped.
+  - **One popover, one row:** once a popover has added or changed its row, a further tap does nothing until it closes, so a row is never added or counted twice.
 
   Rationale: the plan says what is sent and how the pickers order, not when the counts load or what each failure looks like; these are the choices that keep the pickers still under the finger, cost one request a visit, and never count twice.
   Date/Author: 2026-11-01, agent (Milestone 6, #33).
