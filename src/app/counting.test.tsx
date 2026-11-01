@@ -166,6 +166,19 @@ describe("the pickers' order", () => {
     expect(gridNames()[0]).toBe(lastPlanCard.name);
   });
 
+  test("ranks the base cards too, once the switch is at 基本 (D66)", async () => {
+    const base = atLevel(SENSE_CARDS, 0);
+    const lastBase = must(base.filter((c) => c.plan === "sense").at(-1), "the last base センス card");
+    const BASE = counts({ "sense.kocho": { card: new Map([[`${lastBase.id}:${lastBase.upgrade}`, 3]]) } });
+    await showPage(root, undefined, TEST_SHEETS, fakeApi(async () => BASE));
+    await settle();
+    await tap(byText(section(root, "好調"), "button", "＋ カードを追加"));
+    await tap(byText(byLabel(dialog(root), "基本・強化"), "button", "基本"));
+    const names = gridNames();
+    expect(names[0]).toBe(lastBase.name);
+    expect(names.length).toBe(base.length);
+  });
+
   test("keeps the game's order until the counts load, and when they cannot", async () => {
     let arrive: (value: Counts | null) => void = () => undefined;
     await showPage(root, undefined, TEST_SHEETS, fakeApi(() => new Promise((resolve) => (arrive = resolve))));

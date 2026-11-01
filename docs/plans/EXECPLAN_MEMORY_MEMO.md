@@ -137,6 +137,7 @@ The work is tracked on the project's board (`tia-tools` project 7, see `CLAUDE.m
     - **`GET /counts`** still answered the empty sections cached at 19:53Z, when the phone first opened the page, before the row. It arrived with `max-age=14400`, not the Worker's 3600 (Surprises & Discoveries; #49 in Triage).
     - **Pull request #48** into `develop`, with its checks passing; the user approved the push (job #45).
 - [x] (2026-11-01 20:30Z) #11 claimed on `feat/card-level-switch`, from `develop` at `4d4dc22`: the card step's 基本 / 強化 switch (D66). `bun test` (464; each rule of the switch seen to turn a test red when broken: starting at base, no level filter, ignoring the row's level), `bun run type-check`, `bun run lint` and `bun run build` exit 0. In Chrome on the dev server the switch sits on one line with the rarity filter, and 基本 and 強化 each show their cards; no console errors.
+  - [x] (2026-11-01 20:50Z) `/codex-review` of the branch (`origin/develop...d0967c7`, codex-cli 0.150.1, read-only in a snapshot; the sandbox held and the repository was not touched): CHANGES REQUESTED with one low finding, fixed. Every ranking test now ran at 強化 only, so ranking the base cards was unguarded; a test now ranks a base card first under 基本, seen to fail without the ranking. Codex found every card still reachable, 表現の基本 under 基本, 変更 opening on the row's level, and the documents matching the code. Only a test changed after it, so no second run.
 
 ## Surprises & Discoveries
 
