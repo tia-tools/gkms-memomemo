@@ -173,6 +173,17 @@ describe("a pasted code", () => {
     expect([confirmations(), transfer().querySelector('[role="alert"]')?.textContent]).toEqual([0, "引き継ぎコードではありません（mm1. で始まります）閉じる"]);
   });
 
+  test("a later code withdraws a confirmation still shown at once, before it is read, so the earlier code cannot be accepted", async () => {
+    await showPage(root, TWO);
+    await pasteCode(await encodeMemo(JOJU));
+    expect(confirmations()).toBe(1);
+    await type(byLabel(transfer(), "読み込む引き継ぎコード"), await encodeMemo(TWO));
+    await tap(byText(transfer(), "button", "読み込む"));
+    expect(confirmations()).toBe(0);
+    await settle();
+    expect(confirmBox().textContent).toContain("コードのメモ（2行・メモリー0件）に置き換えます");
+  });
+
   test("a code that is not one is refused, saying why, and the memo stays", async () => {
     await showPage(root, TWO);
     await pasteCode("abc");

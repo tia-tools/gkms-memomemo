@@ -47,7 +47,12 @@ The work is tracked on the project's board (`tia-tools` project 7, see `CLAUDE.m
     - at 390 px the new footer fits.
 
     Not checkable here: an install from a real phone, and the hint on an iPhone. They join Milestone 7's checks.
-  - [ ] `/codex-review` of the branch, the pull request into `develop`, and the user's look at D57–D61 (the app icon and its name especially).
+  - [x] (2026-11-01 14:19Z) `/codex-review` of the branch (`origin/develop...4597c45`, codex-cli 0.150.1, read-only in a snapshot; the sandbox held, and the repository's refs were unchanged, only `.git/index` refreshed by a `git status` outside the review): CHANGES REQUESTED with two findings.
+    - **Fixed (medium):** a confirmation stayed on screen while a later code was decoded, so the earlier code could still be accepted. A new code now withdraws at once whatever import state is shown (D59), with a test seen to fail without the fix.
+    - **Declined (low):** `idb.ts` has no automated test (D57 says why).
+
+    Only one line of logic and a test changed after it, so no second run. `bun test` (376), `bun run type-check`, `bun run lint` and `bun run build` exit 0.
+  - [ ] The pull request into `develop`, and the user's look at D57–D61 (the app icon and its name especially).
 - [ ] Milestone 6: anonymous counts and ranked pickers.
 - [ ] Milestone 7: first deployment to `gkms-memomemo.tia.run` and checks of the live site.
 
@@ -408,7 +413,12 @@ All decisions D1–D25 were made by the user in the /grill-me session of 2026-10
   Date/Author: 2026-11-01, user.
 
 - Decision: D57 — the memo is saved in IndexedDB: database `gkms-memomemo`, object store `state`, the memo under `memo` and the settings (`{ idol, counting }`) under `settings`. The memo is written 500 ms after the last change, and at once when the page is hidden or left (`visibilitychange` to hidden, `pagehide`). The settings are written at once, and nothing is written when the page merely opens. A saved memo the reader refuses (`src/memo/read.ts`, as for a code) is first copied under `unreadable-<ISO time>`; the page then starts empty and says so, so the next save cannot lose it. If that copy cannot be written, or the store does not open, the page runs but saves nothing, and says so. A failed write is said on the page too. `navigator.storage.persist()` is asked once, after the first memo holding a row is written, since Firefox asks the player and an empty memo is nothing to keep. A saved idol the data file no longer has gives the first idol (D34). The rules are in `src/app/storage.ts`, with the store passed in.
-  Rationale: one write per burst of taps; a phone may close a hidden page without warning; the memo is the player's only copy (D10, D31), so nothing unreadable is written over. Agent's defaults.
+  Rationale: one write per burst of taps; a phone may close a hidden page without warning; the memo is the player's only copy (D10, D31), so nothing unreadable is written over. Agent's defaults. Codex's review found `idb.ts`, the IndexedDB adapter, without an automated test, and the order of overlapping writes unproven by the Map the tests use. Declined:
+  - happy-dom has no IndexedDB, and a fake IndexedDB, which would be a new dependency or a hand-written stand-in, would test the stand-in.
+  - The order is IndexedDB's own: read-write transactions over one object store run in the order they were created. The adapter makes one transaction per write, in the order the page asks.
+  - It was checked in Chrome: a reload kept the memo and the settings.
+
+  Two smaller points stay open: each reload before the player's next change copies an unreadable memo aside again, and `idb.ts` handles no `blocked` event, which matters only once the database's version moves past 1.
   Date/Author: 2026-11-01, agent.
 
 - Decision: D58 — the service worker is hand-written, with no new dependency. `src/sw/sw.ts` is built by Vite as `/sw.js`, a classic script with no imports; the build stops if it shares a module with the page. The build writes in a manifest: the page's files to keep (`/`, the built script and styles, `public/`'s files), the data route, the sheet prefix, the sheets the bundled index names, and a version hashed from every kept file's name and bytes. A changed file thus means a new `sw.js` and a new page cache.
@@ -427,7 +437,7 @@ All decisions D1–D25 were made by the user in the /grill-me session of 2026-10
   - A link's code is offered at the top of the page and a pasted one beside the box. The fragment is taken out of the address bar as soon as it is read (`history.replaceState`), and a percent-encoded code is decoded.
   - The confirmation names the rows and memories that go and that come (「今のメモ（3行・メモリー5件）を、コードのメモ（…）に置き換えます」), or only those that come when the memo is empty, with 読み込む instead of 置き換える.
   - The memo replaced is kept in memory for 元に戻す, offered while the memo is still what the import made, as D50 had it for the sort.
-  - A code given while another is being decoded replaces it.
+  - A code given while another is being decoded replaces it, and a new code withdraws at once whatever an earlier one left on screen, a confirmation or an undo, so a confirmation shown while the next code is decoded cannot be accepted (Codex's review).
   - A refused code says why in the player's terms (not a code, cut or broken, too large, unreadable), and the reader's path goes to the console.
   Rationale: a confirmation that counts both memos lets a wrong code be noticed before it replaces anything; an undo that outlived a later edit could throw that edit away. Agent's defaults.
   Date/Author: 2026-11-01, agent.

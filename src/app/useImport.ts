@@ -24,7 +24,8 @@ export interface Importing {
  * Importing a 引き継ぎコード (D16, D59): a code is decoded, then the player confirms; the import
  * replaces the memo, never merges, and the memo it replaced is kept for an undo. The undo is offered
  * only while the memo is still what the import made, so it never throws away a later change (as D50
- * had it for the sort); any change withdraws it. A later code replaces one still being decoded.
+ * had it for the sort); any change withdraws it. A later code replaces one still being decoded,
+ * and withdraws at once whatever an earlier one left on screen, a confirmation or an undo.
  */
 export function useImport(memo: Memo, setMemo: (memo: Memo) => void): Importing {
   const [state, setState] = useState<ImportState | null>(null);
@@ -32,6 +33,9 @@ export function useImport(memo: Memo, setMemo: (memo: Memo) => void): Importing 
   const offer = useCallback((code: string, from: ImportFrom) => {
     latest.current += 1;
     const mine = latest.current;
+    // What an earlier code left on screen goes at once: a confirmation still shown while this code
+    // is decoded could otherwise be accepted, importing the earlier code (Codex's review, D59).
+    setState(null);
     void decodeMemo(code).then((result) => {
       if (mine !== latest.current) return;
       if (!isCodeRefusal(result)) return setState({ stage: "confirm", from, memo: result });
