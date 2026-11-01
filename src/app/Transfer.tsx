@@ -80,7 +80,7 @@ function CodeOut() {
   };
   return (
     <div class="flex flex-col gap-2">
-      <textarea readOnly aria-label="このメモの引き継ぎコード" rows={3} class="w-full rounded border border-slate-300 p-1 font-mono text-xs break-all" value={code ?? ""} />
+      <textarea readOnly aria-label="このメモの引き継ぎコード" rows={3} class="w-full rounded border border-slate-300 p-1 font-mono break-all" value={code ?? ""} />
       <div class="flex flex-wrap items-center gap-2">
         <button type="button" class={BUTTON} disabled={code === null} onClick={() => code !== null && copy(code, "コード")}>
           コードをコピー
@@ -103,7 +103,7 @@ function CodeIn({ importing }: { importing: Importing }) {
         aria-label="読み込む引き継ぎコード"
         rows={3}
         placeholder="mm1.…"
-        class="w-full rounded border border-slate-300 p-1 font-mono text-xs break-all"
+        class="w-full rounded border border-slate-300 p-1 font-mono break-all"
         value={text}
         onInput={(e) => setText(e.currentTarget.value)}
       />
