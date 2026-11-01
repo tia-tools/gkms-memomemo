@@ -60,7 +60,12 @@ export type BuildProblem =
   | { problem: "kaimaku-required" }
   | { problem: "kaimaku-over-cap"; steps: number; cap: number };
 
-function customizationProblem(customization: readonly ChosenStep[], card: CardRules): BuildProblem | null {
+/**
+ * Why the card cannot carry this customization in a memory (a kind or step it lacks, a kind twice,
+ * more steps than D39 allows), or null when it can; 開幕時獲得 aside. The Worker checks a count event's
+ * customization with it (infra/worker/count-event.ts).
+ */
+export function customizationProblem(customization: readonly ChosenStep[], card: CardRules): BuildProblem | null {
   const seen = new Set<string>();
   for (const { kind, step } of customization) {
     const options = card.customization.kinds.find((k) => k.id === kind);
