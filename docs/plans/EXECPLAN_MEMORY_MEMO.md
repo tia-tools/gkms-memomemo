@@ -86,7 +86,7 @@ The work is tracked on the project's board (`tia-tools` project 7, see `CLAUDE.m
     - **Declined, with the README fixed:** the cap's place is committed before the counts' batch, so a failure of that batch loses the player one of the day's 200 places with nothing counted. D63 already accepts this. Making the two one transaction would need each count to know whether this event's upsert raised `n`, which only a chain of SQLite `changes()` inside a D1 batch could tell. A refund would fail exactly when D1 fails. When D1 is out altogether, the cap upsert fails first and nothing is lost. The README now says what such a failure leaves.
 
     Only the README and the plan changed after it, so no second run.
-  - [x] (2026-11-01 17:30Z) Pull request #37 into `develop`, its checks passing; the user approved the push (job #36) and merged it (`07e224c`), closing #32.
+  - [x] (2026-11-01 17:06Z) Pull request #37 into `develop`, its checks passing; the user approved the push (job #36) and merged it (`07e224c`), closing #32.
   - [x] (2026-11-01 17:26Z) The page's counting and ranked pickers (#33), on `feat/m6-counts-page`:
     - `src/app/counts.ts`, with its co-located test: `countEvent`, the reader `readCounts` that refuses a whole answer, `ranked`, `rankedCards` and `rankedAbilities`, and `httpCounts`, the `CountsApi` the page is given (D65);
     - `MemoPage.tsx` loads the counts once at start and gives the page `counts` and `countRow`;
@@ -106,7 +106,7 @@ The work is tracked on the project's board (`tia-tools` project 7, see `CLAUDE.m
     - then, with the local cache cleared (Surprises & Discoveries), 好調's card step opened with ファンサ+ and 成就+, one count each in the game's order, and its ability step with 勢い任せ's, counted twice;
     - 集中's card step kept the game's order, and so did the free block;
     - no console errors.
-  - [x] (2026-11-01 17:50Z) `/codex-review` of the branch (`origin/develop...8821181`, codex-cli 0.150.1, read-only in a snapshot; the sandbox held, the repository's refs were unchanged, and only `.git` was touched, by the editor's git integration): CHANGES REQUESTED with three findings. All were fixed in `dea7d17`, each with a test seen to fail without its fix, except one part declined:
+  - [x] (2026-11-01 17:29Z) `/codex-review` of the branch (`origin/develop...8821181`, codex-cli 0.150.1, read-only in a snapshot; the sandbox held, the repository's refs were unchanged, and only `.git` was touched, by the editor's git integration): CHANGES REQUESTED with three findings. All were fixed in `dea7d17`, each with a test seen to fail without its fix, except one part declined:
     - **Fixed (medium):** `readCounts` did not read the customization counts, so a bad one passed. They are now read and checked like the others.
     - **Fixed (low):** `useCounts` set its state whenever an answer came. An answer that comes after the page is gone, or after another `CountsApi` was given, is now dropped.
     - **Fixed (low), from its point on the tests:** two taps on an ability before the page drew again added the row twice and counted it twice. No browser delivers that, but the popover now finishes once. Tests now also show 変更 ranking by its row's section, and the POST's `Content-Type`.
