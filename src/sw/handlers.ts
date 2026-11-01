@@ -9,7 +9,7 @@ import { cacheNames, type RequestFacts, routeOf, staleCaches, staleSheets, type 
 
 /** The slice of a `Cache` the worker uses. */
 export interface CacheLike {
-  match(request: Request | string): Promise<Response | undefined>;
+  match(request: Request | string, options: { ignoreVary: boolean }): Promise<Response | undefined>;
   put(request: Request | string, response: Response): Promise<void>;
   addAll(requests: string[]): Promise<void>;
   keys(): Promise<readonly Request[]>;
@@ -29,6 +29,16 @@ export interface Worker {
   manifest: SwManifest;
   /** The page's origin; the worker answers nothing from another. */
   origin: string;
+}
+
+/**
+ * What a cache keeps for `request`. Each cache here keeps one answer per URL, so a `Vary` header on
+ * it means nothing, and honouring it misses: a static server may answer `Vary: Origin`, and the
+ * browser sends `Origin` with a module script's request but not with install's, so the page's own
+ * script would not be found offline (seen with `vite preview`, D58).
+ */
+function kept(cache: CacheLike, request: Request | string): Promise<Response | undefined> {
+  return cache.match(request, { ignoreVary: true });
 }
 
 /** Keeps every file of the page; if one fails, the install fails and the version before stays in charge. */
@@ -51,21 +61,21 @@ async function networkFirst(worker: Worker, request: Request, cache: CacheLike, 
   try {
     answer = await worker.fetch(request);
   } catch (error) {
-    const kept = await cache.match(key);
-    if (kept === undefined) throw error;
-    return kept;
+    const copy = await kept(cache, key);
+    if (copy === undefined) throw error;
+    return copy;
   }
   if (answer.ok) {
     await cache.put(key, answer.clone());
     return answer;
   }
-  return (await cache.match(key)) ?? answer;
+  return (await kept(cache, key)) ?? answer;
 }
 
 /** From the cache; from the network otherwise, keeping a 200 when `keep` is given. */
 async function cacheFirst(worker: Worker, request: Request, cache: CacheLike, keep: boolean): Promise<Response> {
-  const kept = await cache.match(request);
-  if (kept !== undefined) return kept;
+  const copy = await kept(cache, request);
+  if (copy !== undefined) return copy;
   const answer = await worker.fetch(request);
   if (keep && answer.status === 200) await cache.put(request, answer.clone());
   return answer;
@@ -76,9 +86,9 @@ async function pageOffline(worker: Worker, request: Request, page: CacheLike): P
   try {
     return await worker.fetch(request);
   } catch (error) {
-    const kept = await page.match(new URL("/", worker.origin).href);
-    if (kept === undefined) throw error;
-    return kept;
+    const copy = await kept(page, new URL("/", worker.origin).href);
+    if (copy === undefined) throw error;
+    return copy;
   }
 }
 
@@ -114,7 +124,7 @@ export async function keepLoaded(urls: readonly unknown[], worker: Worker): Prom
   await Promise.all(
     worthKeeping(urls, worker.origin, worker.manifest).map(async (url) => {
       const cache = await worker.caches.open(url === dataUrl ? names.data : names.sheets);
-      if ((await cache.match(url)) !== undefined) return;
+      if ((await kept(cache, url)) !== undefined) return;
       const answer = await worker.fetch(url).catch(() => null);
       if (answer?.status === 200) await cache.put(url, answer);
     }),

@@ -96,6 +96,28 @@ describe("respond", () => {
     expect(network.fetched).toEqual([]);
   });
 
+  test("offline, the page's script comes from the cache though the server answered Vary: Origin and the script's request carries an Origin (seen with vite preview)", async () => {
+    const { network, worker } = world();
+    network.vary = "Origin";
+    await install(worker);
+    network.offline = true;
+    const request = new Request(`${ORIGIN}/assets/index-abc.js`, { headers: { Origin: ORIGIN } });
+    const answer = respond(request, { url: request.url, method: "GET", navigate: false }, worker);
+    expect(await answer?.then((r) => r.text())).toBe("js v2");
+  });
+
+  test("so do a kept data file and sheet, whatever the answer's Vary", async () => {
+    const { network, worker } = world();
+    network.vary = "Origin";
+    await ask(worker, "/data/skillcards.json");
+    await ask(worker, SHEET);
+    network.offline = true;
+    const withOrigin = (path: string) => new Request(`${ORIGIN}${path}`, { headers: { Origin: ORIGIN } });
+    const data = respond(withOrigin("/data/skillcards.json"), { url: `${ORIGIN}/data/skillcards.json`, method: "GET", navigate: false }, worker);
+    const sheet = respond(withOrigin(SHEET), { url: `${ORIGIN}${SHEET}`, method: "GET", navigate: false }, worker);
+    expect([await data?.then((r) => r.text()), await sheet?.then((r) => r.text())]).toEqual(["data 1", "sheet"]);
+  });
+
   test("the data file comes from the network, and its last copy is kept for when there is none", async () => {
     const { network, worker } = world();
     expect(await ask(worker, "/data/skillcards.json")).toBe("data 1");
