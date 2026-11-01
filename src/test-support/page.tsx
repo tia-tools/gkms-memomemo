@@ -55,13 +55,21 @@ export function dialog(root: ParentNode): HTMLElement {
   return must([...root.querySelectorAll<HTMLElement>('[role="dialog"]')].at(-1), "an open popover");
 }
 
+/**
+ * Lets what the page awaits settle (a 引き継ぎコード's compression, a loader). Compression streams
+ * finish over several turns of the event loop, so this waits a few timer turns, not one.
+ */
+export async function settle(): Promise<void> {
+  for (let turn = 0; turn < 5; turn++) await act(() => new Promise((resolve) => setTimeout(resolve, 1)));
+}
+
 export async function tap(el: HTMLElement): Promise<void> {
   await act(() => el.click());
 }
 
 export async function type(input: HTMLElement, text: string): Promise<void> {
   await act(() => {
-    if (input instanceof HTMLInputElement) input.value = text;
+    if (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement) input.value = text;
     input.dispatchEvent(new Event("input", { bubbles: true }));
   });
 }
