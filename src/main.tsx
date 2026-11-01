@@ -1,5 +1,6 @@
 import { render } from "preact";
 import { App } from "./app/App.tsx";
+import { httpCounts } from "./app/counts.ts";
 import { openIndexedDb } from "./app/idb.ts";
 import { loadedUrls, startOffline } from "./app/offline.ts";
 import { loadSkillCardData } from "./data/load.ts";
@@ -12,7 +13,9 @@ const load = () => loadSkillCardData((url) => fetch(url));
 const openStore = () => openIndexedDb(indexedDB);
 // navigator.storage is missing from a page over plain http, such as the dev server opened from a phone.
 const storage: StorageManager | undefined = navigator.storage;
-render(<App load={load} openStore={openStore} storage={storage} />, root);
+// Made once, so the page loads the counts once (src/app/MemoPage.tsx useCounts).
+const countsApi = httpCounts((url, init) => fetch(url, init));
+render(<App load={load} openStore={openStore} storage={storage} countsApi={countsApi} />, root);
 // The service worker is built only by `vite build`; the dev server has none to register.
 if (import.meta.env.PROD) {
   const workers: ServiceWorkerContainer | undefined = navigator.serviceWorker;

@@ -97,7 +97,9 @@ Until the id is in `wrangler.toml`, the binding has none. `wrangler dev` (a loca
     bunx wrangler d1 migrations apply gkms-memomemo --local --persist-to "$TMPDIR/wstate"
     bunx wrangler dev --local --port 8787 --persist-to "$TMPDIR/wstate" --var HASH_SALT:local-test-salt --test-scheduled
 
-Then `POST http://localhost:8787/count` and `GET /counts`; `curl "http://localhost:8787/__scheduled?cron=5+0+*+*+*"` runs the cleanup. `wrangler dev` gives each request `CF-Connecting-IP`, so the cap applies locally too.
+Then `POST http://localhost:8787/count` and `GET /counts`; `curl "http://localhost:8787/__scheduled?cron=5+0+*+*+*"` runs the cleanup. `wrangler dev` gives each request `CF-Connecting-IP`, so the cap applies locally too. The page at `http://localhost:8787/` sends its rows' events and ranks its pickers by these counts.
+
+The first `GET /counts` is kept for an hour, by the Worker's local cache and by the browser, so counts posted after it do not show. Locally, `wrangler dev` kept one answer for `127.0.0.1` and `localhost` alike, so another host is no way round it. To see new counts at once, stop `wrangler dev`, delete `$TMPDIR/wstate/v3/cache` (the local cache, beside the local D1, which stays), and start it again on another port, which the browser has not cached.
 
 ## Verify
 

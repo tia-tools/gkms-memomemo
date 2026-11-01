@@ -2,8 +2,9 @@ import type { ComponentChildren } from "preact";
 import { useMemo, useState } from "preact/hooks";
 import type { SkillCard, SkillCardRarity } from "../data/contract.ts";
 import { type BuildProblem, type CardRules, isBuildProblem, kaimakuRule, kaimakuSwitch, stepLimit, withCustomization } from "../memo/build.ts";
-import type { Build, PlanId } from "../memo/types.ts";
+import type { Build, PlanId, SectionId } from "../memo/types.ts";
 import { type HifEntry, stepText } from "./catalog.ts";
+import { rankedAbilities, rankedCards } from "./counts.ts";
 import { chosenStep, pickStep, stepOpen, switchKaimaku } from "./customize.ts";
 import { CardIcon } from "./Icon.tsx";
 import { usePage } from "./page.ts";
@@ -69,12 +70,16 @@ function RarityFilter({ on, onToggle }: { on: ReadonlySet<SkillCardRarity>; onTo
   );
 }
 
-/** Step 1: the skill card, the plan's cards then the free ones (D8, D19), by name and by rarity (D56). */
-export function CardStep({ plan, chosen, onPick }: { plan: PlanId; chosen: SkillCard | undefined; onPick: (card: SkillCard) => void }) {
-  const { catalog } = usePage();
+/**
+ * Step 1: the skill card, the plan's cards then the free ones, each block ranked by the section's
+ * counts (D8, D19), by name and by rarity (D56).
+ */
+export function CardStep({ plan, section, chosen, onPick }: { plan: PlanId; section: SectionId; chosen: SkillCard | undefined; onPick: (card: SkillCard) => void }) {
+  const { catalog, counts } = usePage();
   const [query, setQuery] = useState("");
   const [rarities, setRarities] = useState<ReadonlySet<SkillCardRarity>>(new Set());
-  const cards = useMemo(() => byRarity(search(catalog.tabCards(plan), query, (c) => c.name), rarities), [catalog, plan, query, rarities]);
+  const order = useMemo(() => rankedCards(catalog.tabCards(plan), counts?.get(section)), [catalog, plan, counts, section]);
+  const cards = useMemo(() => byRarity(search(order, query, (c) => c.name), rarities), [order, query, rarities]);
   return (
     <>
       <SearchBox value={query} onInput={setQuery} label="カード名" />
@@ -84,11 +89,12 @@ export function CardStep({ plan, chosen, onPick }: { plan: PlanId; chosen: Skill
   );
 }
 
-/** Step 3: the H.I.F. ability, drawn with its card's icon (D6, D19). */
-export function HifStep({ plan, chosen, onPick }: { plan: PlanId; chosen: string; onPick: (hif: string) => void }) {
-  const { catalog } = usePage();
+/** Step 3: the H.I.F. ability, drawn with its card's icon, ranked by the section's counts (D6, D19). */
+export function HifStep({ plan, section, chosen, onPick }: { plan: PlanId; section: SectionId; chosen: string; onPick: (hif: string) => void }) {
+  const { catalog, counts } = usePage();
   const [query, setQuery] = useState("");
-  const abilities = useMemo(() => search(catalog.tabAbilities(plan), query, (h) => h.card.name), [catalog, plan, query]);
+  const order = useMemo(() => rankedAbilities(catalog.tabAbilities(plan), counts?.get(section)), [catalog, plan, counts, section]);
+  const abilities = useMemo(() => search(order, query, (h) => h.card.name), [order, query]);
   return (
     <>
       <SearchBox value={query} onInput={setQuery} label="HIFアビリティのカード名" />
