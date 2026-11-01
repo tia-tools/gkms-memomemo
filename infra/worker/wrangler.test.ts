@@ -27,6 +27,22 @@ describe("wrangler.toml", () => {
     expect(root["r2_buckets"]).toEqual([{ binding: "IMAGES", bucket_name: "tia-assets" }]);
   });
 
+  test("binds the counts' database as DB, the name the Worker's Env reads, with its migrations beside this file", async () => {
+    const databases = root["d1_databases"];
+    expect(Array.isArray(databases) ? databases.length : 0).toBe(1);
+    const db = table(Array.isArray(databases) ? databases[0] : null);
+    expect(db["binding"]).toBe("DB");
+    expect(db["database_name"]).toBe("gkms-memomemo");
+    expect(db["migrations_dir"]).toBe("migrations");
+    const files = await Array.fromAsync(new Bun.Glob("*.sql").scan({ cwd: new URL("./migrations/", import.meta.url).pathname }));
+    expect(files.length).toBeGreaterThan(0);
+    for (const file of files) expect(file).toMatch(/^\d{4}_[a-z0-9_]+\.sql$/);
+  });
+
+  test("runs the daily cleanup of the caps once a day (count.ts cleanCaps)", () => {
+    expect(table(root["triggers"])["crons"]).toEqual(["5 0 * * *"]);
+  });
+
   // An [env.*] table inherits the top-level routes, custom domain included: deployed, it would offer
   // to move the production hostname onto itself (the TypeScript stack note, § Cloudflare Workers
   // deployment). Every environment must declare its own routes.
