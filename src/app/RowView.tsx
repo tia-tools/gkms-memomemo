@@ -26,9 +26,9 @@ function CardCell({ row, plan }: { row: Row; plan: PlanId }) {
   const name = card?.name ?? "不明なカード";
   const labels = customizationLabels(card, row.build.customization);
   return (
-    <div class="flex w-[var(--card-col)] shrink-0 flex-col gap-0.5">
+    <div class="flex w-[var(--card-col)] shrink-0 flex-col items-center gap-0.5 text-center">
       <CardIcon card={card} plan={plan} size="var(--icon)" name={name} />
-      <span class="text-[10px] leading-tight break-all">{name}</span>
+      <span class="w-full text-[10px] leading-tight break-all">{name}</span>
       <CardIcon card={hif?.card} plan={plan} size="var(--hif-icon)" name={hif ? `HIF ${hif.card.name}` : "不明なHIF"} />
       <div class="flex flex-col text-[length:var(--label-font)] leading-tight break-all">
         {labels.length === 0 ? (

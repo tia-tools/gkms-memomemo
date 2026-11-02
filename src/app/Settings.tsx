@@ -7,7 +7,7 @@ export const COUNTING_NOTE = "行を追加すると、選んだスキルカー�
 
 /** On an iPhone or iPad in the browser, why and how to add the page to the home screen (D16, D61). */
 export function HomeScreenHint({ shown = suggestsHomeScreen(thisDevice()) }: { shown?: boolean }) {
-  return shown ? <p class="rounded border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">{HOME_SCREEN_HINT}</p> : null;
+  return shown ? <p class="corners border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">{HOME_SCREEN_HINT}</p> : null;
 }
 
 /**

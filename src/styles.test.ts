@@ -39,13 +39,18 @@ function contrast(a: string, b: string): number {
   return ((light ?? 0) + 0.05) / ((dark ?? 0) + 0.05);
 }
 
-/** Each component class with a text colour on a gradient face: its name, its colour, the face's two ends. */
+/**
+ * Each component class with a text colour: its name, its colour, and its face's colours, a
+ * gradient's two ends or a flat background's one.
+ */
 function faces(css: string): { name: string; color: string; ends: string[] }[] {
   const block = css.slice(css.indexOf("@layer components"));
   return [...block.matchAll(/\n {2}(\.[\w.-]+) \{([^}]*)\n {2}\}/g)].flatMap(([, name = "", body = ""]) => {
-    const face = /linear-gradient\((#[0-9a-f]{6}), (#[0-9a-f]{6})\) padding-box/.exec(body);
+    const gradient = /linear-gradient\((?:\d+deg, )?(#[0-9a-f]{6}), (#[0-9a-f]{6})\) padding-box/.exec(body);
+    const flat = /\n {4}background: (#[0-9a-f]{6});/.exec(body);
+    const ends = gradient ? [gradient[1] ?? "", gradient[2] ?? ""] : flat ? [flat[1] ?? ""] : [];
     const color = /\n {4}color: (#[0-9a-f]{6});/.exec(body)?.[1];
-    return face && color ? [{ name, color, ends: [face[1] ?? "", face[2] ?? ""] }] : [];
+    return ends.length > 0 && color ? [{ name, color, ends }] : [];
   });
 }
 

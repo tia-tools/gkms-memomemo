@@ -33,7 +33,7 @@ function AddCard({ plan, section }: { plan: PlanId; section: SectionId }) {
   const [open, setOpen] = useState(false);
   return (
     <div class="relative mt-1">
-      <button type="button" class="rounded border border-dashed border-slate-300 px-3 py-1 text-sm text-slate-600" onClick={() => setOpen(true)}>
+      <button type="button" class="corners border border-dashed border-slate-300 px-3 py-1 text-sm text-slate-600" onClick={() => setOpen(true)}>
         ＋ カードを追加
       </button>
       {open && <RowPopover plan={plan} section={section} onClose={() => setOpen(false)} />}

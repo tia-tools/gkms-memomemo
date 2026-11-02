@@ -16,7 +16,7 @@ export function ImportPanel({ importing, from }: { importing: Importing; from: I
   const { memo } = usePage();
   const { state } = importing;
   if (state === null || state.from !== from) return null;
-  const box = "flex flex-wrap items-center gap-2 rounded border p-2 text-sm";
+  const box = "corners flex flex-wrap items-center gap-2 border p-2 text-sm";
   if (state.stage === "refused") {
     return (
       <div role="alert" class={`${box} border-rose-300 bg-rose-50 text-rose-700`}>

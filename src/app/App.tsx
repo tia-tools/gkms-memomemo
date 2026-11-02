@@ -62,7 +62,7 @@ export function App({
     <main class="mx-auto max-w-5xl px-1 py-3 min-[600px]:px-3">
       <h1 class="text-lg font-bold">学マス　メモリーメモ帳</h1>
       {notice !== null && (
-        <p role="alert" class="my-2 rounded border border-rose-300 bg-rose-50 p-2 text-sm text-rose-700">
+        <p role="alert" class="corners my-2 border border-rose-300 bg-rose-50 p-2 text-sm text-rose-700">
           {NOTICE_TEXT[notice]}
         </p>
       )}
