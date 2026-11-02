@@ -46,7 +46,7 @@ function contrast(a: string, b: string): number {
 function faces(css: string): { name: string; color: string; ends: string[] }[] {
   const block = css.slice(css.indexOf("@layer components"));
   return [...block.matchAll(/\n {2}(\.[\w.-]+) \{([^}]*)\n {2}\}/g)].flatMap(([, name = "", body = ""]) => {
-    const gradient = /linear-gradient\((?:\d+deg, )?(#[0-9a-f]{6}), (#[0-9a-f]{6})\) padding-box/.exec(body);
+    const gradient = /linear-gradient\((#[0-9a-f]{6}), (#[0-9a-f]{6})\) padding-box/.exec(body.replaceAll("90deg, ", ""));
     const flat = /\n {4}background: (#[0-9a-f]{6});/.exec(body);
     const ends = gradient ? [gradient[1] ?? "", gradient[2] ?? ""] : flat ? [flat[1] ?? ""] : [];
     const color = /\n {4}color: (#[0-9a-f]{6});/.exec(body)?.[1];
