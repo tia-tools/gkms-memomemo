@@ -24,13 +24,17 @@ function urlOf(path: string): string {
   return path === "index.html" ? "/" : `/${path}`;
 }
 
-/** Whether a built file is part of the page to keep: not the worker, not a source map, not Vite's own manifests. */
+/** Where the build puts the font's files (vite.config.ts); the worker keeps them as the page uses them, not at install (D68). */
+export const FONT_DIR = "fonts/";
+
+/** Whether a built file is part of the page to keep at install: not the worker, not a source map, not Vite's own manifests, not the font. */
 function kept(path: string): boolean {
-  return path !== SW_FILE && !path.endsWith(".map") && !path.startsWith(".vite/");
+  return path !== SW_FILE && !path.endsWith(".map") && !path.startsWith(".vite/") && !path.startsWith(FONT_DIR);
 }
 
 export function swManifest(files: readonly BuiltFile[], sheets: readonly string[], data: string, sheetPrefix: string): SwManifest {
   const page = files.filter((f) => kept(f.path)).toSorted((a, b) => urlOf(a.path).localeCompare(urlOf(b.path)));
+  const fonts = files.filter((f) => f.path.startsWith(FONT_DIR)).map((f) => urlOf(f.path));
   const hash = createHash("sha256");
   for (const file of page) {
     hash.update(urlOf(file.path));
@@ -38,7 +42,15 @@ export function swManifest(files: readonly BuiltFile[], sheets: readonly string[
     hash.update(file.bytes);
     hash.update("\0");
   }
-  return { version: hash.digest("hex").slice(0, 16), precache: page.map((f) => urlOf(f.path)), data, sheetPrefix, sheets: [...sheets].toSorted() };
+  return {
+    version: hash.digest("hex").slice(0, 16),
+    precache: page.map((f) => urlOf(f.path)),
+    data,
+    sheetPrefix,
+    sheets: [...sheets].toSorted(),
+    fontPrefix: `/${FONT_DIR}`,
+    fonts: fonts.toSorted(),
+  };
 }
 
 /** `sw.js` with its manifest written in, or why not: the name must appear exactly once. */

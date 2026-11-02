@@ -26,9 +26,9 @@ function CardCell({ row, plan }: { row: Row; plan: PlanId }) {
   const name = card?.name ?? "不明なカード";
   const labels = customizationLabels(card, row.build.customization);
   return (
-    <div class="flex w-[var(--card-col)] shrink-0 flex-col gap-0.5">
+    <div class="flex w-[var(--card-col)] shrink-0 flex-col items-center gap-0.5 text-center">
       <CardIcon card={card} plan={plan} size="var(--icon)" name={name} />
-      <span class="text-[10px] leading-tight break-all">{name}</span>
+      <span class="w-full text-[10px] leading-tight break-all">{name}</span>
       <CardIcon card={hif?.card} plan={plan} size="var(--hif-icon)" name={hif ? `HIF ${hif.card.name}` : "不明なHIF"} />
       <div class="flex flex-col text-[length:var(--label-font)] leading-tight break-all">
         {labels.length === 0 ? (
@@ -64,7 +64,7 @@ function RowMenu({ row, section, onChange, onClose }: { row: Row; section: Secti
   return (
     <Popover label="行のメニュー" onClose={onClose}>
       <div class="flex w-48 flex-col gap-1.5">
-        <button type="button" class="rounded border border-slate-300 px-3 py-1.5 text-left" onClick={onChange}>
+        <button type="button" class="btn px-3 py-1.5 text-left" onClick={onChange}>
           変更
         </button>
         <span class="text-xs text-slate-500">別のセクションへ移動</span>
@@ -72,7 +72,7 @@ function RowMenu({ row, section, onChange, onClose }: { row: Row; section: Secti
           {sectionsOf(planOf(section))
             .filter((s) => s !== section)
             .map((s) => (
-              <button key={s} type="button" class="flex-1 rounded border border-slate-300 px-2 py-1.5" onClick={() => move(s)}>
+              <button key={s} type="button" class="btn flex-1 px-2 py-1.5" onClick={() => move(s)}>
                 {SECTION_LABELS[s]}
               </button>
             ))}

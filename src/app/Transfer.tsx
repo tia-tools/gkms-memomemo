@@ -5,7 +5,7 @@ import { usePage } from "./page.ts";
 import { importLink, replaceText } from "./transfer.ts";
 import type { ImportFrom, Importing } from "./useImport.ts";
 
-const BUTTON = "rounded border border-slate-300 bg-white px-3 py-1";
+const BUTTON = "btn px-3 py-1 disabled:opacity-30";
 
 /**
  * What an import from `from` has come to (D16, D59): the refusal, the confirmation naming what goes
@@ -16,7 +16,7 @@ export function ImportPanel({ importing, from }: { importing: Importing; from: I
   const { memo } = usePage();
   const { state } = importing;
   if (state === null || state.from !== from) return null;
-  const box = "flex flex-wrap items-center gap-2 rounded border p-2 text-sm";
+  const box = "corners flex flex-wrap items-center gap-2 border p-2 text-sm";
   if (state.stage === "refused") {
     return (
       <div role="alert" class={`${box} border-rose-300 bg-rose-50 text-rose-700`}>
@@ -32,7 +32,7 @@ export function ImportPanel({ importing, from }: { importing: Importing; from: I
     return (
       <div role="alertdialog" aria-label="引き継ぎコードの読み込み" class={`${box} border-pink-300 bg-pink-50`}>
         <span class="flex-1">{replaceText(current, memoSize(state.memo))}</span>
-        <button type="button" class="rounded bg-pink-600 px-3 py-1 font-bold text-white" onClick={importing.accept}>
+        <button type="button" class="btn btn-on px-3 py-1 font-bold" onClick={importing.accept}>
           {current.rows === 0 ? "読み込む" : "置き換える"}
         </button>
         <button type="button" class={BUTTON} onClick={importing.dismiss}>
@@ -80,7 +80,7 @@ function CodeOut() {
   };
   return (
     <div class="flex flex-col gap-2">
-      <textarea readOnly aria-label="このメモの引き継ぎコード" rows={3} class="w-full rounded border border-slate-300 p-1 font-mono break-all" value={code ?? ""} />
+      <textarea readOnly aria-label="このメモの引き継ぎコード" rows={3} class="field w-full p-1 font-mono break-all" value={code ?? ""} />
       <div class="flex flex-wrap items-center gap-2">
         <button type="button" class={BUTTON} disabled={code === null} onClick={() => code !== null && copy(code, "コード")}>
           コードをコピー
@@ -103,7 +103,7 @@ function CodeIn({ importing }: { importing: Importing }) {
         aria-label="読み込む引き継ぎコード"
         rows={3}
         placeholder="mm1.…"
-        class="w-full rounded border border-slate-300 p-1 font-mono break-all"
+        class="field w-full p-1 font-mono break-all"
         value={text}
         onInput={(e) => setText(e.currentTarget.value)}
       />
