@@ -150,10 +150,13 @@ body {
     box-shadow: none;
   }
 
-  /* Faded by its face and colour, not by opacity: slate-500 keeps 4.5:1 against white for small text. */
+  /*
+   * Faded by its face and colour, not by opacity. Every text colour here keeps 4.5:1 against both
+   * ends of its face, the floor for small text (D67).
+   */
   .btn-off {
     background:
-      linear-gradient(#f8fafc, #f1f5f9) padding-box,
+      linear-gradient(#ffffff, #f8fafc) padding-box,
       linear-gradient(#e2e8f0, #cbd5e1) border-box;
     box-shadow: none;
     color: #64748b;
@@ -161,8 +164,8 @@ body {
 
   .btn-on {
     background:
-      linear-gradient(#f472b6, #db2777) padding-box,
-      linear-gradient(#f9a8d4, #9d174d) border-box;
+      linear-gradient(#db2777, #be185d) padding-box,
+      linear-gradient(#f472b6, #831843) border-box;
     box-shadow: 0 1px 3px rgb(190 24 93 / 0.35);
     color: #ffffff;
   }
@@ -179,13 +182,13 @@ body {
     background:
       linear-gradient(#ffffff, #fff1f2) padding-box,
       linear-gradient(#fecdd3, #e11d48) border-box;
-    color: #e11d48;
+    color: #be123c;
   }
 
   .btn-danger.armed {
     background:
-      linear-gradient(#f43f5e, #e11d48) padding-box,
-      linear-gradient(#fda4af, #9f1239) border-box;
+      linear-gradient(#e11d48, #be123c) padding-box,
+      linear-gradient(#fb7185, #881337) border-box;
     color: #ffffff;
   }
 
