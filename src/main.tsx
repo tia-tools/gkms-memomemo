@@ -4,6 +4,9 @@ import { httpCounts } from "./app/counts.ts";
 import { openIndexedDb } from "./app/idb.ts";
 import { loadedUrls, startOffline } from "./app/offline.ts";
 import { loadSkillCardData } from "./data/load.ts";
+// The game's font, IBM Plex Sans JP, at the two weights the page uses (D67); each loads its slices as text needs them.
+import "@fontsource/ibm-plex-sans-jp/500.css";
+import "@fontsource/ibm-plex-sans-jp/700.css";
 import "./index.css";
 
 const root = document.getElementById("app");
