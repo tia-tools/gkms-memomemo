@@ -597,8 +597,8 @@ All decisions D1–D25 were made by the user in the /grill-me session of 2026-10
   Date/Author: 2026-11-01, agent (Milestone 6, #33).
 
 - Decision: D66 — the card step has a level switch beside its rarity filter: 「基本」 and 「強化」, one on at a time, and the grid shows only the offered cards at that level, so each card appears once instead of twice. It starts at 強化 for a new row, and at the row's own card's level in 変更, where that card is the chosen one; a row whose card counts as not chosen (D31, D54) starts at 強化. It starts again each time the popover opens, as the rarity filter does (D56). 表現の基本, which the pool holds only at its base level (D54), shows only under 基本. The rule is `src/app/picker.ts` `atLevel` and `startLevel`; the ranking, the search and the rarity filter work within the level.
-  Rationale: the user's parked idea #11, "when picking a row's skill card, a toggle switches between the card's base and enhanced (強化) version". A switch rather than two filter toggles follows the issue's words, "switches between". Starting at 強化 is the agent's default, for the user to confirm on review: the one live count so far is a + card (成就+, Progress), and one tap reaches 基本.
-  Date/Author: 2026-11-01, agent (#11).
+  Rationale: the user's parked idea #11, "when picking a row's skill card, a toggle switches between the card's base and enhanced (強化) version". A switch rather than two filter toggles follows the issue's words, "switches between". Starting at 強化 was the agent's default, from the one live count so far being a + card (成就+, Progress), with 基本 one tap away; the user confirmed it on approving the push (job #56): "Good choice."
+  Date/Author: 2026-11-01, agent, confirmed by the user (#11).
 
 ## Outcomes & Retrospective
 
