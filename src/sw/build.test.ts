@@ -9,6 +9,8 @@ const FILES = [
   { path: "assets/index-abc.js.map", bytes: "{}" },
   { path: ".vite/manifest.json", bytes: "{}" },
   { path: "icons/frames112.webp", bytes: new Uint8Array([1, 2, 3]) },
+  { path: "fonts/plex-119-500-normal-b.woff2", bytes: new Uint8Array([4]) },
+  { path: "fonts/plex-119-500-normal-a.woff", bytes: new Uint8Array([5]) },
 ];
 const TTMR = "/img/gkms-memomemo/sheet112/sense-ttmr-0000bbbb.webp";
 const HSKI = "/img/gkms-memomemo/sheet112/sense-hski-0000aaaa.webp";
@@ -17,8 +19,18 @@ const SHEETS = [TTMR, HSKI];
 const manifestOf = (files = FILES) => swManifest(files, SHEETS, "/data/skillcards.json", "/img/");
 
 describe("swManifest", () => {
-  test("keeps the page at /, its scripts, styles and static files, but not the worker, source maps or Vite's manifests", () => {
+  test("keeps the page at /, its scripts, styles and static files, but not the worker, source maps, Vite's manifests or the font", () => {
     expect(manifestOf().precache).toEqual(["/", "/assets/index-abc.css", "/assets/index-abc.js", "/icons/frames112.webp"]);
+  });
+
+  test("names the font's files apart, sorted, for the worker to keep as the page uses them (D68)", () => {
+    const { fontPrefix, fonts } = manifestOf();
+    expect({ fontPrefix, fonts }).toEqual({ fontPrefix: "/fonts/", fonts: ["/fonts/plex-119-500-normal-a.woff", "/fonts/plex-119-500-normal-b.woff2"] });
+  });
+
+  test("the version does not change with a font file, which is not kept at install", () => {
+    const other = FILES.map((f) => (f.path.startsWith("fonts/") ? { ...f, bytes: new Uint8Array([9]) } : f));
+    expect(manifestOf(other).version).toBe(manifestOf().version);
   });
 
   test("carries the data route, the sheet prefix and the sheets, sorted", () => {

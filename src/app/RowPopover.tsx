@@ -42,7 +42,7 @@ function RefusalNote({ refusal, onJump }: { refusal: Refusal; onJump: (row: stri
     <p role="alert" class="flex flex-wrap items-center gap-2 text-xs text-rose-600">
       {refusalText(refusal)}
       {refusal.refused === "duplicate" && (
-        <button type="button" class="rounded border border-rose-300 px-2 py-0.5" onClick={() => onJump(refusal.row)}>
+        <button type="button" class="btn btn-danger px-2 py-0.5" onClick={() => onJump(refusal.row)}>
           その行へ
         </button>
       )}
@@ -104,7 +104,7 @@ export function RowPopover({ plan, section, row, onClose }: { plan: PlanId; sect
           </p>
         )}
         {row && draft.card && (
-          <button type="button" class="self-end rounded border border-slate-800 px-3 py-1" onClick={() => finish(draft.build)}>
+          <button type="button" class="btn btn-primary self-end px-3 py-1" onClick={() => finish(draft.build)}>
             この内容で保存
           </button>
         )}

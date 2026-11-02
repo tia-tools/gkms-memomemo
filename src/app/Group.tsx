@@ -107,7 +107,7 @@ function AddExtra({ row }: { row: Row }) {
           {pattern === null ? (
             <div class="flex w-56 flex-wrap gap-1">
               {EXTRA_PATTERNS.map((p, i) => (
-                <button key={p} type="button" disabled={taken.has(p)} class={`rounded border px-2 py-1 font-mono disabled:opacity-30 ${i < 2 ? "border-slate-500" : "border-slate-200 text-xs text-slate-500"}`} onClick={() => setPattern(p)}>
+                <button key={p} type="button" disabled={taken.has(p)} class={`btn px-2 py-1 font-mono disabled:opacity-30 ${i < 2 ? "" : "btn-off text-xs"}`} onClick={() => setPattern(p)}>
                   {p}
                 </button>
               ))}

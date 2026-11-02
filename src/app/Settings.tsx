@@ -7,7 +7,7 @@ export const COUNTING_NOTE = "行を追加すると、選んだスキルカー�
 
 /** On an iPhone or iPad in the browser, why and how to add the page to the home screen (D16, D61). */
 export function HomeScreenHint({ shown = suggestsHomeScreen(thisDevice()) }: { shown?: boolean }) {
-  return shown ? <p class="rounded border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">{HOME_SCREEN_HINT}</p> : null;
+  return shown ? <p class="corners border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">{HOME_SCREEN_HINT}</p> : null;
 }
 
 /**
@@ -34,7 +34,7 @@ export function Settings({
     <footer class="mt-6 flex flex-col gap-3 border-t border-slate-200 pt-4 text-sm">
       <label class="flex items-center gap-2">
         カードの絵柄
-        <select class="rounded border border-slate-300 px-2 py-1" value={idol} onChange={(e) => onIdol(e.currentTarget.value)}>
+        <select class="btn px-2 py-1" value={idol} onChange={(e) => onIdol(e.currentTarget.value)}>
           {idols.map((i) => (
             <option key={i.id} value={i.id}>
               {i.name}

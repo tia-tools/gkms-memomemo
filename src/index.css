@@ -113,3 +113,111 @@ textarea {
 .highlight {
   animation: highlight 2s ease-out;
 }
+
+/*
+ * The game's type (docs/plans/EXECPLAN_MEMORY_MEMO.md, D67; the user's reference article on the
+ * game's UI): IBM Plex Sans JP, Medium for text and Bold where the page was already bold, loaded
+ * in src/main.tsx. A glyph whose slice has not come is drawn in the system's font meanwhile.
+ */
+@theme {
+  --font-sans: "IBM Plex Sans JP", ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  font-weight: 500;
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%) fixed;
+}
+
+/*
+ * The page's controls and panels in the game's Flat 2.0 (D67), measured from the live demo in the
+ * user's reference article (https://blog.tachibanai.one/article/2024-05-31_01, read 2026-11-02):
+ * - a control is a pill. A plain one is a flat white face in a 2 px light border with a 1 px
+ *   shadow (the demo's 「背景画像をアップロード」); a coloured one has a horizontal gradient face,
+ *   a rim of the same hue lighter at the top, and a soft shadow (the demo's 「ボタン」). Flat
+ *   faces, not a vertical shine: depth comes from the rim and the shadow;
+ * - the option chosen is the coloured pill in the page's pink, as the chosen tab is; an option
+ *   beside it not chosen is faded to a flat face, a pale border and slate-500 text;
+ * - a panel or a box takes the game's mix of square and rounded corners: square at the top left
+ *   and the bottom right, rounded at the other two (the demo's text box, 0 r 0 r).
+ * Every text colour keeps 4.5:1 against both ends of its face, the floor for small text, which
+ * src/styles.test.ts computes from this file. Components, so a utility on the element still wins.
+ */
+@layer components {
+  .btn {
+    border: 2px solid #cbd9de;
+    border-radius: 9999px;
+    background: #ffffff;
+    box-shadow: 0 1px 2px #e2e8f0;
+    color: #20201e;
+  }
+
+  .btn:active:not(:disabled) {
+    transform: translateY(1px);
+    box-shadow: none;
+  }
+
+  .btn-off {
+    border-color: #e2e8f0;
+    background: #ffffff;
+    box-shadow: none;
+    color: #64748b;
+  }
+
+  .btn-on {
+    border-color: transparent;
+    background:
+      linear-gradient(90deg, #be185d, #db2777) padding-box,
+      linear-gradient(#f9a8d4, #be185d) border-box;
+    box-shadow: 0 2px 4px rgb(190 24 93 / 0.25);
+    color: #ffffff;
+  }
+
+  .btn-primary {
+    border-color: transparent;
+    background:
+      linear-gradient(90deg, #1e293b, #475569) padding-box,
+      linear-gradient(#94a3b8, #1e293b) border-box;
+    box-shadow: 0 2px 4px rgb(15 23 42 / 0.2);
+    color: #ffffff;
+  }
+
+  .btn-danger {
+    border-color: #fda4af;
+    background: #ffffff;
+    color: #be123c;
+  }
+
+  .btn-danger.armed {
+    border-color: transparent;
+    background:
+      linear-gradient(90deg, #be123c, #e11d48) padding-box,
+      linear-gradient(#fda4af, #be123c) border-box;
+    color: #ffffff;
+  }
+
+  /* The game's corners: square at the top left and the bottom right, rounded at the other two. */
+  .corners {
+    border-radius: 0 0.75rem 0 0.75rem;
+  }
+
+  .panel {
+    border: 1px solid #e2e8f0;
+    border-radius: 0 0.75rem 0 0.75rem;
+    background: #ffffff;
+    box-shadow:
+      0 1px 2px rgb(15 23 42 / 0.05),
+      0 4px 12px rgb(15 23 42 / 0.04);
+  }
+
+  .field {
+    border: 2px solid #e5e7eb;
+    border-radius: 2px;
+    background: #ffffff;
+  }
+
+  .field:focus {
+    outline: 2px solid #f9a8d4;
+    outline-offset: 0;
+    border-color: #db2777;
+  }
+}

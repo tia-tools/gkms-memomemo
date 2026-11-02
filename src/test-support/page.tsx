@@ -11,7 +11,8 @@ import type { CountsApi } from "../app/counts.ts";
 import { MemoPage } from "../app/MemoPage.tsx";
 import type { IconIndex } from "../app/sheets.ts";
 import { type Memo, PLAN_IDS } from "../memo/types.ts";
-import { SKILL_CARDS } from "./skillcards.ts";
+import { LEVELS } from "../app/picker.ts";
+import { cardNamed, SKILL_CARDS } from "./skillcards.ts";
 
 export const CATALOG = makeCatalog(SKILL_CARDS);
 
@@ -80,10 +81,17 @@ export async function pick(root: ParentNode, name: string): Promise<void> {
   await tap(must([...dialog(root).querySelectorAll<HTMLElement>("button[aria-pressed]")].find((b) => b.querySelector("span:last-child")?.textContent === name), `pick ${name}`));
 }
 
-/** Adds a row through 「＋ カードを追加」: the card, 次へ past the customization if shown, the ability. */
+/** Sets the open card step's level switch (D66) to the named card's level. */
+export async function switchLevelFor(root: ParentNode, card: string): Promise<void> {
+  const label = must(LEVELS.find((l) => l.upgrade === cardNamed(card).upgrade), `the level of ${card}`).label;
+  await tap(byText(byLabel(dialog(root), "基本・強化"), "button", label));
+}
+
+/** Adds a row through 「＋ カードを追加」: the card at its level, 次へ past the customization if shown, the ability. */
 export async function addRowThroughPopover(root: HTMLElement, sectionLabel: string, card: string, hifCard: string): Promise<void> {
   await tap(byText(section(root, sectionLabel), "button", "＋ カードを追加"));
   await type(byLabel(dialog(root), "カード名"), card);
+  await switchLevelFor(root, card);
   await pick(root, card);
   const next = [...dialog(root).querySelectorAll<HTMLElement>("button")].find((b) => b.textContent === "次へ");
   if (next !== undefined) await tap(next);
