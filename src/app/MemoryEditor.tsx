@@ -45,7 +45,7 @@ export function MemoryEditor({
                 type="button"
                 aria-label={`${stat.name} ${TIER_LABELS[tier]} ${value}`}
                 aria-pressed={tiers[i] === tier}
-                class={`tier-${tier} flex-1 rounded py-2 text-base font-bold ${tiers[i] === tier ? "ring-2 ring-slate-800" : "opacity-50"}`}
+                class={`tier-${tier} flex-1 rounded-md py-2 text-base font-bold shadow-sm ${tiers[i] === tier ? "ring-2 ring-pink-500" : "opacity-50"}`}
                 onClick={() => setTiers(tiers.with(i, tier))}
               >
                 {value}
@@ -56,7 +56,7 @@ export function MemoryEditor({
       ))}
       <div class="flex items-center justify-between gap-2">
         {onDelete ? <ArmedButton label="削除" armedLabel="もう一度押すと削除" onConfirm={onDelete} /> : <span />}
-        <button type="button" disabled={memory === null} class="rounded bg-slate-800 px-4 py-1.5 text-white disabled:opacity-30" onClick={() => memory && onSubmit(memory)}>
+        <button type="button" disabled={memory === null} class="btn btn-primary px-4 py-1.5 disabled:opacity-30" onClick={() => memory && onSubmit(memory)}>
           {initial ? "変更" : "追加"}
         </button>
       </div>

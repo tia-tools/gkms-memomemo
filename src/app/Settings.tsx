@@ -34,7 +34,7 @@ export function Settings({
     <footer class="mt-6 flex flex-col gap-3 border-t border-slate-200 pt-4 text-sm">
       <label class="flex items-center gap-2">
         カードの絵柄
-        <select class="rounded border border-slate-300 px-2 py-1" value={idol} onChange={(e) => onIdol(e.currentTarget.value)}>
+        <select class="btn px-2 py-1" value={idol} onChange={(e) => onIdol(e.currentTarget.value)}>
           {idols.map((i) => (
             <option key={i.id} value={i.id}>
               {i.name}

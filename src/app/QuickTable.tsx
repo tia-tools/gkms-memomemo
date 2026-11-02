@@ -41,7 +41,7 @@ export function QuickTable({ plan }: { plan: PlanId }) {
   const { memo, jumpTo } = usePage();
   const sections = sectionsOf(plan).filter((s) => memo.sections[s].length > 0);
   return (
-    <details class="rounded-lg bg-white shadow-sm">
+    <details class="panel">
       <summary class="cursor-pointer px-3 py-2 font-bold">早見表</summary>
       <div class="flex flex-col gap-2 px-2 pb-2">
         {sections.length === 0 && <p class="text-xs text-slate-500">まだ行がありません</p>}

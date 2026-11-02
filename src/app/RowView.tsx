@@ -64,7 +64,7 @@ function RowMenu({ row, section, onChange, onClose }: { row: Row; section: Secti
   return (
     <Popover label="行のメニュー" onClose={onClose}>
       <div class="flex w-48 flex-col gap-1.5">
-        <button type="button" class="rounded border border-slate-300 px-3 py-1.5 text-left" onClick={onChange}>
+        <button type="button" class="btn px-3 py-1.5 text-left" onClick={onChange}>
           変更
         </button>
         <span class="text-xs text-slate-500">別のセクションへ移動</span>
@@ -72,7 +72,7 @@ function RowMenu({ row, section, onChange, onClose }: { row: Row; section: Secti
           {sectionsOf(planOf(section))
             .filter((s) => s !== section)
             .map((s) => (
-              <button key={s} type="button" class="flex-1 rounded border border-slate-300 px-2 py-1.5" onClick={() => move(s)}>
+              <button key={s} type="button" class="btn flex-1 px-2 py-1.5" onClick={() => move(s)}>
                 {SECTION_LABELS[s]}
               </button>
             ))}

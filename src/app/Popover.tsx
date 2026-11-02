@@ -47,7 +47,7 @@ export function Popover({ label, onClose, children }: { label: string; onClose: 
         ref={panel}
         role="dialog"
         aria-label={label}
-        class="absolute top-full z-50 mt-1 max-w-[calc(100vw-16px)] rounded-lg border border-slate-200 bg-white p-2 text-sm shadow-lg"
+        class="panel absolute top-full z-50 mt-1 max-w-[calc(100vw-16px)] p-2 text-sm shadow-lg"
         style={{ left: `${left}px` }}
       >
         {children}
@@ -70,9 +70,8 @@ export function ArmedButton({ label, armedLabel, onConfirm }: { label: string; a
     const timer = setTimeout(() => setArmed(false), ARMED_MS);
     return () => clearTimeout(timer);
   }, [armed]);
-  const look = armed ? "armed border-rose-600 bg-rose-600 text-white" : "border-rose-300 text-rose-600";
   return (
-    <button type="button" class={`rounded border px-3 py-1.5 ${look}`} onClick={() => (armed ? onConfirm() : setArmed(true))}>
+    <button type="button" class={`btn btn-danger px-3 py-1.5 ${armed ? "armed" : ""}`} onClick={() => (armed ? onConfirm() : setArmed(true))}>
       {armed ? armedLabel : label}
     </button>
   );

@@ -12,9 +12,8 @@ import { atLevel, byRarity, FILTER_RARITIES, LEVELS, search, startLevel, toggled
 
 /** A choice that shows whether it is chosen. */
 export function Choice({ pressed, disabled, onClick, children }: { pressed: boolean; disabled?: boolean; onClick: () => void; children: ComponentChildren }) {
-  const look = pressed ? "border-slate-800 bg-slate-800 text-white" : "border-slate-300 bg-white";
   return (
-    <button type="button" aria-pressed={pressed} disabled={disabled} class={`rounded border px-2 py-1 text-xs disabled:opacity-30 ${look}`} onClick={onClick}>
+    <button type="button" aria-pressed={pressed} disabled={disabled} class={`btn px-2 py-1 text-xs disabled:opacity-30 ${pressed ? "btn-on" : "btn-off"}`} onClick={onClick}>
       {children}
     </button>
   );
@@ -26,7 +25,7 @@ function SearchBox({ value, onInput, label }: { value: string; onInput: (text: s
       type="search"
       aria-label={label}
       placeholder={label}
-      class="w-full rounded border border-slate-300 px-2 py-1"
+      class="field w-full px-2 py-1"
       value={value}
       onInput={(e) => onInput(e.currentTarget.value)}
     />
@@ -47,7 +46,7 @@ function IconGrid<T>({ entries, keyOf, nameOf, cardOf, chosen, plan, onPick }: {
   return (
     <div class="grid max-h-[50vh] grid-cols-5 gap-1 overflow-y-auto">
       {entries.map((entry) => (
-        <button key={keyOf(entry)} type="button" aria-pressed={chosen(entry)} class={`flex flex-col items-center gap-0.5 rounded p-0.5 ${chosen(entry) ? "ring-2 ring-slate-800" : ""}`} onClick={() => onPick(entry)}>
+        <button key={keyOf(entry)} type="button" aria-pressed={chosen(entry)} class={`flex flex-col items-center gap-0.5 rounded-md p-0.5 ${chosen(entry) ? "bg-pink-50 ring-2 ring-pink-500" : ""}`} onClick={() => onPick(entry)}>
           <CardIcon card={cardOf(entry)} plan={plan} size="var(--pick-icon)" name={nameOf(entry)} />
           <span class="w-full truncate text-center text-[10px]">{nameOf(entry)}</span>
         </button>
@@ -171,7 +170,7 @@ export function CustomizeStep({ card, build, onBuild, onNext }: { card: SkillCar
       </div>
       {card.customization.kinds.length > 0 && <p class="text-xs text-slate-500">合計{stepLimit(card)}回まで</p>}
       <KaimakuSwitch build={build} card={card} onBuild={onBuild} />
-      <button type="button" class="self-end rounded bg-slate-800 px-4 py-1.5 text-white" onClick={onNext}>
+      <button type="button" class="btn btn-primary self-end px-4 py-1.5" onClick={onNext}>
         次へ
       </button>
     </div>
