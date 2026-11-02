@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { byRarity, fold, search, toggled } from "./picker.ts";
+import { atLevel, byRarity, fold, LEVELS, search, startLevel, toggled } from "./picker.ts";
 
 const NAMES = ["ファンサ", "ファンサ+", "成就+", "アイドル宣言", "表現の基本"];
 const find = (query: string) => search(NAMES, query, (n) => n);
@@ -54,6 +54,34 @@ describe("byRarity", () => {
 
   test("with every rarity on, it keeps every card too", () => {
     expect(names(new Set(["SSR", "SR", "R", "N"]))).toEqual(cards.map((c) => c.name));
+  });
+});
+
+describe("the level switch (D66)", () => {
+  const cards = [
+    { name: "ファンサ", upgrade: 0 },
+    { name: "ファンサ+", upgrade: 1 },
+    { name: "表現の基本", upgrade: 0 },
+    { name: "成就+", upgrade: 1 },
+  ] as const;
+  const names = (upgrade: number) => atLevel(cards, upgrade).map((c) => c.name);
+
+  test("keeps the cards at that level only, in their order", () => {
+    expect(names(0)).toEqual(["ファンサ", "表現の基本"]);
+    expect(names(1)).toEqual(["ファンサ+", "成就+"]);
+  });
+
+  test("offers base then enhanced, the two levels a memory's card can have (D37)", () => {
+    expect(LEVELS.map((l) => [l.upgrade, l.label])).toEqual([
+      [0, "基本"],
+      [1, "強化"],
+    ]);
+  });
+
+  test("starts at the chosen card's level, and at enhanced with none chosen", () => {
+    expect(startLevel({ upgrade: 0 })).toBe(0);
+    expect(startLevel({ upgrade: 1 })).toBe(1);
+    expect(startLevel(undefined)).toBe(1);
   });
 });
 

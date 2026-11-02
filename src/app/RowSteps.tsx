@@ -8,7 +8,7 @@ import { rankedAbilities, rankedCards } from "./counts.ts";
 import { chosenStep, pickStep, stepOpen, switchKaimaku } from "./customize.ts";
 import { CardIcon } from "./Icon.tsx";
 import { usePage } from "./page.ts";
-import { byRarity, FILTER_RARITIES, search, toggled } from "./picker.ts";
+import { atLevel, byRarity, FILTER_RARITIES, LEVELS, search, startLevel, toggled } from "./picker.ts";
 
 /** A choice that shows whether it is chosen. */
 export function Choice({ pressed, disabled, onClick, children }: { pressed: boolean; disabled?: boolean; onClick: () => void; children: ComponentChildren }) {
@@ -70,20 +70,37 @@ function RarityFilter({ on, onToggle }: { on: ReadonlySet<SkillCardRarity>; onTo
   );
 }
 
+/** The card step's level switch (D66): base or enhanced, one at a time. */
+function LevelSwitch({ level, onSwitch }: { level: number; onSwitch: (upgrade: number) => void }) {
+  return (
+    <div class="flex gap-1" role="group" aria-label="基本・強化">
+      {LEVELS.map(({ upgrade, label }) => (
+        <Choice key={upgrade} pressed={level === upgrade} onClick={() => onSwitch(upgrade)}>
+          {label}
+        </Choice>
+      ))}
+    </div>
+  );
+}
+
 /**
  * Step 1: the skill card, the plan's cards then the free ones, each block ranked by the section's
- * counts (D8, D19), by name and by rarity (D56).
+ * counts (D8, D19), by name and by rarity (D56), at one level, the chosen card's or enhanced (D66).
  */
 export function CardStep({ plan, section, chosen, onPick }: { plan: PlanId; section: SectionId; chosen: SkillCard | undefined; onPick: (card: SkillCard) => void }) {
   const { catalog, counts } = usePage();
   const [query, setQuery] = useState("");
   const [rarities, setRarities] = useState<ReadonlySet<SkillCardRarity>>(new Set());
+  const [level, setLevel] = useState(() => startLevel(chosen));
   const order = useMemo(() => rankedCards(catalog.tabCards(plan), counts?.get(section)), [catalog, plan, counts, section]);
-  const cards = useMemo(() => byRarity(search(order, query, (c) => c.name), rarities), [order, query, rarities]);
+  const cards = useMemo(() => byRarity(atLevel(search(order, query, (c) => c.name), level), rarities), [order, query, level, rarities]);
   return (
     <>
       <SearchBox value={query} onInput={setQuery} label="カード名" />
-      <RarityFilter on={rarities} onToggle={(rarity) => setRarities(toggled(rarities, rarity))} />
+      <div class="flex flex-wrap gap-3">
+        <LevelSwitch level={level} onSwitch={setLevel} />
+        <RarityFilter on={rarities} onToggle={(rarity) => setRarities(toggled(rarities, rarity))} />
+      </div>
       <IconGrid entries={cards} keyOf={(c) => `${c.id}:${c.upgrade}`} nameOf={(c) => c.name} cardOf={(c) => c} chosen={(c) => c === chosen} plan={plan} onPick={onPick} />
     </>
   );
