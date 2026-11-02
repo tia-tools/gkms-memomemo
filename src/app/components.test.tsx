@@ -129,43 +129,97 @@ describe("the row popover", () => {
   });
 });
 
+/** The names in the open card step's grid, in order. */
+const shown = () => [...dialog(root).querySelectorAll("button[aria-pressed] span:last-child")].map((el) => el.textContent);
+/** The センス tab's cards at a level (1 enhanced, 0 base) of the rarities given, or of every rarity. */
+const offeredNames = (upgrade: number, ...rarities: string[]) =>
+  CATALOG.tabCards("sense")
+    .filter((c) => c.upgrade === upgrade && (rarities.length === 0 || rarities.includes(c.rarity)))
+    .map((c) => c.name);
+const toggle = (rarity: string) => tap(byText(byLabel(dialog(root), "レアリティ"), "button", rarity));
+const toLevel = (label: "基本" | "強化") => tap(byText(byLabel(dialog(root), "基本・強化"), "button", label));
+const levelPressed = () => [...byLabel(dialog(root), "基本・強化").querySelectorAll('button[aria-pressed="true"]')].map((b) => b.textContent);
+
+describe("the card step's level switch (D66)", () => {
+  test("a new row opens at 強化, each card once; 基本 shows the base cards, 表現の基本 among them", async () => {
+    await showPage(root);
+    await tap(byText(section(root, "好調"), "button", "＋ カードを追加"));
+    expect(levelPressed()).toEqual(["強化"]);
+    expect(shown()).toEqual(offeredNames(1));
+    expect(shown()).toContain("成就+");
+    expect(shown()).not.toContain("表現の基本");
+    await toLevel("基本");
+    expect(levelPressed()).toEqual(["基本"]);
+    expect(shown()).toEqual(offeredNames(0));
+    expect(shown()).toContain("表現の基本");
+    expect(shown()).not.toContain("成就+");
+    await toLevel("強化");
+    expect(shown()).toEqual(offeredNames(1));
+  });
+
+  test("works with the search and the rarity filter", async () => {
+    await showPage(root);
+    await tap(byText(section(root, "好調"), "button", "＋ カードを追加"));
+    await type(byLabel(dialog(root), "カード名"), "ファンサ");
+    expect(shown()).toEqual(["ファンサ+"]);
+    await toLevel("基本");
+    expect(shown()).toEqual(["ファンサ"]);
+    await toggle("SSR");
+    expect(shown()).toEqual([]);
+  });
+
+  test("a base card picked makes a row of the base card", async () => {
+    await showPage(root);
+    await addRowThroughPopover(root, "好調", "ファンサ", HIF.card.name);
+    const row = must(section(root, "好調").querySelector<HTMLElement>('[id^="row-"]'), "the new row");
+    expect(row.textContent).toContain("ファンサ");
+    expect(row.textContent).not.toContain("ファンサ+");
+  });
+
+  test("変更 opens at the row's own card's level, the card chosen", async () => {
+    const fansa = cardNamed("ファンサ");
+    await showPage(root, ok(addRow(emptyMemo(), "sense.kocho", "r1", newBuild(fansa.id, fansa, HIF.ability.id))));
+    await tap(byLabel(section(root, "好調"), "行のメニュー"));
+    await tap(byText(dialog(root), "button", "変更"));
+    await tap(byText(dialog(root), "button", "1 カード"));
+    expect(levelPressed()).toEqual(["基本"]);
+    const chosen = [...dialog(root).querySelectorAll('.grid > button[aria-pressed="true"]')].map((b) => b.querySelector("span:last-child")?.textContent);
+    expect(chosen).toEqual(["ファンサ"]);
+  });
+});
+
 describe("the card step's rarity filter (D56)", () => {
-  const shown = () => [...dialog(root).querySelectorAll("button[aria-pressed] span:last-child")].map((el) => el.textContent);
-  const offeredNames = (...rarities: string[]) =>
-    CATALOG.tabCards("sense")
-      .filter((c) => rarities.length === 0 || rarities.includes(c.rarity))
-      .map((c) => c.name);
-  const toggle = (rarity: string) => tap(byText(byLabel(dialog(root), "レアリティ"), "button", rarity));
 
   test("shows only the rarities switched on, several at once, and every card again when none is on", async () => {
     await showPage(root);
     await tap(byText(section(root, "好調"), "button", "＋ カードを追加"));
-    expect(shown()).toEqual(offeredNames());
+    expect(shown()).toEqual(offeredNames(1));
     await toggle("SSR");
-    expect(shown()).toEqual(offeredNames("SSR"));
+    expect(shown()).toEqual(offeredNames(1, "SSR"));
     expect(shown().length).toBeGreaterThan(0);
     await toggle("R");
-    expect(shown()).toEqual(offeredNames("SSR", "R"));
+    expect(shown()).toEqual(offeredNames(1, "SSR", "R"));
     await toggle("SSR");
     await toggle("R");
-    expect(shown()).toEqual(offeredNames());
+    expect(shown()).toEqual(offeredNames(1));
   });
 
   test("works with the search: a name and a rarity together", async () => {
     await showPage(root);
     await tap(byText(section(root, "好調"), "button", "＋ カードを追加"));
     await type(byLabel(dialog(root), "カード名"), "ファンサ");
-    expect(shown()).toEqual(["ファンサ", "ファンサ+"]);
+    expect(shown()).toEqual(["ファンサ+"]);
     await toggle("SSR");
     expect(shown()).toEqual([]);
     await toggle("SSR");
     await toggle("R");
-    expect(shown()).toEqual(["ファンサ", "ファンサ+"]);
+    expect(shown()).toEqual(["ファンサ+"]);
   });
 
-  test("N shows 表現の基本 alone, the one N card that can be a produce memory (D54)", async () => {
+  test("N shows 表現の基本 alone, the one N card that can be a produce memory (D54), at 基本, its one level", async () => {
     await showPage(root);
     await tap(byText(section(root, "好調"), "button", "＋ カードを追加"));
+    await toLevel("基本");
     await toggle("N");
     expect(shown()).toEqual(["表現の基本"]);
   });
