@@ -33,7 +33,7 @@ function AddCard({ plan, section }: { plan: PlanId; section: SectionId }) {
   const [open, setOpen] = useState(false);
   return (
     <div class="relative mt-1">
-      <button type="button" class="rounded border border-dashed border-slate-300 px-3 py-1 text-sm text-slate-600" onClick={() => setOpen(true)}>
+      <button type="button" class="corners border border-dashed border-slate-300 px-3 py-1 text-sm text-slate-600" onClick={() => setOpen(true)}>
         ＋ カードを追加
       </button>
       {open && <RowPopover plan={plan} section={section} onClose={() => setOpen(false)} />}
@@ -63,7 +63,7 @@ export function SectionView({ section, plan, gapsOnly }: { section: SectionId; p
   const shown = gapsOnly ? rows.filter(hasGaps) : rows;
   const { list, drag, handle } = useRowDrag(rows, shown);
   return (
-    <section class="flex flex-col gap-1 rounded-lg bg-white p-1 shadow-sm min-[600px]:p-2" aria-label={SECTION_LABELS[section]}>
+    <section class="panel flex flex-col gap-1 p-1 min-[600px]:p-2" aria-label={SECTION_LABELS[section]}>
       <h2 class="font-bold">{SECTION_LABELS[section]}</h2>
       {rows.length > 0 && <ColumnHeader />}
       <div ref={list}>

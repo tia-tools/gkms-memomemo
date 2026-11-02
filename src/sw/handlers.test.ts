@@ -5,8 +5,18 @@ import type { SwManifest } from "./routes.ts";
 
 const SHEET = "/img/gkms-memomemo/sheet112/sense-hski-0000aaaa.webp";
 const OLD_SHEET = "/img/gkms-memomemo/sheet112/sense-hski-1111cccc.webp";
-const MANIFEST: SwManifest = { version: "v2", precache: ["/", "/assets/index-abc.js"], data: "/data/skillcards.json", sheetPrefix: "/img/", sheets: [SHEET] };
-const ANSWERS = { "/": "<html>v2</html>", "/assets/index-abc.js": "js v2", "/data/skillcards.json": "data 1", [SHEET]: "sheet" };
+const FONT = "/fonts/ibm-plex-sans-jp-119-500-normal-AbCd12.woff2";
+const OLD_FONT = "/fonts/ibm-plex-sans-jp-119-500-normal-Old999.woff2";
+const MANIFEST: SwManifest = {
+  version: "v2",
+  precache: ["/", "/assets/index-abc.js"],
+  data: "/data/skillcards.json",
+  sheetPrefix: "/img/",
+  sheets: [SHEET],
+  fontPrefix: "/fonts/",
+  fonts: [FONT],
+};
+const ANSWERS = { "/": "<html>v2</html>", "/assets/index-abc.js": "js v2", "/data/skillcards.json": "data 1", [SHEET]: "sheet", [FONT]: "font" };
 
 function world(answers: Record<string, string | number> = ANSWERS) {
   const network = fakeNetwork(answers);
@@ -38,18 +48,22 @@ describe("install", () => {
 });
 
 describe("activate", () => {
-  test("deletes earlier versions' pages and the sheets the index no longer names, keeping the rest", async () => {
+  test("deletes earlier versions' pages, the sheets the index and the font files the build no longer names, keeping the rest", async () => {
     const { caches, worker } = world();
     const older = await caches.open("memomemo-page-v1");
     await older.put("/", new Response("v1"));
     const sheets = await caches.open("memomemo-sheets");
     await sheets.put(SHEET, new Response("sheet"));
     await sheets.put(OLD_SHEET, new Response("old"));
+    const fonts = await caches.open("memomemo-fonts");
+    await fonts.put(FONT, new Response("font"));
+    await fonts.put(OLD_FONT, new Response("old"));
     await (await caches.open("memomemo-data")).put("/data/skillcards.json", new Response("data"));
     await install(worker);
     await activate(worker);
     expect(caches.kept()).toEqual({
       "memomemo-sheets": [`${ORIGIN}${SHEET}`],
+      "memomemo-fonts": [`${ORIGIN}${FONT}`],
       "memomemo-data": [`${ORIGIN}/data/skillcards.json`],
       "memomemo-page-v2": [`${ORIGIN}/`, `${ORIGIN}/assets/index-abc.js`],
     });
@@ -161,6 +175,15 @@ describe("respond", () => {
     expect(caches.kept()["memomemo-sheets"]).toEqual([]);
   });
 
+  test("a font file is fetched once, then kept in the font's own cache: offline the page keeps its font (D68)", async () => {
+    const { caches, network, worker } = world();
+    expect(await ask(worker, FONT)).toBe("font");
+    network.offline = true;
+    expect(await ask(worker, FONT)).toBe("font");
+    expect(network.fetched).toEqual([`${ORIGIN}${FONT}`]);
+    expect(caches.kept()["memomemo-fonts"]).toEqual([`${ORIGIN}${FONT}`]);
+  });
+
   test("anything else is left to the browser", async () => {
     const { worker } = world();
     expect([await ask(worker, "/sw.js"), await ask(worker, "/other.txt")]).toEqual([null, null]);
@@ -170,8 +193,12 @@ describe("respond", () => {
 describe("keepLoaded", () => {
   test("keeps the data file and the sheets a first visit loaded, from the network, which the HTTP cache answers", async () => {
     const { caches, worker } = world();
-    await keepLoaded([`${ORIGIN}/assets/index-abc.js`, `${ORIGIN}/data/skillcards.json`, `${ORIGIN}${SHEET}`], worker);
-    expect(caches.kept()).toEqual({ "memomemo-data": [`${ORIGIN}/data/skillcards.json`], "memomemo-sheets": [`${ORIGIN}${SHEET}`] });
+    await keepLoaded([`${ORIGIN}/assets/index-abc.js`, `${ORIGIN}/data/skillcards.json`, `${ORIGIN}${SHEET}`, `${ORIGIN}${FONT}`], worker);
+    expect(caches.kept()).toEqual({
+      "memomemo-data": [`${ORIGIN}/data/skillcards.json`],
+      "memomemo-sheets": [`${ORIGIN}${SHEET}`],
+      "memomemo-fonts": [`${ORIGIN}${FONT}`],
+    });
   });
 
   test("fetches nothing already kept", async () => {

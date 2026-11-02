@@ -6,7 +6,7 @@ import { type Connect, defineConfig, type Plugin } from "vite";
 import { SKILLCARDS_ROUTE } from "./infra/worker/data.ts";
 import { imageKey } from "./infra/worker/img.ts";
 import { parseIconIndex, SHEET_URL_PREFIX } from "./src/app/sheets.ts";
-import { type BuiltFile, SW_FILE, swManifest, withManifest } from "./src/sw/build.ts";
+import { type BuiltFile, FONT_DIR, SW_FILE, swManifest, withManifest } from "./src/sw/build.ts";
 
 /** The gakumas-supportcards checkout the dev server borrows from; by default beside this one. */
 const SIBLING = process.env["SUPPORTCARDS_DIR"] ?? join(import.meta.dirname, "../gakumas-supportcards");
@@ -88,7 +88,11 @@ function serviceWorker(): Plugin {
       build: {
         rolldownOptions: {
           input: { index: join(import.meta.dirname, "index.html"), sw: join(import.meta.dirname, "src/sw/sw.ts") },
-          output: { entryFileNames: (chunk) => (chunk.name === "sw" ? SW_FILE : "assets/[name]-[hash].js") },
+          output: {
+            entryFileNames: (chunk) => (chunk.name === "sw" ? SW_FILE : "assets/[name]-[hash].js"),
+            // The font's files go apart, where the worker keeps them as the page uses them (D68).
+            assetFileNames: (asset) => (/\.woff2?$/.test(asset.names[0] ?? "") ? `${FONT_DIR}[name]-[hash][extname]` : "assets/[name]-[hash][extname]"),
+          },
         },
       },
     }),

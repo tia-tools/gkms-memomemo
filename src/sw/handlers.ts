@@ -5,7 +5,7 @@
  * under `bun test` with fakes; sw.ts wires them to the worker's events.
  */
 
-import { cacheNames, type RequestFacts, routeOf, staleCaches, staleSheets, type SwManifest, worthKeeping } from "./routes.ts";
+import { cacheNames, type RequestFacts, routeOf, staleCaches, staleKept, type SwManifest, worthKeeping } from "./routes.ts";
 
 /** The slice of a `Cache` the worker uses. */
 export interface CacheLike {
@@ -47,12 +47,18 @@ export async function install(worker: Worker): Promise<void> {
   await page.addAll([...worker.manifest.precache]);
 }
 
-/** Deletes earlier versions' pages and the sheets the bundled index no longer names. */
+/** Drops what `named` no longer holds from one kept cache. */
+async function dropStale(cache: CacheLike, named: readonly string[]): Promise<void> {
+  const stale = staleKept((await cache.keys()).map((request) => request.url), named);
+  await Promise.all(stale.map((url) => cache.delete(url)));
+}
+
+/** Deletes earlier versions' pages, the sheets the bundled index no longer names, and the font files the build no longer wrote. */
 export async function activate(worker: Worker): Promise<void> {
   await Promise.all(staleCaches(await worker.caches.keys(), worker.manifest.version).map((name) => worker.caches.delete(name)));
-  const sheets = await worker.caches.open(cacheNames(worker.manifest.version).sheets);
-  const stale = staleSheets((await sheets.keys()).map((request) => request.url), worker.manifest);
-  await Promise.all(stale.map((url) => sheets.delete(url)));
+  const names = cacheNames(worker.manifest.version);
+  await dropStale(await worker.caches.open(names.sheets), worker.manifest.sheets);
+  await dropStale(await worker.caches.open(names.fonts), worker.manifest.fonts);
 }
 
 /** From the network, a copy kept when it answers 200; the copy when the network fails or answers otherwise. */
@@ -110,12 +116,14 @@ export function respond(request: Request, facts: RequestFacts, worker: Worker): 
       return open(names.data).then((data) => networkFirst(worker, request, data, new URL(worker.manifest.data, worker.origin).href));
     case "sheet":
       return open(names.sheets).then((sheets) => cacheFirst(worker, request, sheets, true));
+    case "font":
+      return open(names.fonts).then((fonts) => cacheFirst(worker, request, fonts, true));
   }
 }
 
 /**
  * Keeps what a page loaded before this worker controlled it (`urls`, its first visit's resources):
- * the data file and the sheets, fetched again, which the browser's HTTP cache answers. A failure
+ * the data file, the sheets and the font's slices, fetched again, which the browser's HTTP cache answers. A failure
  * leaves that file to be kept on the next visit, when the worker sees its request.
  */
 export async function keepLoaded(urls: readonly unknown[], worker: Worker): Promise<void> {
@@ -123,7 +131,8 @@ export async function keepLoaded(urls: readonly unknown[], worker: Worker): Prom
   const dataUrl = new URL(worker.manifest.data, worker.origin).href;
   await Promise.all(
     worthKeeping(urls, worker.origin, worker.manifest).map(async (url) => {
-      const cache = await worker.caches.open(url === dataUrl ? names.data : names.sheets);
+      const fonts = new URL(url).pathname.startsWith(worker.manifest.fontPrefix);
+      const cache = await worker.caches.open(url === dataUrl ? names.data : fonts ? names.fonts : names.sheets);
       if ((await kept(cache, url)) !== undefined) return;
       const answer = await worker.fetch(url).catch(() => null);
       if (answer?.status === 200) await cache.put(url, answer);

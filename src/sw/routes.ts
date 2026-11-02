@@ -17,6 +17,10 @@ export interface SwManifest {
   sheetPrefix: string;
   /** Every sheet the bundled index names (src/icons/index.v1.json); a kept sheet it no longer names is dropped. */
   sheets: readonly string[];
+  /** Where the build puts the font's files (vite.config.ts). */
+  fontPrefix: string;
+  /** Every font file the build wrote; a kept one it no longer wrote is dropped. */
+  fonts: readonly string[];
 }
 
 /**
@@ -25,9 +29,11 @@ export interface SwManifest {
  * - `precached`: a file of the page, from the cache, since its name or the worker changes with it;
  * - `data`: the skill card file, from the network, the last copy kept for when there is none;
  * - `sheet`: a sprite sheet, from the cache once shown, its name never changing meaning;
+ * - `font`: a slice of the font, from the cache once used, its name holding its hash (D68): kept
+ *   as the page needs it rather than at install, since the page uses a few of its slices;
  * - `network`: anything else, left to the browser as if there were no service worker.
  */
-export type Route = "page" | "precached" | "data" | "sheet" | "network";
+export type Route = "page" | "precached" | "data" | "sheet" | "font" | "network";
 
 export interface RequestFacts {
   url: string;
@@ -43,6 +49,7 @@ export function routeOf(request: RequestFacts, origin: string, manifest: SwManif
   if (url.search !== "") return "network";
   if (url.pathname === manifest.data) return "data";
   if (url.pathname.startsWith(manifest.sheetPrefix)) return "sheet";
+  if (url.pathname.startsWith(manifest.fontPrefix)) return "font";
   return manifest.precache.includes(url.pathname) ? "precached" : "network";
 }
 
@@ -53,11 +60,12 @@ export interface CacheNames {
   page: string;
   data: string;
   sheets: string;
+  fonts: string;
 }
 
-/** The page's cache is per version; the data and the sheets outlive a deploy. */
+/** The page's cache is per version; the data, the sheets and the font outlive a deploy. */
 export function cacheNames(version: string): CacheNames {
-  return { page: `${CACHE_PREFIX}page-${version}`, data: `${CACHE_PREFIX}data`, sheets: `${CACHE_PREFIX}sheets` };
+  return { page: `${CACHE_PREFIX}page-${version}`, data: `${CACHE_PREFIX}data`, sheets: `${CACHE_PREFIX}sheets`, fonts: `${CACHE_PREFIX}fonts` };
 }
 
 /** The caches an activation deletes: this page's caches the version does not use, so earlier versions' pages. */
@@ -66,9 +74,9 @@ export function staleCaches(existing: readonly string[], version: string): strin
   return existing.filter((name) => name.startsWith(CACHE_PREFIX) && !used.has(name));
 }
 
-/** The kept sheets (their URLs) that the bundled index no longer names. */
-export function staleSheets(kept: readonly string[], manifest: SwManifest): string[] {
-  const current = new Set(manifest.sheets);
+/** The kept files (their URLs) whose paths `named` no longer holds: the sheets the bundled index, or the font files the build, no longer names. */
+export function staleKept(kept: readonly string[], named: readonly string[]): string[] {
+  const current = new Set(named);
   return kept.filter((url) => !current.has(new URL(url).pathname));
 }
 
@@ -84,11 +92,11 @@ function parses(url: string): boolean {
 
 /**
  * Of the URLs a page loaded before its service worker controlled it (its first visit), those to
- * keep for offline use: the data file and the sheets. Anything else named is ignored, so a message
+ * keep for offline use: the data file, the sheets and the font's slices. Anything else named is ignored, so a message
  * cannot make the worker fetch what it would not keep anyway.
  */
 export function worthKeeping(urls: readonly unknown[], origin: string, manifest: SwManifest): string[] {
   const keep = urls.filter((url): url is string => typeof url === "string" && parses(url));
   const routes = keep.map((url) => routeOf({ url, method: "GET", navigate: false }, origin, manifest));
-  return [...new Set(keep.filter((_, i) => routes[i] === "data" || routes[i] === "sheet"))];
+  return [...new Set(keep.filter((_, i) => routes[i] === "data" || routes[i] === "sheet" || routes[i] === "font"))];
 }
