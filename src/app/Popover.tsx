@@ -34,13 +34,21 @@ function useEscape(onClose: () => void): void {
   }, [onClose]);
 }
 
-/** Renders the component again whenever the window is resized or the phone turned. */
-function useRenderOnResize(): void {
-  const [, setResizes] = useState(0);
+/**
+ * Renders the component again whenever the window is resized or the phone turned, or anything
+ * scrolls: a section's rows scrolled sideways move the anchor (#69). Scroll events do not bubble,
+ * so the window listens for them in the capture phase.
+ */
+function useRenderOnMove(): void {
+  const [, setMoves] = useState(0);
   useEffect(() => {
-    const onResize = (): void => setResizes((n) => n + 1);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    const onMove = (): void => setMoves((n) => n + 1);
+    window.addEventListener("resize", onMove);
+    window.addEventListener("scroll", onMove, true);
+    return () => {
+      window.removeEventListener("resize", onMove);
+      window.removeEventListener("scroll", onMove, true);
+    };
   }, []);
 }
 
@@ -65,9 +73,9 @@ export function Popover({ label, onClose, children }: { label: string; onClose: 
   const marker = useRef<HTMLSpanElement>(null);
   const panel = useRef<HTMLDivElement>(null);
   const [place, setPlace] = useState<Place>({ left: 0, top: null });
-  useRenderOnResize();
+  useRenderOnMove();
   // Measured after every render, since a popover's steps change its width, and a resize or a turn
-  // of the phone renders it again; set only when it moved.
+  // of the phone or a scroll renders it again; set only when it moved.
   useLayoutEffect(() => {
     const anchor = marker.current?.parentElement;
     if (!panel.current || !anchor) return;
