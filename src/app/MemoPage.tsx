@@ -9,6 +9,7 @@ import { PLAN_LABELS } from "./labels.ts";
 import { type Page, PageContext } from "./page.ts";
 import { QuickTable } from "./QuickTable.tsx";
 import { SectionView } from "./Section.tsx";
+import { PopoverLayerRoot } from "./Popover.tsx";
 import { HomeScreenHint, Settings } from "./Settings.tsx";
 import type { IconIndex } from "./sheets.ts";
 import { DEFAULT_SETTINGS, NOT_SAVING, type Saving, type Settings as SavedSettings } from "./storage.ts";
@@ -35,6 +36,22 @@ function Tabs({ tab, onTab }: { tab: PlanId; onTab: (plan: PlanId) => void }) {
         </button>
       ))}
     </nav>
+  );
+}
+
+/** A tab's body: the 早見表, 「未所持がある行だけ表示」 and the tab's sections. */
+function TabBody({ tab, gapsOnly, onGapsOnly }: { tab: PlanId; gapsOnly: boolean; onGapsOnly: (on: boolean) => void }) {
+  return (
+    <div class="flex flex-col gap-3 pt-3">
+      <QuickTable plan={tab} />
+      <label class="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={gapsOnly} onChange={(e) => onGapsOnly(e.currentTarget.checked)} />
+        未所持がある行だけ表示
+      </label>
+      {sectionsOf(tab).map((section) => (
+        <SectionView key={section} section={section} plan={tab} gapsOnly={gapsOnly} />
+      ))}
+    </div>
   );
 }
 
@@ -121,22 +138,15 @@ export function MemoPage({
   }, [catalog, sheets, idol, defaultIdol, memo, highlighted, highlight, counts, counting, countsApi]);
   return (
     <PageContext.Provider value={page}>
-      <ImportPanel importing={importing} from="link" />
-      <Tabs tab={tab} onTab={setTab} />
-      <div class="flex flex-col gap-3 pt-3">
-        <QuickTable plan={tab} />
-        <label class="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={gapsOnly} onChange={(e) => setGapsOnly(e.currentTarget.checked)} />
-          未所持がある行だけ表示
-        </label>
-        {sectionsOf(tab).map((section) => (
-          <SectionView key={section} section={section} plan={tab} gapsOnly={gapsOnly} />
-        ))}
-      </div>
-      <Settings idols={catalog.data.idols} idol={idol} onIdol={setIdol} counting={counting} onCounting={setCounting}>
-        <HomeScreenHint />
-        <Transfer importing={importing} />
-      </Settings>
+      <PopoverLayerRoot>
+        <ImportPanel importing={importing} from="link" />
+        <Tabs tab={tab} onTab={setTab} />
+        <TabBody tab={tab} gapsOnly={gapsOnly} onGapsOnly={setGapsOnly} />
+        <Settings idols={catalog.data.idols} idol={idol} onIdol={setIdol} counting={counting} onCounting={setCounting}>
+          <HomeScreenHint />
+          <Transfer importing={importing} />
+        </Settings>
+      </PopoverLayerRoot>
     </PageContext.Provider>
   );
 }
