@@ -63,6 +63,13 @@ describe("the Purpose scenario", () => {
   });
 });
 
+describe("the card column", () => {
+  test("says カスタムなし for a card with no customization (#71)", async () => {
+    await showPage(root, withJoju());
+    expect(byText(section(root, "好調"), "span", "カスタムなし")).toBeTruthy();
+  });
+});
+
 describe("the memory popover", () => {
   test("追加 stays disabled until all three tiers are chosen", async () => {
     await showPage(root, withJoju());
