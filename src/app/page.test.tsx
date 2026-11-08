@@ -37,16 +37,31 @@ afterEach(() => act(() => render(null, root)));
 const rowOrder = (label: string) => [...section(root, label).querySelectorAll("[data-row]")].map((el) => el.getAttribute("data-row"));
 
 describe("extra groups", () => {
-  test("「＋追加」 adds a %%% group, and a second %%% is greyed out (D3)", async () => {
+  const addButtons = () => [...section(root, "好調").querySelectorAll("button[aria-label$='を追加']")].map((b) => b.textContent);
+
+  test("each 追加 button says what it adds: 「＋%%%」 and 「＋FFF」 go straight to the memory, and leave once the row has their group (D3, #70)", async () => {
     await showPage(root, withRow(emptyMemo(), "r1", "成就+"));
-    await tap(byText(section(root, "好調"), "button", "＋追加"));
-    await tap(byText(dialog(root), "button", "%%%"));
+    expect(addButtons()).toEqual(["＋%%%", "＋FFF", "＋他"]);
+    await tap(byLabel(section(root, "好調"), "%%%を追加"));
     for (const tier of ["Vo 虹 2.8", "Da 虹 2.8", "Vi 虹 2.8"]) await tap(byLabel(dialog(root), tier));
     await tap(byText(dialog(root), "button", "追加"));
     expect(byLabel(section(root, "好調"), "%%% 2.8 / 2.8 / 2.8")).toBeTruthy();
-    await tap(byText(section(root, "好調"), "button", "＋追加"));
-    expect(byText(dialog(root), "button", "%%%").hasAttribute("disabled")).toBe(true);
-    expect(byText(dialog(root), "button", "FFF").hasAttribute("disabled")).toBe(false);
+    expect(addButtons()).toEqual(["＋FFF", "＋他"]);
+  });
+
+  test("「＋他」 offers %FF, F%F and FF%, the one the row has greyed out (D18, #70)", async () => {
+    await showPage(root, ok(addExtraGroup(withRow(emptyMemo(), "r1", "成就+"), "r1", "F%F", DDR)));
+    await tap(byLabel(section(root, "好調"), "ほかのパターンを追加"));
+    expect([...dialog(root).querySelectorAll("button")].map((b) => [b.textContent, b.hasAttribute("disabled")])).toEqual([
+      ["%FF", false],
+      ["F%F", true],
+      ["FF%", false],
+    ]);
+    await tap(byText(dialog(root), "button", "FF%"));
+    for (const tier of ["Vo 虹 20", "Da 虹 20", "Vi 虹 2.8"]) await tap(byLabel(dialog(root), tier));
+    await tap(byText(dialog(root), "button", "追加"));
+    expect(byLabel(section(root, "好調"), "FF% 20 / 20 / 2.8")).toBeTruthy();
+    expect(addButtons()).toEqual([]);
   });
 });
 
@@ -86,8 +101,7 @@ describe("an emptied extra group (D27)", () => {
     expect(byLabel(section(root, "好調"), "%%% 3.5 / 3.5 / 2.8")).toBeTruthy();
     await tap(byText(dialog(root), "button", "メモリー1件も外す"));
     expect(section(root, "好調").querySelector('[aria-label^="%%% "]')).toBeNull();
-    await tap(byText(section(root, "好調"), "button", "＋追加"));
-    expect(byText(dialog(root), "button", "%%%").hasAttribute("disabled")).toBe(false);
+    expect(byLabel(section(root, "好調"), "%%%を追加")).toBeTruthy();
   });
 
   test("a fixed group has no removal", async () => {
