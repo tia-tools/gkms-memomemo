@@ -2,7 +2,7 @@ import { useState } from "preact/hooks";
 import { addExtraGroup, addMemory, changeMemory, deleteMemory, type GroupPattern, isRefusal, removeExtraGroup } from "../memo/edit.ts";
 import { EXTRA_PATTERNS, type ExtraPattern, MAX_EXTRAS, type Memory, type Pattern, type Row } from "../memo/types.ts";
 import { cellValues } from "../memo/values.ts";
-import { columnLabels, refusalText, STATS } from "./labels.ts";
+import { type ColumnLabel, columnLabels, refusalText, STATS } from "./labels.ts";
 import { MemoryEditor } from "./MemoryEditor.tsx";
 import { usePage } from "./page.ts";
 import { ArmedButton, Popover } from "./Popover.tsx";
@@ -69,14 +69,22 @@ export function GroupView({ row, pattern, memories, extra }: { row: Row; pattern
   );
 }
 
+/** A column's mark, its stat said only to assistive technology (#54). */
+export function ColumnMark({ label, class: className, color }: { label: ColumnLabel; class: string; color?: string }) {
+  return (
+    <span class={className} style={color === undefined ? undefined : { borderColor: color }}>
+      <span class="sr-only">{label.stat}</span>
+      {label.mark}
+    </span>
+  );
+}
+
 /** The labels above an extra group, which the section header cannot know (Artifacts and Notes). */
 function ExtraLabels({ pattern }: { pattern: ExtraPattern }) {
   return (
     <div class="flex gap-[var(--cell-gap)] text-[9px] leading-3 text-slate-500">
       {columnLabels(pattern).map((label) => (
-        <span key={label} class="w-[var(--cell-w)] text-center">
-          {label}
-        </span>
+        <ColumnMark key={label.stat} label={label} class="w-[var(--cell-w)] text-center" />
       ))}
     </div>
   );
