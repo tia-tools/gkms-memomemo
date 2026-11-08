@@ -68,7 +68,7 @@ describe("the card column", () => {
     await showPage(root, withJoju());
     const name = byText(section(root, "好調"), "span", "成就+");
     expect(name.className).toContain("card-name");
-    expect(Number(name.style.getPropertyValue("--name-ems"))).toBeCloseTo(2.6);
+    expect(Number(name.style.getPropertyValue("--name-ems"))).toBeCloseTo(2.64);
   });
 });
 

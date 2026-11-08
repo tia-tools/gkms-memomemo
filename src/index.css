@@ -56,7 +56,7 @@ textarea {
 
 /*
  * A card's name in the card column on one line (#68): 10 px when it fits, else the size at which
- * its width in ems, estimated by src/app/fit.ts and set as --name-ems, fills the column. Clipped,
+ * its width in ems, an upper bound from src/app/fit.ts set as --name-ems, fills the column. Clipped,
  * not wrapped, should the estimate fall short.
  */
 .card-name {

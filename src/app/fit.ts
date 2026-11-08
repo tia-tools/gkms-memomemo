@@ -1,25 +1,27 @@
 /**
  * A card name on one line in the card column (#68): drawn at the row's usual size when it fits,
  * smaller when it does not, never wrapped. The page has no layout to measure in its tests, and a
- * row should not measure itself after it is drawn, so the width is estimated from the characters:
- * a full-width one (kana, kanji, ＆) takes one em, a half-width one (+, Latin letters and digits,
- * half-width katakana) at most HALF_WIDTH_EM of one in IBM Plex Sans JP.
+ * row should not measure itself after it is drawn, so the width is estimated from the characters,
+ * as an upper bound: one em for every character, except the narrow ones IBM Plex Sans JP draws at
+ * most NARROW_EM wide (measured in Chrome at weight 500, 2026-11-08: digits and + 0.63, the
+ * listed punctuation at most 0.51, half-width katakana 0.5). A Latin letter or % counts one em:
+ * W is 0.97 and % 0.99, so any smaller figure could clip them.
  */
 
-export const HALF_WIDTH_EM = 0.6;
+export const NARROW_EM = 0.64;
 
-/** Below U+1100 every script the names use is half-width, as are the half-width forms U+FF61–U+FFDC. */
-const FULL_WIDTH_FROM = 0x1100;
-const HALF_FORMS_FIRST = 0xff61;
-const HALF_FORMS_LAST = 0xffdc;
+const NARROW = new Set("0123456789+-.,:;!?()/' ");
+const HALF_KANA_FIRST = 0xff61;
+const HALF_KANA_LAST = 0xff9f;
 
-function isHalfWidth(code: number): boolean {
-  return code < FULL_WIDTH_FROM || (code >= HALF_FORMS_FIRST && code <= HALF_FORMS_LAST);
+function isNarrow(char: string): boolean {
+  const code = char.codePointAt(0) ?? 0;
+  return NARROW.has(char) || (code >= HALF_KANA_FIRST && code <= HALF_KANA_LAST);
 }
 
 /** How many ems wide the name is drawn, at most; `.card-name` in src/index.css divides the column by it. */
 export function nameEms(name: string): number {
   let ems = 0;
-  for (const char of name) ems += isHalfWidth(char.codePointAt(0) ?? 0) ? HALF_WIDTH_EM : 1;
+  for (const char of name) ems += isNarrow(char) ? NARROW_EM : 1;
   return ems;
 }
