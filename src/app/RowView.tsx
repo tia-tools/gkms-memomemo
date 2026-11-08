@@ -3,6 +3,7 @@ import { useState } from "preact/hooks";
 import { deleteRow, isRefusal, moveRow } from "../memo/edit.ts";
 import { FIXED_PATTERNS, planOf, type PlanId, type Row, type SectionId, sectionsOf } from "../memo/types.ts";
 import { customizationLabels } from "./catalog.ts";
+import { nameEms } from "./fit.ts";
 import { ExtrasArea, GroupView } from "./Group.tsx";
 import { CardIcon } from "./Icon.tsx";
 import { SECTION_LABELS } from "./labels.ts";
@@ -18,7 +19,7 @@ export function memoryCount(row: Row): number {
   return FIXED_PATTERNS.reduce((n, p) => n + row.fixed[p].length, 0) + row.extras.reduce((n, g) => n + g.memories.length, 0);
 }
 
-/** The card column (D1, D31): the card, its name, and under it the H.I.F. ability, then the customization and 開幕時獲得. */
+/** The card column (D1, D31): the card, its name on one line (#68), and under it the H.I.F. ability, then the customization and 開幕時獲得. */
 function CardCell({ row, plan }: { row: Row; plan: PlanId }) {
   const { catalog } = usePage();
   const card = catalog.card(row.build.card, row.build.upgrade);
@@ -28,7 +29,9 @@ function CardCell({ row, plan }: { row: Row; plan: PlanId }) {
   return (
     <div class="flex w-[var(--card-col)] shrink-0 flex-col items-center gap-0.5 text-center">
       <CardIcon card={card} plan={plan} size="var(--icon)" name={name} />
-      <span class="w-full text-[10px] leading-tight break-all">{name}</span>
+      <span class="card-name w-full leading-tight" style={{ "--name-ems": nameEms(name) }}>
+        {name}
+      </span>
       <CardIcon card={hif?.card} plan={plan} size="var(--hif-icon)" name={hif ? `HIF ${hif.card.name}` : "不明なHIF"} />
       <div class="flex flex-col text-[length:var(--label-font)] leading-tight break-all">
         {labels.length === 0 ? (
