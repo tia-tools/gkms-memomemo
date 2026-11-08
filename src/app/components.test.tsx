@@ -322,4 +322,24 @@ describe("the popover", () => {
       Reflect.deleteProperty(document.documentElement, "clientWidth");
     }
   });
+
+  test("moves with its anchor when a section's rows are scrolled sideways (#69)", async () => {
+    await showPage(root, withJoju());
+    await tap(byLabel(section(root, "好調"), "%F% 未所持"));
+    const panel = dialog(root);
+    const anchor = must(root.querySelector("[data-popover-anchor]")?.parentElement, "the anchor");
+    expect(panel.style.left).toBe("8px");
+    Object.defineProperty(anchor, "getBoundingClientRect", { value: () => new DOMRect(60, 40, 88, 26), configurable: true });
+    const scroller = must(section(root, "好調").querySelector<HTMLElement>(".overflow-x-auto"), "the sideways scroller");
+    Object.defineProperty(document.documentElement, "clientWidth", { value: 390, configurable: true });
+    try {
+      await act(() => {
+        scroller.dispatchEvent(new Event("scroll"));
+      });
+      // It fits from the anchor's new place at 60, so it starts there, the layer at 0.
+      expect(panel.style.left).toBe("60px");
+    } finally {
+      Reflect.deleteProperty(document.documentElement, "clientWidth");
+    }
+  });
 });
