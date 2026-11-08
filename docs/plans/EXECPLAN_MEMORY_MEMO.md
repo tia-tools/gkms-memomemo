@@ -151,6 +151,10 @@ The work is tracked on the project's board (`tia-tools` project 7, see `CLAUDE.m
 - [x] (2026-11-02 02:53Z) #12 claimed on `feat/ui-design`, from `develop` at `600c5e0`: the page in the game's Flat 2.0 controls and font, the user's choice B (job #61; D67), with the font's slices kept by the service worker as the page uses them (D68). `bun test` (470 then; each rule of the font's route seen to turn a test red when broken: no route, the font precached, stale slices kept, a first visit's slices not kept, slices kept with the sheets), `bun run type-check`, `bun run lint` and `bun run build` exit 0. In Chrome on the dev server, with a memo of three rows, the font is IBM Plex Sans JP at 500 and the controls, panels and popovers draw as D67 says; with `vite preview` the worker kept 39 slices in `memomemo-fonts` beside the 9 precached files.
   - [x] (2026-11-02 02:55Z) `/codex-review` of the branch (`origin/develop...9e203f0`, codex-cli 0.150.1, read-only in a snapshot; the sandbox held and the repository was not touched): CHANGES REQUESTED, two findings, both fixed. **Medium:** white on the chosen pink's top (#f472b6) was 2.6:1. Checking every pair of the new classes found three more under 4.5:1 (the unchosen face's bottom, the delete's text and its armed top); all four were darkened, and a test now computes every control's contrast from the CSS, seen to fail on the old pink. **Low:** D68 said the font was out of the version; only its bytes are, and a changed font still changes the version through the CSS that names it. Only colours, a test and text changed after it, so no second run. `bun test` 474.
   - [x] (2026-11-02 09:35Z) The user's review on the dev server: the card name was not under the icon's centre, the buttons looked ふっくらとしていて不気味, and the game's 直角と角丸の混在 was missing. The controls were redrawn as the game's pills and the corners mixed, measured from the article's live demo (D67), and the card column centred. Only CSS, class names and the contrast test changed, all from the user's own look, so Codex was not run again; the contrast test covers the new colours. `bun test` (474), `bun run type-check`, `bun run lint` and `bun run build` exit 0. The user approved the push (job #62).
+- [x] (2026-11-08 07:26Z) The plan is complete and closed out (#66). Every milestone is done. Milestone 1's data half is live from gakumas-supportcards, and its icon half was replaced by `docs/adr/0002`, carried out in `docs/plans/EXECPLAN_GAME_STYLE_ICONS.md`. On the live site from a phone, every point of Validation and Acceptance held: the user's checks in jobs #47 and #67 (2026-11-02), and the counts read through `GET /counts` and D1 (Milestone 7).
+  - **Follow-ups beside it:** the phone pass's two remarks became improvements: #72, a refused duplicate said at the top of the popover, and #73, one 強化 checkbox. The other open follow-ups are #49 (`GET /counts`'s four-hour browser cache), #54, #55 and #68–#71 (the user's UI feedback).
+  - **Durable decisions:** `docs/adr/0003` (counts and cap in D1 on the Free plan) and `docs/adr/0004` (the memo only in the browser, moved by a versioned code). `CLAUDE.md` indexes them.
+  - From here the plan is history: later corrections go into ADRs and `CLAUDE.md`.
 
 ## Surprises & Discoveries
 
@@ -294,6 +298,9 @@ The observations below are Milestone 0's. Unless stated otherwise their evidence
 
 - Observation, for Milestone 7: on the live site, `GET /counts` came out of the Worker's Cache API with `cache-control: public, max-age=14400`, four hours, though the Worker stores and returns `public, max-age=3600`. `/data/skillcards.json`, a fresh Worker answer, kept its own `max-age=3600`, and the static assets kept `max-age=0, must-revalidate`. The likely cause is the zone's Browser Cache TTL, whose default is four hours, raising a lower `max-age`. Cloudflare's pages state that rule without saying whether it applies to a Cache API answer, and the rule as written would have raised the other two routes too. So a returning player's browser may rank the pickers by counts up to four hours old, while the Worker's own copy is kept an hour. #49 (Triage) holds the options.
   Evidence: `curl -sI https://gkms-memomemo.tia.run/counts` at 2026-11-01 20:01Z gave `cf-cache-status: HIT`, `age: 452`, `cache-control: public, max-age=14400`. The same minute, `/data/skillcards.json` gave `public, max-age=3600`, and `/`, `/sw.js` and the script `public, max-age=0, must-revalidate`. The docs read were `developers.cloudflare.com/cache/how-to/edge-browser-cache-ttl/` (dated 2026-08-14: a Browser Cache TTL of 4 hours by default on every plan, overriding an origin's lower value), `…/cache/concepts/cache-control/` (2026-06-30: "Cloudflare respects whichever value is higher: the Browser Cache TTL in Cloudflare or the `max-age` header") and `…/workers/runtime-apis/cache/` (2026-10-29), which says nothing of the Browser Cache TTL.
+
+- Observation, for Milestone 7: `wrangler d1 execute --remote` sometimes failed on its first call with Cloudflare's code 7403, "The given account is not valid or is not authorized to access this service", and the same command run again at once succeeded. It happened once on 2026-11-01 and once on 2026-11-02, each time as the first D1 call after a pause, never on a retry. The likely cause is the wrangler login's access token being refreshed, which was not confirmed. The error names the account, but it said nothing about the database or the token's scopes: rerun once before suspecting either.
+  Evidence: wrangler 4.156.0, with the user's OAuth login (scope `d1 (write)`). At 2026-11-01 20:01Z a two-statement query failed, then a one-statement query succeeded. At 2026-11-02 10:12Z the same one-statement query failed, then succeeded on an immediate retry.
 
 - Observation, for Milestone 5: Chrome answered `persist()` with false on the local test origin, by its own heuristics (bookmarks, installs, engagement), so persistence was not seen granted here. The page asks once and goes on either way (D57).
   Evidence: `navigator.storage.persisted()` after the ask, `127.0.0.1:4173`, 2026-11-01.
@@ -630,7 +637,23 @@ All decisions D1–D25 were made by the user in the /grill-me session of 2026-10
 
 ## Outcomes & Retrospective
 
-Nothing yet; the plan has not started.
+2026-11-08, at close-out (#66). **What was achieved.** 「学マス　メモリーメモ帳」 has been live at `https://gkms-memomemo.tia.run` since 2026-11-01, as the Purpose describes it:
+- three tabs of rows, one per build, with each memory as three tier cells;
+- the 未所持 blocks and the folded 早見表, and pickers ranked by anonymous counts per section;
+- the memo saved in the browser, installable to the home screen, opening offline, and moved by a 引き継ぎコード.
+
+It was built in eight milestones over three days (2026-10-30 to 2026-11-01). The card data comes from gakumas-supportcards, and the art in game-style frames from `docs/plans/EXECPLAN_GAME_STYLE_ICONS.md`. Every point of Validation and Acceptance held on the live site from a real iPhone. `bun test` ends with 474 tests over every rule module and Worker route, each new rule seen to turn a test red when broken. Two decisions outlive the plan, as `docs/adr/0003` and `docs/adr/0004`.
+
+**What remains.** Improvements beyond the plan, each its own issue:
+- #49, `GET /counts` reaching the browser with a four-hour cache;
+- the user's feedback from the live site: #54, #55 and #68–#73 (the column labels, the row menu, a long name's size, sideways scrolling on narrow phones, 「＋追加」, 「カスタムなし」, the refusal's place, a 強化 checkbox).
+
+**Lessons.**
+- **The plan of the account shaped the design more than any feature did.** The Workers Free plan's shared 100,000 requests a day and D1's 100,000 rows written gave sprite sheets (D42), the cap in D1 (D41) and the hour-long caches. Measuring rows written on a local D1 early (4 a counted event) turned the estimate into a budget.
+- **Read the tool's source where its documentation is silent.** wrangler's `deploy` provisions a binding with no id, and its `secret put` creates an empty Worker when none exists. Both were found in its source, and each would have made a silent wrong resource.
+- **Breaking each rule on purpose found weak tests in every milestone.** 100, 85, 86 and 28 broken rules turned up tests that passed with their rule broken, each sharpened. Codex's review of every branch found real faults the agent's own reading had passed: a stale confirmation that could still be accepted, an unread part of the counts' answer, a drop at the wrong position.
+- **The simulator found the iPhone's traps before a phone did:** zoom on small fields, Share under 「⋯」, and separate home-screen storage. But the layout's faults on a narrow real screen showed only when the user used the live site (#68–#73). A deployed preview on a phone, earlier in Milestone 4, would have shown them while the layout was being made.
+- **Everything written to a public repository is public at once, issue text included.** A Cloudflare account id written into a job's text for convenience stayed in the issue's edit history after it was removed. A permission named from an older reading turned out to be marked Legacy (Workers Scripts: Edit). The user caught both. Write no identifier into public text, and re-read the provider's current page before naming a permission.
 
 ## Context and Orientation
 
@@ -849,3 +872,5 @@ Revision note, 2026-11-01: Milestone 7 marked complete: the release into `main` 
 Revision note, 2026-11-01: D66 records the card step's 基本 / 強化 switch (#11); Progress, Validation and Acceptance and the Milestone 4 paragraph follow it.
 
 Revision note, 2026-11-02: D67 records the page's look after the game's UI (#12, the user's choice B) and D68 how the service worker keeps the font; Progress, Validation and Acceptance and the Milestone 4 paragraph follow them.
+
+Revision note, 2026-11-08: the plan closed out (#66): the completion stamp in Progress, the retrospective, an observation on wrangler's transient 7403, and `docs/adr/0003` and `docs/adr/0004` written from D41 and D10/D16/D28. This is the plan's last edit.
