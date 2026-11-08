@@ -8,7 +8,7 @@ import { newBuild } from "../memo/build.ts";
 import { addMemory, addRow, isRefusal, type Edited } from "../memo/edit.ts";
 import { emptyMemo, type Memo, type Memory } from "../memo/types.ts";
 import { cardNamed, kindLabelled } from "../test-support/skillcards.ts";
-import { addRowThroughPopover, byLabel, byText, CATALOG, dialog, must, pick, section, showPage, tap, type } from "../test-support/page.tsx";
+import { addRowThroughPopover, byLabel, byText, CATALOG, dialog, enhancedBox, must, pick, section, setEnhanced, showPage, tap, type } from "../test-support/page.tsx";
 
 const HIF = must(CATALOG.tabAbilities("sense")[0], "a センス ability");
 const DDR: Memory = ["diamond", "diamond", "rainbow"];
@@ -137,11 +137,11 @@ const offeredNames = (upgrade: number, ...rarities: string[]) =>
     .filter((c) => c.upgrade === upgrade && (rarities.length === 0 || rarities.includes(c.rarity)))
     .map((c) => c.name);
 const toggle = (rarity: string) => tap(byText(byLabel(dialog(root), "レアリティ"), "button", rarity));
-const toLevel = (label: "基本" | "強化") => tap(byText(byLabel(dialog(root), "基本・強化"), "button", label));
-const levelPressed = () => [...byLabel(dialog(root), "基本・強化").querySelectorAll('button[aria-pressed="true"]')].map((b) => b.textContent);
+const toLevel = (label: "基本" | "強化") => setEnhanced(root, label === "強化");
+const levelPressed = () => [enhancedBox(root).checked ? "強化" : "基本"];
 
-describe("the card step's level switch (D66)", () => {
-  test("a new row opens at 強化, each card once; 基本 shows the base cards, 表現の基本 among them", async () => {
+describe("the card step's level switch, one 強化 checkbox (D66, #73)", () => {
+  test("a new row opens checked, each card once; unchecked shows the base cards, 表現の基本 among them", async () => {
     await showPage(root);
     await tap(byText(section(root, "好調"), "button", "＋ カードを追加"));
     expect(levelPressed()).toEqual(["強化"]);
