@@ -16,7 +16,8 @@ textarea {
  * Sizes of the memo grid (docs/plans/EXECPLAN_MEMORY_MEMO.md, D17 and Artifacts and Notes): phone
  * first, the drag strip, the card and the three fixed groups taking 358 px, which with the page's
  * and the section's 4 px paddings fits a 375 px screen; from 600 px the sizes of the mockup the
- * user accepted.
+ * user accepted. What does not fit, a row's 追加 area or its extra groups, scrolls sideways with
+ * the rest of its section, the drag strip and the card column fixed (#69).
  */
 :root {
   --cell-w: 28px;

@@ -10,6 +10,12 @@ import { usePage } from "./page.ts";
 import { ArmedButton, Popover } from "./Popover.tsx";
 import { RowPopover } from "./RowPopover.tsx";
 
+/**
+ * The drag strip and the card column, fixed at the left while a section's rows scroll sideways
+ * (#69), in the background of their row, so a highlight shows through it.
+ */
+export const STICKY = "sticky left-0 z-10 flex shrink-0 gap-x-[var(--group-gap)] bg-inherit";
+
 /** The pointer handlers of a row's drag handle (useRowDrag.ts). */
 export type HandleProps = Pick<JSX.HTMLAttributes<HTMLButtonElement>, "onPointerDown" | "onPointerMove" | "onPointerUp" | "onPointerCancel" | "onLostPointerCapture">;
 
@@ -103,7 +109,9 @@ function RowControls({ row, section, plan, handle }: { row: Row; section: Sectio
 
 /**
  * One row (D1): the card column, the three fixed groups in %%F, %F%, F%% order, and the 追加 area,
- * which moves to a line of its own under the groups on a phone (D17).
+ * on one line. A row wider than the screen scrolls sideways with the rest of its section, the drag
+ * strip and the card column fixed at the left (#69, which replaces D17's 追加 area on a line of its
+ * own on a phone).
  */
 export function RowView({ row, section, plan, handle, dragging }: { row: Row; section: SectionId; plan: PlanId; handle: HandleProps; dragging: boolean }) {
   const { highlighted } = usePage();
@@ -111,18 +119,16 @@ export function RowView({ row, section, plan, handle, dragging }: { row: Row; se
     <div
       id={`row-${row.id}`}
       data-row={row.id}
-      class={`flex items-start gap-x-[var(--group-gap)] border-b border-slate-100 py-1.5 ${highlighted === row.id ? "highlight" : ""} ${dragging ? "opacity-40" : ""}`}
+      class={`flex items-start gap-x-[var(--group-gap)] border-b border-slate-100 bg-white py-1.5 pr-1 ${highlighted === row.id ? "highlight" : ""} ${dragging ? "opacity-40" : ""}`}
     >
-      <RowControls row={row} section={section} plan={plan} handle={handle} />
-      <CardCell row={row} plan={plan} />
-      <div class="flex flex-1 flex-wrap items-start gap-x-[var(--group-gap)] gap-y-1">
-        {FIXED_PATTERNS.map((p) => (
-          <GroupView key={p} row={row} pattern={p} memories={row.fixed[p]} />
-        ))}
-        <div class="basis-full min-[600px]:basis-auto">
-          <ExtrasArea row={row} />
-        </div>
+      <div class={`${STICKY} items-start`}>
+        <RowControls row={row} section={section} plan={plan} handle={handle} />
+        <CardCell row={row} plan={plan} />
       </div>
+      {FIXED_PATTERNS.map((p) => (
+        <GroupView key={p} row={row} pattern={p} memories={row.fixed[p]} />
+      ))}
+      <ExtrasArea row={row} />
     </div>
   );
 }
