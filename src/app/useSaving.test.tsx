@@ -70,15 +70,18 @@ describe("useSaving's rereads (#29)", () => {
     }
     const root = document.body.appendChild(document.createElement("div"));
     await act(() => render(<Page />, root));
+    // Once listening, the page rereads for a write it could not have heard of.
+    expect(save.asked.length).toBe(1);
+    save.asked[0]?.({});
     // The other tab saves twice; each message asks for a reread.
     save.hear();
     save.hear();
     await turn();
-    expect(save.asked.length).toBe(1);
-    save.asked[0]?.({ memo: withRow("first") });
-    await turn();
     expect(save.asked.length).toBe(2);
-    save.asked[1]?.({ memo: withRow("second") });
+    save.asked[1]?.({ memo: withRow("first") });
+    await turn();
+    expect(save.asked.length).toBe(3);
+    save.asked[2]?.({ memo: withRow("second") });
     await turn();
     expect(shown).toEqual(withRow("second"));
     expect(save.memos).toEqual([]);

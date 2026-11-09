@@ -80,8 +80,9 @@ function rereadOnce(save: Saving, refs: Refs): Promise<void> {
 /**
  * Saves the memo and the settings after each change (D16, D57), not the ones the page started from,
  * and writes a memo still waiting as soon as the page is hidden or left: a phone may close a hidden
- * page without another word. What another tab saves is taken when that tab says it wrote, and when
- * the page is shown again, since a phone may pause a hidden tab past the message (#29).
+ * page without another word. What another tab saves is taken when that tab says it wrote, once the
+ * page starts listening, and when the page is shown again, since a phone may pause a hidden tab past
+ * the message (#29).
  */
 export function useSaving(save: Saving, shown: Shown, follow: Follow): void {
   // What the store holds as far as this page knows; a render that differs from it is a change to save.
@@ -105,6 +106,8 @@ export function useSaving(save: Saving, shown: Shown, follow: Follow): void {
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("pagehide", flush);
     const stopListening = save.listen(reread);
+    // A write made between the page's first read and this listening was told to no one here (Codex's review of #29).
+    reread();
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pagehide", flush);
