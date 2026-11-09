@@ -1,5 +1,4 @@
 import type { ComponentChildren } from "preact";
-import type { Idol } from "../data/contract.ts";
 import { HOME_SCREEN_HINT, suggestsHomeScreen, thisDevice } from "./install.ts";
 
 /** The disclosure of D12, word for word. */
@@ -8,25 +7,6 @@ export const COUNTING_NOTE = "行を追加すると、選んだスキルカー�
 /** On an iPhone or iPad in the browser, why and how to add the page to the home screen (D16, D61). */
 export function HomeScreenHint({ shown = suggestsHomeScreen(thisDevice()) }: { shown?: boolean }) {
   return shown ? <p class="corners border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">{HOME_SCREEN_HINT}</p> : null;
-}
-
-/**
- * 「カードの絵柄」, the idol every card icon is drawn in (D20, D34), above the 早見表 (#14), chosen
- * by name until the idols' icons are extracted for a table of them.
- */
-export function ArtPicker({ idols, idol, onIdol }: { idols: readonly Idol[]; idol: string; onIdol: (idol: string) => void }) {
-  return (
-    <label class="flex items-center gap-2 text-sm">
-      カードの絵柄
-      <select class="btn px-2 py-1" value={idol} onChange={(e) => onIdol(e.currentTarget.value)}>
-        {idols.map((i) => (
-          <option key={i.id} value={i.id}>
-            {i.name}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
 }
 
 /**

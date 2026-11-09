@@ -7,7 +7,7 @@ import { act } from "preact/test-utils";
 import { newBuild } from "../memo/build.ts";
 import { addExtraGroup, addMemory, addRow, type Edited, isRefusal } from "../memo/edit.ts";
 import { emptyMemo, FIXED_PATTERNS, type Memo, type Memory } from "../memo/types.ts";
-import { byLabel, byText, CATALOG, dialog, must, pick, section, showPage, TEST_SHEETS, tap } from "../test-support/page.tsx";
+import { artToggle, byLabel, byText, CATALOG, chooseIdol, dialog, must, pick, section, showPage, TEST_SHEETS, tap } from "../test-support/page.tsx";
 import { cardNamed } from "../test-support/skillcards.ts";
 
 const HIF = must(CATALOG.tabAbilities("sense")[0], "a センス ability").ability.id;
@@ -155,18 +155,14 @@ describe("art and unknown rows", () => {
     await showPage(root, TWO_ROWS);
     const urls = () => [...section(root, "好調").querySelectorAll<HTMLElement>('[role="img"]')].map((el) => el.style.backgroundImage);
     expect(urls().every((u) => u.includes("sense-hski-"))).toBe(true);
-    const select = must(root.querySelector("select"), "カードの絵柄");
-    await act(() => {
-      select.value = "ttmr";
-      select.dispatchEvent(new Event("change", { bubbles: true }));
-    });
+    await chooseIdol(root, "月村手毬");
     expect(urls().length).toBe(4);
     expect(urls().every((u) => u.includes("sense-ttmr-"))).toBe(true);
   });
 
   test("「カードの絵柄」 sits above the 早見表, not in the footer (#14)", async () => {
     await showPage(root, TWO_ROWS);
-    const picker = must(root.querySelector("select")?.closest("label"), "カードの絵柄");
+    const picker = artToggle(root);
     const table = must(root.querySelector("details"), "the 早見表");
     expect(picker.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(picker.closest("footer")).toBeNull();

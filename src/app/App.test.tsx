@@ -5,7 +5,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, spyOn, te
 import { render } from "preact";
 import { act } from "preact/test-utils";
 import { parseSkillCardData, SkillCardDataError } from "../data/load.ts";
-import { addRowThroughPopover, byText, CATALOG, must, section } from "../test-support/page.tsx";
+import { addRowThroughPopover, byText, CATALOG, chooseIdol, chosenIdol, must, section } from "../test-support/page.tsx";
 import { linkedTabs, type MemoryStore, memoryStore } from "../test-support/store.ts";
 import type { CountEvent } from "../../infra/worker/count-contract.ts";
 import { App, NOTICE_TEXT } from "./App.tsx";
@@ -137,15 +137,11 @@ describe("saving (Milestone 5, D57)", () => {
   test("「カードの絵柄」 and the counting switch are kept", async () => {
     const store = memoryStore();
     await page(() => Promise.resolve(DATA), () => Promise.resolve(store));
-    const select = must(root.querySelector("select"), "カードの絵柄");
-    await act(() => {
-      select.value = "ttmr";
-      select.dispatchEvent(new Event("change", { bubbles: true }));
-    });
+    await chooseIdol(root, "月村手毬");
     await act(() => byText(root, "label", "集計に協力する").querySelector("input")?.click());
     await reopen(store);
     expect(store.kept.get(SETTINGS_KEY)).toEqual({ idol: "ttmr", counting: false });
-    expect(must(root.querySelector("select"), "カードの絵柄").value).toBe("ttmr");
+    expect(chosenIdol(root)).toBe("月村手毬");
     expect(byText(root, "label", "集計に協力する").querySelector("input")?.checked).toBe(false);
   });
 
@@ -155,8 +151,8 @@ describe("saving (Milestone 5, D57)", () => {
       () => Promise.resolve(DATA),
       () => Promise.resolve(store),
     );
-    expect(must(root.querySelector("select"), "カードの絵柄").value).toBe("hski");
-    // A select shows its first option for a value it lacks, so the idol is read where it is saved.
+    expect(chosenIdol(root)).toBe("花海咲季");
+    // The idol is also read where it is saved.
     await act(() => byText(root, "label", "集計に協力する").querySelector("input")?.click());
     expect(store.kept.get(SETTINGS_KEY)).toEqual({ idol: "hski", counting: false });
   });
@@ -264,11 +260,7 @@ describe("two tabs of the page (#29)", () => {
     await act(() => byText(second, "label", "集計に協力する").querySelector("input")?.click());
     await leave();
     expect(byText(root, "label", "集計に協力する").querySelector("input")?.checked).toBe(false);
-    const select = must(root.querySelector("select"), "カードの絵柄");
-    await act(() => {
-      select.value = "ttmr";
-      select.dispatchEvent(new Event("change", { bubbles: true }));
-    });
+    await chooseIdol(root, "月村手毬");
     await leave();
     expect(store.kept.get(SETTINGS_KEY)).toEqual({ idol: "ttmr", counting: false });
   });
