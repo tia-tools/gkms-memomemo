@@ -1,4 +1,4 @@
-import type { JSX } from "preact";
+import type { ComponentChildren, JSX } from "preact";
 import { useState } from "preact/hooks";
 import { deleteRow, isRefusal, moveRow } from "../memo/edit.ts";
 import { FIXED_PATTERNS, planOf, type PlanId, type Row, type SectionId, sectionsOf } from "../memo/types.ts";
@@ -25,8 +25,26 @@ export function memoryCount(row: Row): number {
   return FIXED_PATTERNS.reduce((n, p) => n + row.fixed[p].length, 0) + row.extras.reduce((n, g) => n + g.memories.length, 0);
 }
 
-/** The card column (D1, D31): the card, its name on one line (#68), and under it the H.I.F. ability, then the customization and 開幕時獲得. */
-function CardCell({ row, plan }: { row: Row; plan: PlanId }) {
+/** The card's icon as the row's menu button (#55): 変更, 別のセクションへ移動 and 行を削除 open from the card itself. */
+function CardMenuButton({ row, section, plan, children }: { row: Row; section: SectionId; plan: PlanId; children: ComponentChildren }) {
+  const [open, setOpen] = useState<"menu" | "change" | null>(null);
+  const close = () => setOpen(null);
+  return (
+    <div class="relative">
+      <button type="button" aria-label="行のメニュー" class="block rounded" onClick={() => setOpen("menu")}>
+        {children}
+      </button>
+      {open === "menu" && <RowMenu row={row} section={section} onChange={() => setOpen("change")} onClose={close} />}
+      {open === "change" && <RowPopover plan={plan} section={section} row={row} onClose={close} />}
+    </div>
+  );
+}
+
+/**
+ * The card column (D1, D31): the card, which opens the row's menu (#55), its name on one line (#68),
+ * and under it the H.I.F. ability, then the customization and 開幕時獲得.
+ */
+function CardCell({ row, section, plan }: { row: Row; section: SectionId; plan: PlanId }) {
   const { catalog } = usePage();
   const card = catalog.card(row.build.card, row.build.upgrade);
   const hif = catalog.hif(row.build.hif);
@@ -34,7 +52,9 @@ function CardCell({ row, plan }: { row: Row; plan: PlanId }) {
   const labels = customizationLabels(card, row.build.customization);
   return (
     <div class="flex w-[var(--card-col)] shrink-0 flex-col items-center gap-0.5 text-center">
-      <CardIcon card={card} plan={plan} size="var(--icon)" name={name} />
+      <CardMenuButton row={row} section={section} plan={plan}>
+        <CardIcon card={card} plan={plan} size="var(--icon)" name={name} />
+      </CardMenuButton>
       <span class="card-name w-full leading-tight" style={{ "--name-ems": nameEms(name) }}>
         {name}
       </span>
@@ -61,7 +81,7 @@ function CardCell({ row, plan }: { row: Row; plan: PlanId }) {
   );
 }
 
-/** 「⋯」: 変更, 別のセクションへ移動 and the two-tap 行を削除 (D19). */
+/** The row's menu, opened from its card (#55): 変更, 別のセクションへ移動 and the two-tap 行を削除 (D19). */
 function RowMenu({ row, section, onChange, onClose }: { row: Row; section: SectionId; onChange: () => void; onClose: () => void }) {
   const { memo, setMemo } = usePage();
   const memories = memoryCount(row);
@@ -92,20 +112,13 @@ function RowMenu({ row, section, onChange, onClose }: { row: Row; section: Secti
   );
 }
 
-/** The drag handle and 「⋯」, in a narrow strip left of the card. */
-function RowControls({ row, section, plan, handle }: { row: Row; section: SectionId; plan: PlanId; handle: HandleProps }) {
-  const [open, setOpen] = useState<"menu" | "change" | null>(null);
-  const close = () => setOpen(null);
+/** The drag handle, alone in a narrow strip left of the card: the menu opens from the card (#55). */
+function DragHandle({ handle }: { handle: HandleProps }) {
   return (
-    <div class="relative flex w-[var(--controls)] shrink-0 flex-col items-center gap-2 pt-1 text-slate-400">
+    <div class="flex w-[var(--controls)] shrink-0 flex-col items-center pt-1 text-slate-400">
       <button type="button" aria-label="並べ替えのハンドル" class="cursor-grab touch-none px-0.5 leading-none select-none" {...handle}>
         ⋮⋮
       </button>
-      <button type="button" aria-label="行のメニュー" class="px-0.5 leading-none" onClick={() => setOpen("menu")}>
-        ⋯
-      </button>
-      {open === "menu" && <RowMenu row={row} section={section} onChange={() => setOpen("change")} onClose={close} />}
-      {open === "change" && <RowPopover plan={plan} section={section} row={row} onClose={close} />}
     </div>
   );
 }
@@ -125,8 +138,8 @@ export function RowView({ row, section, plan, handle, dragging }: { row: Row; se
       class={`flex items-start gap-x-[var(--group-gap)] border-b border-slate-100 bg-white py-1.5 pr-1 ${highlighted === row.id ? "highlight" : ""} ${dragging ? "opacity-40" : ""}`}
     >
       <div class={`${STICKY} items-start`}>
-        <RowControls row={row} section={section} plan={plan} handle={handle} />
-        <CardCell row={row} plan={plan} />
+        <DragHandle handle={handle} />
+        <CardCell row={row} section={section} plan={plan} />
       </div>
       {FIXED_PATTERNS.map((p) => (
         <GroupView key={p} row={row} pattern={p} memories={row.fixed[p]} />

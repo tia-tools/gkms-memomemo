@@ -241,6 +241,17 @@ describe("the card step's rarity filter (D56)", () => {
 });
 
 describe("the row menu", () => {
+  test("opens from the card's icon, the strip left of it holding only the drag handle (#55)", async () => {
+    await showPage(root, withJoju());
+    const row = must(document.getElementById("row-r1"), "row r1");
+    const menu = byLabel(row, "行のメニュー");
+    expect(menu.querySelector('[role="img"][aria-label="成就+"]')).toBeTruthy();
+    expect([...row.querySelectorAll("button")].some((b) => b.textContent === "⋯")).toBe(false);
+    expect(must(byLabel(row, "並べ替えのハンドル").parentElement, "the strip").querySelectorAll("button").length).toBe(1);
+    await tap(menu);
+    expect(byText(dialog(root), "button", "変更")).toBeTruthy();
+  });
+
   test("deleting a row takes two taps and its armed state says how many memories go with it", async () => {
     await showPage(root, withJoju());
     await tap(byLabel(section(root, "好調"), "行のメニュー"));
