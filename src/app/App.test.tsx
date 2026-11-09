@@ -6,11 +6,12 @@ import { render } from "preact";
 import { act } from "preact/test-utils";
 import { parseSkillCardData, SkillCardDataError } from "../data/load.ts";
 import { addRowThroughPopover, byText, CATALOG, must, section } from "../test-support/page.tsx";
-import { type MemoryStore, memoryStore } from "../test-support/store.ts";
+import { linkedTabs, type MemoryStore, memoryStore } from "../test-support/store.ts";
 import type { CountEvent } from "../../infra/worker/count-contract.ts";
 import { App, NOTICE_TEXT } from "./App.tsx";
 import type { CountsApi } from "./counts.ts";
 import { MEMO_KEY, SETTINGS_KEY, type Store, UNREADABLE_PREFIX } from "./storage.ts";
+import type { TabChannel } from "./tabs.ts";
 
 const DATA = parseSkillCardData(JSON.parse(await Bun.file(new URL("../data/fixtures/skillcards.v1.json", import.meta.url)).text()));
 const HIF_CARD = must(CATALOG.tabAbilities("sense")[0], "a センス ability").card.name;
@@ -193,6 +194,81 @@ describe("saving (Milestone 5, D57)", () => {
     });
     logged.mockRestore();
     expect(root.textContent).toContain(NOTICE_TEXT["save-failed"]);
+  });
+});
+
+describe("two tabs of the page (#29)", () => {
+  const HIF_CARD_2 = must(CATALOG.tabAbilities("sense")[1], "a second センス ability").card.name;
+  let second: HTMLElement;
+  beforeEach(() => {
+    second = document.body.appendChild(document.createElement("div"));
+  });
+  afterEach(() => act(() => render(null, second)));
+
+  /** Opens the page in `into` on the shared store, and lets it settle. */
+  async function openTab(into: HTMLElement, store: MemoryStore, channel?: TabChannel): Promise<void> {
+    await act(() => render(<App load={() => Promise.resolve(DATA)} openStore={() => Promise.resolve(store)} channel={channel} />, into));
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+  }
+
+  /** Every tab writes what it has waiting, as when the player leaves, and the messages are delivered. */
+  async function leave(): Promise<void> {
+    await act(async () => {
+      window.dispatchEvent(new Event("pagehide"));
+    });
+    await act(() => new Promise((resolve) => setTimeout(resolve, 5)));
+  }
+
+  const rowsIn = (tab: HTMLElement) => [...section(tab, "好調").querySelectorAll("[data-row]")].length;
+
+  test("a row added in one tab appears in the other, and the other's next change keeps it", async () => {
+    const store = memoryStore();
+    const tabs = linkedTabs();
+    await openTab(root, store, tabs.tab());
+    await openTab(second, store, tabs.tab());
+    await addRowThroughPopover(second, "好調", "成就+", HIF_CARD);
+    await leave();
+    expect(rowsIn(root)).toBe(1);
+    // The memo taken from the store is not a change: it is not written back.
+    await leave();
+    expect(store.writes).toEqual([MEMO_KEY]);
+    await addRowThroughPopover(root, "好調", "成就+", HIF_CARD_2);
+    await leave();
+    expect(rowsIn(second)).toBe(2);
+    await act(() => render(null, second));
+    await reopen(store);
+    expect(rowsIn(root)).toBe(2);
+  });
+
+  test("a tab that missed the message takes the other's memo when it is shown again", async () => {
+    const store = memoryStore();
+    await openTab(root, store);
+    await openTab(second, store);
+    await addRowThroughPopover(second, "好調", "成就+", HIF_CARD);
+    await leave();
+    expect(rowsIn(root)).toBe(0);
+    await act(async () => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+    expect(rowsIn(root)).toBe(1);
+  });
+
+  test("the counting switch turned off in one tab is not turned back on by the other", async () => {
+    const store = memoryStore();
+    const tabs = linkedTabs();
+    await openTab(root, store, tabs.tab());
+    await openTab(second, store, tabs.tab());
+    await act(() => byText(second, "label", "集計に協力する").querySelector("input")?.click());
+    await leave();
+    expect(byText(root, "label", "集計に協力する").querySelector("input")?.checked).toBe(false);
+    const select = must(root.querySelector("select"), "カードの絵柄");
+    await act(() => {
+      select.value = "ttmr";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await leave();
+    expect(store.kept.get(SETTINGS_KEY)).toEqual({ idol: "ttmr", counting: false });
   });
 });
 
