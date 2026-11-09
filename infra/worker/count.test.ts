@@ -175,6 +175,18 @@ describe("serveCounts", () => {
     expect(await later.json()).toEqual(countsAnswer([]));
   });
 
+  test("a kept answer reaches the browser with the route's hour, whatever Cache-Control the cache gives back (#49)", async () => {
+    const cache = memoryCache();
+    const body = JSON.stringify(countsAnswer([]));
+    const headers = { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "public, max-age=14400", Age: "452" };
+    await cache.put(new Request(`${SITE}/counts`), new Response(body, { headers }));
+    for (const method of ["GET", "HEAD"]) {
+      const response = await serveCounts(new Request(`${SITE}/counts`, { method }), countsDeps(await fakeD1(), cache));
+      expect([response.status, response.headers.get("Cache-Control"), response.headers.get("Age")]).toEqual([200, "public, max-age=3600", "452"]);
+      expect(await response.text()).toBe(method === "GET" ? body : "");
+    }
+  });
+
   test("HEAD answers the headers without a body; another method is a 405", async () => {
     const db = await fakeD1();
     const head = await serveCounts(new Request(`${SITE}/counts`, { method: "HEAD" }), countsDeps(db));
