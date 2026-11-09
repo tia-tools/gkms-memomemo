@@ -8,7 +8,7 @@ import type { CountEvent } from "../../infra/worker/count-contract.ts";
 import { newBuild } from "../memo/build.ts";
 import { addRow, isRefusal } from "../memo/edit.ts";
 import { emptyMemo, type Memo, SECTION_IDS } from "../memo/types.ts";
-import { addRowThroughPopover, byLabel, byText, CATALOG, dialog, must, pick, section, settle, showPage, tap, TEST_SHEETS, type } from "../test-support/page.tsx";
+import { addRowThroughPopover, byLabel, byText, CATALOG, dialog, must, pick, section, setEnhanced, settle, showPage, tap, TEST_SHEETS, type } from "../test-support/page.tsx";
 import { cardNamed, kindLabelled } from "../test-support/skillcards.ts";
 import type { Counts, CountsApi, SectionCounts } from "./counts.ts";
 import { MemoPage } from "./MemoPage.tsx";
@@ -173,7 +173,7 @@ describe("the pickers' order", () => {
     await showPage(root, undefined, TEST_SHEETS, fakeApi(async () => BASE));
     await settle();
     await tap(byText(section(root, "好調"), "button", "＋ カードを追加"));
-    await tap(byText(byLabel(dialog(root), "基本・強化"), "button", "基本"));
+    await setEnhanced(root, false);
     const names = gridNames();
     expect(names[0]).toBe(lastBase.name);
     expect(names.length).toBe(base.length);

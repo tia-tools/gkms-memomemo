@@ -11,7 +11,7 @@ import type { CountsApi } from "../app/counts.ts";
 import { MemoPage } from "../app/MemoPage.tsx";
 import type { IconIndex } from "../app/sheets.ts";
 import { type Memo, PLAN_IDS } from "../memo/types.ts";
-import { LEVELS } from "../app/picker.ts";
+import { ENHANCED } from "../app/picker.ts";
 import { cardNamed, SKILL_CARDS } from "./skillcards.ts";
 
 export const CATALOG = makeCatalog(SKILL_CARDS);
@@ -81,10 +81,20 @@ export async function pick(root: ParentNode, name: string): Promise<void> {
   await tap(must([...dialog(root).querySelectorAll<HTMLElement>("button[aria-pressed]")].find((b) => b.querySelector("span:last-child")?.textContent === name), `pick ${name}`));
 }
 
+/** The open card step's 強化 checkbox (D66, #73). */
+export function enhancedBox(root: ParentNode): HTMLInputElement {
+  return must(byText(dialog(root), "label", "強化").querySelector<HTMLInputElement>('input[type="checkbox"]'), "the 強化 checkbox");
+}
+
+/** Checks or unchecks the open card step's 強化 checkbox, a tap only when it is not so already. */
+export async function setEnhanced(root: ParentNode, on: boolean): Promise<void> {
+  const box = enhancedBox(root);
+  if (box.checked !== on) await tap(box);
+}
+
 /** Sets the open card step's level switch (D66) to the named card's level. */
 export async function switchLevelFor(root: ParentNode, card: string): Promise<void> {
-  const label = must(LEVELS.find((l) => l.upgrade === cardNamed(card).upgrade), `the level of ${card}`).label;
-  await tap(byText(byLabel(dialog(root), "基本・強化"), "button", label));
+  await setEnhanced(root, cardNamed(card).upgrade === ENHANCED);
 }
 
 /** Adds a row through 「＋ カードを追加」: the card at its level, 次へ past the customization if shown, the ability. */
