@@ -3,6 +3,7 @@ import { useState } from "preact/hooks";
 import { deleteRow, isRefusal, moveRow } from "../memo/edit.ts";
 import { FIXED_PATTERNS, planOf, type PlanId, type Row, type SectionId, sectionsOf } from "../memo/types.ts";
 import { customizationLabels } from "./catalog.ts";
+import { nameEms } from "./fit.ts";
 import { ExtrasArea, GroupView } from "./Group.tsx";
 import { CardIcon } from "./Icon.tsx";
 import { SECTION_LABELS } from "./labels.ts";
@@ -40,8 +41,8 @@ function CardMenuButton({ row, section, plan, children }: { row: Row; section: S
 }
 
 /**
- * The card column (D1, D31): the card, which opens the row's menu (#55), its name, and under it the
- * H.I.F. ability, then the customization and 開幕時獲得.
+ * The card column (D1, D31): the card, which opens the row's menu (#55), its name on one line (#68),
+ * and under it the H.I.F. ability, then the customization and 開幕時獲得.
  */
 function CardCell({ row, section, plan }: { row: Row; section: SectionId; plan: PlanId }) {
   const { catalog } = usePage();
@@ -54,7 +55,9 @@ function CardCell({ row, section, plan }: { row: Row; section: SectionId; plan: 
       <CardMenuButton row={row} section={section} plan={plan}>
         <CardIcon card={card} plan={plan} size="var(--icon)" name={name} />
       </CardMenuButton>
-      <span class="w-full text-[10px] leading-tight break-all">{name}</span>
+      <span class="card-name w-full leading-tight" style={{ "--name-ems": nameEms(name) }}>
+        {name}
+      </span>
       <CardIcon card={hif?.card} plan={plan} size="var(--hif-icon)" name={hif ? `HIF ${hif.card.name}` : "不明なHIF"} />
       <div class="flex flex-col text-[length:var(--label-font)] leading-tight break-all">
         {labels.length === 0 ? (

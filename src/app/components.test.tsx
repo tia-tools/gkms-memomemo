@@ -64,6 +64,13 @@ describe("the Purpose scenario", () => {
 });
 
 describe("the card column", () => {
+  test("keeps the card's name on one line, sized to fit the column (#68)", async () => {
+    await showPage(root, withJoju());
+    const name = byText(section(root, "好調"), "span", "成就+");
+    expect(name.className).toContain("card-name");
+    expect(Number(name.style.getPropertyValue("--name-ems"))).toBeCloseTo(2.64);
+  });
+
   test("says カスタムなし for a card with no customization (#71)", async () => {
     await showPage(root, withJoju());
     expect(byText(section(root, "好調"), "span", "カスタムなし")).toBeTruthy();
