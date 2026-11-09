@@ -11,7 +11,8 @@ import { type Page, PageContext } from "./page.ts";
 import { QuickTable } from "./QuickTable.tsx";
 import { SectionView } from "./Section.tsx";
 import { PopoverLayerRoot } from "./Popover.tsx";
-import { ArtPicker, HomeScreenHint, Settings } from "./Settings.tsx";
+import { IdolPicker } from "./IdolPicker.tsx";
+import { HomeScreenHint, Settings } from "./Settings.tsx";
 import type { IconIndex } from "./sheets.ts";
 import { DEFAULT_SETTINGS, NOT_SAVING, type Saving, type Settings as SavedSettings } from "./storage.ts";
 import { ImportPanel, Transfer } from "./Transfer.tsx";
@@ -40,7 +41,7 @@ function Tabs({ tab, onTab }: { tab: PlanId; onTab: (plan: PlanId) => void }) {
   );
 }
 
-/** A tab's body: 「カードの絵柄」 (#14), the 早見表, 「未所持がある行だけ表示」 and the tab's sections. */
+/** A tab's body: 「カードの絵柄」 (#14, #86), the 早見表, 「未所持がある行だけ表示」 and the tab's sections. */
 function TabBody({ tab, gapsOnly, onGapsOnly, art }: { tab: PlanId; gapsOnly: boolean; onGapsOnly: (on: boolean) => void; art: ComponentChildren }) {
   return (
     <div class="flex flex-col gap-3 pt-3">
@@ -147,7 +148,7 @@ export function MemoPage({
       <PopoverLayerRoot>
         <ImportPanel importing={importing} from="link" />
         <Tabs tab={tab} onTab={setTab} />
-        <TabBody tab={tab} gapsOnly={gapsOnly} onGapsOnly={setGapsOnly} art={<ArtPicker idols={catalog.data.idols} idol={idol} onIdol={setIdol} />} />
+        <TabBody tab={tab} gapsOnly={gapsOnly} onGapsOnly={setGapsOnly} art={<IdolPicker idols={catalog.data.idols} idol={idol} onIdol={setIdol} />} />
         <Settings counting={counting} onCounting={setCounting}>
           <HomeScreenHint />
           <Transfer importing={importing} />
