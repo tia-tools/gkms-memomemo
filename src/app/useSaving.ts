@@ -41,6 +41,42 @@ function useSaveChanges(save: Saving, shown: Shown, last: { current: Shown }): v
   }, [save, memo, idol, counting, last]);
 }
 
+interface Refs {
+  /** What the store holds as far as the page knows. */
+  last: { current: Shown };
+  /** What the page shows: its last render, or what a reread took since. */
+  current: { current: Shown };
+  following: { current: Follow };
+}
+
+/**
+ * One reread: takes what another tab saved, unless the page changed meanwhile (`takeable`). What it
+ * takes is recorded at once, before the page renders it, so a reread queued behind this one compares
+ * with it rather than with what the page showed before (Codex's review of #29).
+ */
+function rereadOnce(save: Saving, refs: Refs): Promise<void> {
+  const before = refs.current.current;
+  return save.reread().then(
+    (found) => {
+      const taken = takeable(found, before, refs.current.current);
+      const page = refs.following.current;
+      if (taken.memo !== undefined) {
+        refs.last.current = { ...refs.last.current, memo: taken.memo };
+        refs.current.current = { ...refs.current.current, memo: taken.memo };
+        page.setMemo(taken.memo);
+      }
+      if (taken.settings !== undefined) {
+        const settings = { idol: page.idolFor(taken.settings.idol), counting: taken.settings.counting };
+        refs.last.current = { ...refs.last.current, ...settings };
+        refs.current.current = { ...refs.current.current, ...settings };
+        page.setIdol(settings.idol);
+        page.setCounting(settings.counting);
+      }
+    },
+    (error: unknown) => console.error("the saved memo was not read again:", error),
+  );
+}
+
 /**
  * Saves the memo and the settings after each change (D16, D57), not the ones the page started from,
  * and writes a memo still waiting as soon as the page is hidden or left: a phone may close a hidden
@@ -55,23 +91,11 @@ export function useSaving(save: Saving, shown: Shown, follow: Follow): void {
   const following = useRef(follow);
   following.current = follow;
   useSaveChanges(save, shown, last);
+  // Rereads one after another, each taking what the page shows as its turn starts (Codex's review of #29).
+  const rereads = useRef<Promise<void>>(Promise.resolve());
   useEffect(() => {
     const reread = (): void => {
-      const before = current.current;
-      void save.reread().then((found) => {
-        const taken = takeable(found, before, current.current);
-        const page = following.current;
-        if (taken.memo !== undefined) {
-          last.current = { ...last.current, memo: taken.memo };
-          page.setMemo(taken.memo);
-        }
-        if (taken.settings !== undefined) {
-          const idol = page.idolFor(taken.settings.idol);
-          last.current = { ...last.current, idol, counting: taken.settings.counting };
-          page.setIdol(idol);
-          page.setCounting(taken.settings.counting);
-        }
-      }, (error: unknown) => console.error("the saved memo was not read again:", error));
+      rereads.current = rereads.current.then(() => rereadOnce(save, { last, current, following }));
     };
     const onVisibility = (): void => {
       if (document.visibilityState === "hidden") void save.flush();
