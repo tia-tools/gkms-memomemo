@@ -8,7 +8,7 @@ import { newBuild } from "../memo/build.ts";
 import { addMemory, addRow, isRefusal, type Edited } from "../memo/edit.ts";
 import { emptyMemo, type Memo, type Memory } from "../memo/types.ts";
 import { cardNamed, kindLabelled } from "../test-support/skillcards.ts";
-import { addRowThroughPopover, byLabel, byText, CATALOG, dialog, must, pick, section, showPage, tap, type } from "../test-support/page.tsx";
+import { addRowThroughPopover, byLabel, byText, CATALOG, dialog, enhancedBox, must, pick, section, setEnhanced, showPage, tap, type } from "../test-support/page.tsx";
 
 const HIF = must(CATALOG.tabAbilities("sense")[0], "a センス ability");
 const DDR: Memory = ["diamond", "diamond", "rainbow"];
@@ -70,6 +70,11 @@ describe("the card column", () => {
     expect(name.className).toContain("card-name");
     expect(Number(name.style.getPropertyValue("--name-ems"))).toBeCloseTo(2.64);
   });
+
+  test("says カスタムなし for a card with no customization (#71)", async () => {
+    await showPage(root, withJoju());
+    expect(byText(section(root, "好調"), "span", "カスタムなし")).toBeTruthy();
+  });
 });
 
 describe("the memory popover", () => {
@@ -116,10 +121,11 @@ describe("the memory popover", () => {
 });
 
 describe("the row popover", () => {
-  test("refuses a build already in the tab, naming its section, and jumps to its row", async () => {
+  test("refuses a build already in the tab at the popover's top, naming its section, and jumps to its row (#72)", async () => {
     await showPage(root, withJoju());
     await addRowThroughPopover(root, "集中", "成就+", HIF.card.name);
-    expect(byText(root, '[role="alert"]', "同じ組み合わせが「好調」にありますその行へ")).toBeTruthy();
+    const note = byText(root, '[role="alert"]', "同じ組み合わせが「好調」にありますその行へ");
+    expect(note.parentElement?.firstElementChild).toBe(note);
     expect(section(root, "集中").textContent).not.toContain("成就+");
     await tap(byText(dialog(root), "button", "その行へ"));
     expect(must(document.getElementById("row-r1"), "row r1").className).toContain("highlight");
@@ -146,11 +152,11 @@ const offeredNames = (upgrade: number, ...rarities: string[]) =>
     .filter((c) => c.upgrade === upgrade && (rarities.length === 0 || rarities.includes(c.rarity)))
     .map((c) => c.name);
 const toggle = (rarity: string) => tap(byText(byLabel(dialog(root), "レアリティ"), "button", rarity));
-const toLevel = (label: "基本" | "強化") => tap(byText(byLabel(dialog(root), "基本・強化"), "button", label));
-const levelPressed = () => [...byLabel(dialog(root), "基本・強化").querySelectorAll('button[aria-pressed="true"]')].map((b) => b.textContent);
+const toLevel = (label: "基本" | "強化") => setEnhanced(root, label === "強化");
+const levelPressed = () => [enhancedBox(root).checked ? "強化" : "基本"];
 
-describe("the card step's level switch (D66)", () => {
-  test("a new row opens at 強化, each card once; 基本 shows the base cards, 表現の基本 among them", async () => {
+describe("the card step's level switch, one 強化 checkbox (D66, #73)", () => {
+  test("a new row opens checked, each card once; unchecked shows the base cards, 表現の基本 among them", async () => {
     await showPage(root);
     await tap(byText(section(root, "好調"), "button", "＋ カードを追加"));
     expect(levelPressed()).toEqual(["強化"]);

@@ -29,10 +29,20 @@ export const STATS = [
   { name: "Vi", color: "#f5b400" },
 ] as const;
 
-/** A group's column labels: Vo% Da% Vi+ for %%F, a fixed bonus written +. */
-export function columnLabels(pattern: Pattern): [string, string, string] {
-  const [vo, da, vi] = kindsOf(pattern).map((kind) => (kind === "%" ? "%" : "+"));
-  return [`Vo${vo ?? ""}`, `Da${da ?? ""}`, `Vi${vi ?? ""}`];
+/** One column's label: the stat it is under and its bonus's mark. */
+export interface ColumnLabel {
+  stat: (typeof STATS)[number]["name"];
+  mark: "%" | "+";
+}
+
+/**
+ * A group's column labels in Vo, Da, Vi order: % for a percentage bonus, + for a fixed one (% % +
+ * for %%F). On screen only the mark shows, the colour above the column saying its stat; the stat
+ * stays in the text for assistive technology (#54).
+ */
+export function columnLabels(pattern: Pattern): ColumnLabel[] {
+  const kinds = kindsOf(pattern);
+  return STATS.map(({ name }, i) => ({ stat: name, mark: kinds[i] === "%" ? "%" : "+" }));
 }
 
 /** A quality's name, for assistive technology: on screen its texture says it (D52). */
