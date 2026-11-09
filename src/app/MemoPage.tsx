@@ -16,7 +16,7 @@ import type { IconIndex } from "./sheets.ts";
 import { DEFAULT_SETTINGS, NOT_SAVING, type Saving, type Settings as SavedSettings } from "./storage.ts";
 import { ImportPanel, Transfer } from "./Transfer.tsx";
 import { useImport, useLinkImport } from "./useImport.ts";
-import { useSaving } from "./useSaving.ts";
+import { type Follow, useSaving } from "./useSaving.ts";
 
 /** How long a jumped-to row stays highlighted. */
 export const HIGHLIGHT_MS = 2000;
@@ -119,7 +119,11 @@ export function MemoPage({
   const [tab, setTab] = useState<PlanId>("sense");
   const [idol, setIdol] = useState(() => startIdol(settings.idol, catalog.data.idols));
   const [counting, setCounting] = useState(settings.counting);
-  useSaving(save, memo, idol, counting);
+  const follow = useMemo<Follow>(
+    () => ({ setMemo, setIdol, setCounting, idolFor: (saved) => startIdol(saved, catalog.data.idols) }),
+    [catalog],
+  );
+  useSaving(save, { memo, idol, counting }, follow);
   const importing = useImport(memo, setMemo);
   useLinkImport(importing.offer);
   const [gapsOnly, setGapsOnly] = useState(false);
