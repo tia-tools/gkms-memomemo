@@ -3,7 +3,8 @@
  * when it contains the query once both are folded, full-width letters and digits to half-width and
  * katakana to hiragana, so ふぁんさ finds ファンサ and ＋ finds +. The card step's rarity filter: a
  * toggle per rarity, the cards of the rarities on, every card while none is on. Its level switch
- * (D66): base or enhanced, one at a time. The order is the caller's (ranked by counts, D65).
+ * (D66, #73): one 強化 checkbox, enhanced cards when checked and base cards when not. The order is
+ * the caller's (ranked by counts, D65).
  */
 
 import type { SkillCardRarity } from "../data/contract.ts";
@@ -36,15 +37,18 @@ export function byRarity<T extends { rarity: SkillCardRarity }>(cards: readonly 
   return on.size === 0 ? [...cards] : cards.filter((card) => on.has(card.rarity));
 }
 
-/** The level switch's choices, in the game's order: base (upgradeCount 0), then enhanced (1, D37). */
-export const LEVELS = [
-  { upgrade: 0, label: "基本" },
-  { upgrade: 1, label: "強化" },
-] as const;
+/** The two levels a memory's card can have (D37): base (upgradeCount 0) and enhanced (1). */
+export const BASE = 0;
+export const ENHANCED = 1;
+
+/** The level the 強化 checkbox stands for: enhanced when checked, base when not (#73). */
+export function levelOf(enhanced: boolean): number {
+  return enhanced ? ENHANCED : BASE;
+}
 
 /** The level the switch starts at: the chosen card's, else enhanced (D66). */
 export function startLevel(chosen: { upgrade: number } | undefined): number {
-  return chosen?.upgrade ?? 1;
+  return chosen?.upgrade ?? ENHANCED;
 }
 
 /** The cards at that level, in their order. */
