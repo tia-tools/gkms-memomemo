@@ -4,10 +4,12 @@ import { newRowId, ROW_ID_BYTES, rowIdFrom } from "./ids.ts";
 import { columnLabels, refusalText } from "./labels.ts";
 
 describe("columnLabels", () => {
+  const text = (pattern: Parameters<typeof columnLabels>[0]) => columnLabels(pattern).map(({ stat, mark }) => `${stat}${mark}`);
+
   test("writes a percentage bonus % and a fixed bonus +, in Vo, Da, Vi order", () => {
-    expect(columnLabels("%%F")).toEqual(["Vo%", "Da%", "Vi+"]);
-    expect(columnLabels("F%%")).toEqual(["Vo+", "Da%", "Vi%"]);
-    expect(columnLabels("FFF")).toEqual(["Vo+", "Da+", "Vi+"]);
+    expect(text("%%F")).toEqual(["Vo%", "Da%", "Vi+"]);
+    expect(text("F%%")).toEqual(["Vo+", "Da%", "Vi%"]);
+    expect(text("FFF")).toEqual(["Vo+", "Da+", "Vi+"]);
   });
 });
 
