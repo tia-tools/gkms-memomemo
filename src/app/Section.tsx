@@ -2,28 +2,29 @@ import type { VNode } from "preact";
 import { useState } from "preact/hooks";
 import { hasGaps } from "../memo/coverage.ts";
 import { FIXED_PATTERNS, type PlanId, type Row, type SectionId } from "../memo/types.ts";
+import { ColumnMark } from "./Group.tsx";
 import { columnLabels, SECTION_LABELS, STATS } from "./labels.ts";
 import { usePage } from "./page.ts";
 import { RowPopover } from "./RowPopover.tsx";
-import { RowView } from "./RowView.tsx";
+import { RowView, STICKY } from "./RowView.tsx";
 import { type Drag, useRowDrag } from "./useRowDrag.ts";
 
-/** The fixed groups' column labels under their stats' colours, aligned with the rows' groups. */
+/** The fixed groups' column labels under their stats' colours, aligned with the rows' groups and scrolled with them (#69). */
 function ColumnHeader() {
   return (
-    <div class="flex items-end gap-x-[var(--group-gap)] text-[10px] text-slate-600">
-      <span class="w-[var(--controls)] shrink-0" />
-      <span class="w-[var(--card-col)] shrink-0" />
+    <div class="flex items-end gap-x-[var(--group-gap)] bg-white text-[10px] text-slate-600">
+      <span class={`${STICKY} self-stretch`}>
+        <span class="w-[var(--controls)] shrink-0" />
+        <span class="w-[var(--card-col)] shrink-0" />
+      </span>
       {FIXED_PATTERNS.map((pattern) => (
         <div key={pattern} class="memo-group flex shrink-0 gap-[var(--cell-gap)]">
           {columnLabels(pattern).map((label, i) => (
-            <span key={label} class="w-[var(--cell-w)] border-t-[3px] text-center" style={{ borderColor: STATS[i]?.color }}>
-              {label}
-            </span>
+            <ColumnMark key={label.stat} label={label} class="w-[var(--cell-w)] border-t-[3px] text-center" color={STATS[i]?.color} />
           ))}
         </div>
       ))}
-      <span class="hidden min-[600px]:block">追加</span>
+      <span>追加</span>
     </div>
   );
 }
@@ -65,11 +66,16 @@ export function SectionView({ section, plan, gapsOnly }: { section: SectionId; p
   return (
     <section class="panel flex flex-col gap-1 p-1 min-[600px]:p-2" aria-label={SECTION_LABELS[section]}>
       <h2 class="font-bold">{SECTION_LABELS[section]}</h2>
-      {rows.length > 0 && <ColumnHeader />}
-      <div ref={list}>
-        {rowsWithDropLine(shown, drag, (row, i) => (
-          <RowView key={row.id} row={row} section={section} plan={plan} handle={handle(row, i)} dragging={drag?.id === row.id} />
-        ))}
+      {/* The header and the rows scroll sideways together when they are wider than the screen, the card column fixed (#69). */}
+      <div class="overflow-x-auto">
+        <div class="w-max min-w-full">
+          {rows.length > 0 && <ColumnHeader />}
+          <div ref={list}>
+            {rowsWithDropLine(shown, drag, (row, i) => (
+              <RowView key={row.id} row={row} section={section} plan={plan} handle={handle(row, i)} dragging={drag?.id === row.id} />
+            ))}
+          </div>
+        </div>
       </div>
       {shown.length < rows.length && <p class="text-xs text-slate-400">ほかに{rows.length - shown.length}行（すべて所持）</p>}
       <AddCard plan={plan} section={section} />

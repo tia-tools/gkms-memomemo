@@ -2,7 +2,7 @@ import { useState } from "preact/hooks";
 import { addExtraGroup, addMemory, changeMemory, deleteMemory, type GroupPattern, isRefusal, removeExtraGroup } from "../memo/edit.ts";
 import { EXTRA_PATTERNS, type ExtraPattern, MAX_EXTRAS, type Memory, type Pattern, type Row } from "../memo/types.ts";
 import { cellValues } from "../memo/values.ts";
-import { columnLabels, refusalText, STATS } from "./labels.ts";
+import { type ColumnLabel, columnLabels, refusalText, STATS } from "./labels.ts";
 import { MemoryEditor } from "./MemoryEditor.tsx";
 import { usePage } from "./page.ts";
 import { ArmedButton, Popover } from "./Popover.tsx";
@@ -69,51 +69,78 @@ export function GroupView({ row, pattern, memories, extra }: { row: Row; pattern
   );
 }
 
+/** A column's mark, its stat said only to assistive technology (#54). */
+export function ColumnMark({ label, class: className, color }: { label: ColumnLabel; class: string; color?: string }) {
+  return (
+    <span class={className} style={color === undefined ? undefined : { borderColor: color }}>
+      <span class="sr-only">{label.stat}</span>
+      {label.mark}
+    </span>
+  );
+}
+
 /** The labels above an extra group, which the section header cannot know (Artifacts and Notes). */
 function ExtraLabels({ pattern }: { pattern: ExtraPattern }) {
   return (
     <div class="flex gap-[var(--cell-gap)] text-[9px] leading-3 text-slate-500">
       {columnLabels(pattern).map((label) => (
-        <span key={label} class="w-[var(--cell-w)] text-center">
-          {label}
-        </span>
+        <ColumnMark key={label.stat} label={label} class="w-[var(--cell-w)] text-center" />
       ))}
     </div>
   );
 }
 
-/** 「＋追加」: the pattern first, the ones the row has greyed out, then the memory (D3, D18). */
+/** The extra patterns with a button of their own on every row, %%% and FFF (D3); the rest are under 「＋他」. */
+const QUICK_PATTERNS = EXTRA_PATTERNS.slice(0, 2);
+const OTHER_PATTERNS = EXTRA_PATTERNS.slice(2);
+
+function AddButton({ label, onClick, children }: { label: string; onClick: () => void; children: string }) {
+  return (
+    <button type="button" aria-label={label} class="h-[var(--cell-h)] rounded-sm border border-dashed border-slate-300 px-1.5 font-mono text-[length:var(--cell-font)] whitespace-nowrap text-slate-500" onClick={onClick}>
+      {children}
+    </button>
+  );
+}
+
+/**
+ * The 追加 buttons, each saying what it adds (#70): 「＋%%%」 and 「＋FFF」 while the row has not
+ * got them, straight to the memory (D3), and 「＋他」 for %FF, F%F and FF%, the ones the row has
+ * greyed out, then the memory (D18).
+ */
 function AddExtra({ row }: { row: Row }) {
   const { memo, setMemo } = usePage();
-  const [open, setOpen] = useState(false);
-  const [pattern, setPattern] = useState<ExtraPattern | null>(null);
+  /** "others" while the rarer patterns are offered, a pattern once chosen, or null when closed. */
+  const [open, setOpen] = useState<ExtraPattern | "others" | null>(null);
   const [refused, setRefused] = useState<string | null>(null);
-  const close = () => (setOpen(false), setPattern(null), setRefused(null));
+  const close = () => (setOpen(null), setRefused(null));
   const submit = (memory: Memory) => {
-    if (pattern === null) return;
-    const result = addExtraGroup(memo, row.id, pattern, memory);
+    if (open === null || open === "others") return;
+    const result = addExtraGroup(memo, row.id, open, memory);
     if (isRefusal(result)) return setRefused(refusalText(result));
     setMemo(result);
     close();
   };
   const taken = new Set(row.extras.map((g) => g.pattern));
   return (
-    <div class="relative">
-      <button type="button" class="h-[var(--cell-h)] rounded-sm border border-dashed border-slate-300 px-2 text-[length:var(--cell-font)] text-slate-500" onClick={() => setOpen(true)}>
-        ＋追加
-      </button>
-      {open && (
+    <div class="relative flex gap-[var(--cell-gap)]">
+      {QUICK_PATTERNS.filter((p) => !taken.has(p)).map((p) => (
+        <AddButton key={p} label={`${p}を追加`} onClick={() => setOpen(p)}>{`＋${p}`}</AddButton>
+      ))}
+      <AddButton label="ほかのパターンを追加" onClick={() => setOpen("others")}>
+        ＋他
+      </AddButton>
+      {open !== null && (
         <Popover label="パターンを追加" onClose={close}>
-          {pattern === null ? (
-            <div class="flex w-56 flex-wrap gap-1">
-              {EXTRA_PATTERNS.map((p, i) => (
-                <button key={p} type="button" disabled={taken.has(p)} class={`btn px-2 py-1 font-mono disabled:opacity-30 ${i < 2 ? "" : "btn-off text-xs"}`} onClick={() => setPattern(p)}>
+          {open === "others" ? (
+            <div class="flex gap-1">
+              {OTHER_PATTERNS.map((p) => (
+                <button key={p} type="button" disabled={taken.has(p)} class="btn px-2 py-1 font-mono disabled:opacity-30" onClick={() => setOpen(p)}>
                   {p}
                 </button>
               ))}
             </div>
           ) : (
-            <MemoryEditor pattern={pattern} onSubmit={submit} />
+            <MemoryEditor pattern={open} onSubmit={submit} />
           )}
           {refused !== null && <p role="alert" class="mt-1 text-xs text-rose-600">{refused}</p>}
         </Popover>
@@ -122,7 +149,7 @@ function AddExtra({ row }: { row: Row }) {
   );
 }
 
-/** The 追加 area: the row's extra groups with their patterns above them, empty ones too (D27), and 「＋追加」 while there is room. */
+/** The 追加 area: the row's extra groups with their patterns above them, empty ones too (D27), and the 追加 buttons while there is room. */
 export function ExtrasArea({ row }: { row: Row }) {
   return (
     <div class="flex items-start gap-[var(--group-gap)]">

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { dropIndex, placeAmongAll, popoverOffset } from "./layout.ts";
+import { dropIndex, placeAmongAll, popoverOffset, popoverPlace } from "./layout.ts";
 
 describe("dropIndex", () => {
   const mids = [100, 160, 220];
@@ -69,5 +69,18 @@ describe("popoverOffset", () => {
 
   test("touching the right margin exactly is still a fit", () => {
     expect(popoverOffset(182, 200, 390)).toBe(0);
+  });
+});
+
+describe("popoverPlace (#69)", () => {
+  const layer = { left: 4, top: -500 };
+
+  test("puts the popover under its anchor, in the layer's coordinates", () => {
+    expect(popoverPlace({ left: 20, top: 100, bottom: 126 }, layer, 200, 390)).toEqual({ left: 16, top: 626 });
+  });
+
+  test("moves it sideways as popoverOffset does, from an anchor scrolled off the left edge too", () => {
+    expect(popoverPlace({ left: 300, top: 0, bottom: 30 }, layer, 200, 390)).toEqual({ left: 390 - 8 - 200 - 4, top: 530 });
+    expect(popoverPlace({ left: -30, top: 0, bottom: 30 }, layer, 200, 390)).toEqual({ left: 8 - 4, top: 530 });
   });
 });

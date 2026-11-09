@@ -1,7 +1,8 @@
 /**
  * Geometry the page computes from measured boxes, kept pure so it is tested without a layout
  * engine (happy-dom has none): where a dragged row lands (D14) and where an in-place popover sits
- * so it stays on screen (D18, D19).
+ * so it stays on screen (D18, D19), drawn in the page's popover layer so a row scrolled sideways
+ * cannot clip it (#69).
  */
 
 /**
@@ -36,4 +37,19 @@ export function popoverOffset(anchorLeft: number, width: number, viewportWidth: 
   const leftmost = margin - anchorLeft;
   const rightmost = viewportWidth - margin - width - anchorLeft;
   return Math.max(leftmost, Math.min(0, rightmost));
+}
+
+/** A box's place on screen, as getBoundingClientRect gives it. */
+export interface ScreenPoint {
+  left: number;
+  top: number;
+}
+
+/**
+ * Where a popover sits in the popover layer's own coordinates: right under its anchor, moved
+ * sideways as popoverOffset keeps it on screen. Both boxes are measured on screen, so the place
+ * holds wherever the anchor is, inside a row scrolled sideways too (#69).
+ */
+export function popoverPlace(anchor: ScreenPoint & { bottom: number }, layer: ScreenPoint, width: number, viewportWidth: number): ScreenPoint {
+  return { left: anchor.left - layer.left + popoverOffset(anchor.left, width, viewportWidth), top: anchor.bottom - layer.top };
 }

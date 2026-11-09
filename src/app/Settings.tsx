@@ -11,37 +11,31 @@ export function HomeScreenHint({ shown = suggestsHomeScreen(thisDevice()) }: { s
 }
 
 /**
- * The settings near the footer: 「カードの絵柄」, the idol every card icon is drawn in (D20, D34),
- * then `children` (the 引き継ぎコード), and the counting note with its off switch last (D12;
- * Milestone 6 sends the counts).
+ * 「カードの絵柄」, the idol every card icon is drawn in (D20, D34), above the 早見表 (#14), chosen
+ * by name until the idols' icons are extracted for a table of them.
  */
-export function Settings({
-  idols,
-  idol,
-  onIdol,
-  counting,
-  onCounting,
-  children,
-}: {
-  idols: readonly Idol[];
-  idol: string;
-  onIdol: (idol: string) => void;
-  counting: boolean;
-  onCounting: (on: boolean) => void;
-  children?: ComponentChildren;
-}) {
+export function ArtPicker({ idols, idol, onIdol }: { idols: readonly Idol[]; idol: string; onIdol: (idol: string) => void }) {
+  return (
+    <label class="flex items-center gap-2 text-sm">
+      カードの絵柄
+      <select class="btn px-2 py-1" value={idol} onChange={(e) => onIdol(e.currentTarget.value)}>
+        {idols.map((i) => (
+          <option key={i.id} value={i.id}>
+            {i.name}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+/**
+ * The settings in the footer: `children` (the 引き継ぎコード), and the counting note with its off
+ * switch last (D12; Milestone 6 sends the counts). 「カードの絵柄」 is above the 早見表 (#14).
+ */
+export function Settings({ counting, onCounting, children }: { counting: boolean; onCounting: (on: boolean) => void; children?: ComponentChildren }) {
   return (
     <footer class="mt-6 flex flex-col gap-3 border-t border-slate-200 pt-4 text-sm">
-      <label class="flex items-center gap-2">
-        カードの絵柄
-        <select class="btn px-2 py-1" value={idol} onChange={(e) => onIdol(e.currentTarget.value)}>
-          {idols.map((i) => (
-            <option key={i.id} value={i.id}>
-              {i.name}
-            </option>
-          ))}
-        </select>
-      </label>
       {children}
       <div class="flex items-start gap-3 text-xs text-slate-600">
         <p class="flex-1">{COUNTING_NOTE}</p>

@@ -16,7 +16,8 @@ textarea {
  * Sizes of the memo grid (docs/plans/EXECPLAN_MEMORY_MEMO.md, D17 and Artifacts and Notes): phone
  * first, the drag strip, the card and the three fixed groups taking 358 px, which with the page's
  * and the section's 4 px paddings fits a 375 px screen; from 600 px the sizes of the mockup the
- * user accepted.
+ * user accepted. What does not fit, a row's 追加 area or its extra groups, scrolls sideways with
+ * the rest of its section, the drag strip and the card column fixed (#69).
  */
 :root {
   --cell-w: 28px;
@@ -52,6 +53,17 @@ textarea {
   width: var(--cell-w);
   height: var(--cell-h);
   font-size: var(--cell-font);
+}
+
+/*
+ * A card's name in the card column on one line (#68): 10 px when it fits, else the size at which
+ * its width in ems, an upper bound from src/app/fit.ts set as --name-ems, fills the column. Clipped,
+ * not wrapped, should the estimate fall short.
+ */
+.card-name {
+  font-size: min(10px, calc(var(--card-col) / var(--name-ems, 1)));
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .memo-group {
@@ -104,10 +116,14 @@ textarea {
   animation: armed 0.3s ease-in-out 2;
 }
 
-/* A row shown by a jump from the 早見表 or a duplicate refusal. */
+/*
+ * A row shown by a jump from the 早見表 or a duplicate refusal. It fades to the row's own white,
+ * not to transparent: the card column, fixed over the groups scrolled under it, takes the row's
+ * background (#69), and must stay opaque.
+ */
 @keyframes highlight {
   from { background-color: #fde68a; }
-  to { background-color: transparent; }
+  to { background-color: #ffffff; }
 }
 
 .highlight {

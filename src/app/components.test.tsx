@@ -8,7 +8,7 @@ import { newBuild } from "../memo/build.ts";
 import { addMemory, addRow, isRefusal, type Edited } from "../memo/edit.ts";
 import { emptyMemo, type Memo, type Memory } from "../memo/types.ts";
 import { cardNamed, kindLabelled } from "../test-support/skillcards.ts";
-import { addRowThroughPopover, byLabel, byText, CATALOG, dialog, must, pick, section, showPage, tap, type } from "../test-support/page.tsx";
+import { addRowThroughPopover, byLabel, byText, CATALOG, dialog, enhancedBox, must, pick, section, setEnhanced, showPage, tap, type } from "../test-support/page.tsx";
 
 const HIF = must(CATALOG.tabAbilities("sense")[0], "a センス ability");
 const DDR: Memory = ["diamond", "diamond", "rainbow"];
@@ -63,6 +63,20 @@ describe("the Purpose scenario", () => {
   });
 });
 
+describe("the card column", () => {
+  test("keeps the card's name on one line, sized to fit the column (#68)", async () => {
+    await showPage(root, withJoju());
+    const name = byText(section(root, "好調"), "span", "成就+");
+    expect(name.className).toContain("card-name");
+    expect(Number(name.style.getPropertyValue("--name-ems"))).toBeCloseTo(2.64);
+  });
+
+  test("says カスタムなし for a card with no customization (#71)", async () => {
+    await showPage(root, withJoju());
+    expect(byText(section(root, "好調"), "span", "カスタムなし")).toBeTruthy();
+  });
+});
+
 describe("the memory popover", () => {
   test("追加 stays disabled until all three tiers are chosen", async () => {
     await showPage(root, withJoju());
@@ -107,10 +121,11 @@ describe("the memory popover", () => {
 });
 
 describe("the row popover", () => {
-  test("refuses a build already in the tab, naming its section, and jumps to its row", async () => {
+  test("refuses a build already in the tab at the popover's top, naming its section, and jumps to its row (#72)", async () => {
     await showPage(root, withJoju());
     await addRowThroughPopover(root, "集中", "成就+", HIF.card.name);
-    expect(byText(root, '[role="alert"]', "同じ組み合わせが「好調」にありますその行へ")).toBeTruthy();
+    const note = byText(root, '[role="alert"]', "同じ組み合わせが「好調」にありますその行へ");
+    expect(note.parentElement?.firstElementChild).toBe(note);
     expect(section(root, "集中").textContent).not.toContain("成就+");
     await tap(byText(dialog(root), "button", "その行へ"));
     expect(must(document.getElementById("row-r1"), "row r1").className).toContain("highlight");
@@ -137,11 +152,11 @@ const offeredNames = (upgrade: number, ...rarities: string[]) =>
     .filter((c) => c.upgrade === upgrade && (rarities.length === 0 || rarities.includes(c.rarity)))
     .map((c) => c.name);
 const toggle = (rarity: string) => tap(byText(byLabel(dialog(root), "レアリティ"), "button", rarity));
-const toLevel = (label: "基本" | "強化") => tap(byText(byLabel(dialog(root), "基本・強化"), "button", label));
-const levelPressed = () => [...byLabel(dialog(root), "基本・強化").querySelectorAll('button[aria-pressed="true"]')].map((b) => b.textContent);
+const toLevel = (label: "基本" | "強化") => setEnhanced(root, label === "強化");
+const levelPressed = () => [enhancedBox(root).checked ? "強化" : "基本"];
 
-describe("the card step's level switch (D66)", () => {
-  test("a new row opens at 強化, each card once; 基本 shows the base cards, 表現の基本 among them", async () => {
+describe("the card step's level switch, one 強化 checkbox (D66, #73)", () => {
+  test("a new row opens checked, each card once; unchecked shows the base cards, 表現の基本 among them", async () => {
     await showPage(root);
     await tap(byText(section(root, "好調"), "button", "＋ カードを追加"));
     expect(levelPressed()).toEqual(["強化"]);
@@ -226,6 +241,17 @@ describe("the card step's rarity filter (D56)", () => {
 });
 
 describe("the row menu", () => {
+  test("opens from the card's icon, the strip left of it holding only the drag handle (#55)", async () => {
+    await showPage(root, withJoju());
+    const row = must(document.getElementById("row-r1"), "row r1");
+    const menu = byLabel(row, "行のメニュー");
+    expect(menu.querySelector('[role="img"][aria-label="成就+"]')).toBeTruthy();
+    expect([...row.querySelectorAll("button")].some((b) => b.textContent === "⋯")).toBe(false);
+    expect(must(byLabel(row, "並べ替えのハンドル").parentElement, "the strip").querySelectorAll("button").length).toBe(1);
+    await tap(menu);
+    expect(byText(dialog(root), "button", "変更")).toBeTruthy();
+  });
+
   test("deleting a row takes two taps and its armed state says how many memories go with it", async () => {
     await showPage(root, withJoju());
     await tap(byLabel(section(root, "好調"), "行のメニュー"));
@@ -303,18 +329,41 @@ describe("the popover", () => {
     await showPage(root, withJoju());
     await tap(byLabel(section(root, "好調"), "%F% 未所持"));
     const panel = dialog(root);
-    const anchor = must(panel.parentElement, "the anchor");
-    // happy-dom lays nothing out: an anchor at 0 and a panel of no width start at the 8 px margin.
+    const anchor = must(root.querySelector("[data-popover-anchor]")?.parentElement, "the anchor");
+    // happy-dom lays nothing out: an anchor at 0 and a panel of no width start at the 8 px margin,
+    // in the popover layer's coordinates (#69), the layer at 0 too.
     expect(panel.style.left).toBe("8px");
-    Object.defineProperty(anchor, "getBoundingClientRect", { value: () => new DOMRect(100, 0, 88, 26), configurable: true });
-    Object.defineProperty(panel, "offsetWidth", { value: 300, configurable: true });
+    Object.defineProperty(anchor, "getBoundingClientRect", { value: () => new DOMRect(100, 40, 88, 26), configurable: true });
+    Object.defineProperty(panel, "offsetWidth", { value: 200, configurable: true });
     Object.defineProperty(document.documentElement, "clientWidth", { value: 250, configurable: true });
     try {
       await act(() => {
         window.dispatchEvent(new Event("resize"));
       });
-      // Wider than the 250 px screen, from an anchor at 100: it starts at the left margin, 8 - 100.
-      expect(panel.style.left).toBe("-92px");
+      // 200 px wide from an anchor at 100 on a 250 px screen: moved left to end at the right
+      // margin, 250 - 8 - 200 from the layer at 0, and under the anchor, whose bottom is at 66.
+      expect(panel.style.left).toBe("42px");
+      expect(panel.style.top).toBe("66px");
+    } finally {
+      Reflect.deleteProperty(document.documentElement, "clientWidth");
+    }
+  });
+
+  test("moves with its anchor when a section's rows are scrolled sideways (#69)", async () => {
+    await showPage(root, withJoju());
+    await tap(byLabel(section(root, "好調"), "%F% 未所持"));
+    const panel = dialog(root);
+    const anchor = must(root.querySelector("[data-popover-anchor]")?.parentElement, "the anchor");
+    expect(panel.style.left).toBe("8px");
+    Object.defineProperty(anchor, "getBoundingClientRect", { value: () => new DOMRect(60, 40, 88, 26), configurable: true });
+    const scroller = must(section(root, "好調").querySelector<HTMLElement>(".overflow-x-auto"), "the sideways scroller");
+    Object.defineProperty(document.documentElement, "clientWidth", { value: 390, configurable: true });
+    try {
+      await act(() => {
+        scroller.dispatchEvent(new Event("scroll"));
+      });
+      // It fits from the anchor's new place at 60, so it starts there, the layer at 0.
+      expect(panel.style.left).toBe("60px");
     } finally {
       Reflect.deleteProperty(document.documentElement, "clientWidth");
     }
