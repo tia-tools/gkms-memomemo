@@ -164,6 +164,14 @@ describe("art and unknown rows", () => {
     expect(urls().every((u) => u.includes("sense-ttmr-"))).toBe(true);
   });
 
+  test("「カードの絵柄」 sits above the 早見表, not in the footer (#14)", async () => {
+    await showPage(root, TWO_ROWS);
+    const picker = must(root.querySelector("select")?.closest("label"), "カードの絵柄");
+    const table = must(root.querySelector("details"), "the 早見表");
+    expect(picker.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(picker.closest("footer")).toBeNull();
+  });
+
   test("a card at a level the sheets lack is drawn as the empty frame of its rarity and type, with its name", async () => {
     await showPage(root, TWO_ROWS, { cell: 112, columns: 10, plans: [] });
     const icons = [...section(root, "好調").querySelectorAll<HTMLElement>('[role="img"]')];
