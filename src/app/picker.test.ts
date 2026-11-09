@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { atLevel, byRarity, fold, LEVELS, search, startLevel, toggled } from "./picker.ts";
+import { atLevel, byRarity, fold, levelOf, search, startLevel, toggled } from "./picker.ts";
 
 const NAMES = ["ファンサ", "ファンサ+", "成就+", "アイドル宣言", "表現の基本"];
 const find = (query: string) => search(NAMES, query, (n) => n);
@@ -71,11 +71,9 @@ describe("the level switch (D66)", () => {
     expect(names(1)).toEqual(["ファンサ+", "成就+"]);
   });
 
-  test("offers base then enhanced, the two levels a memory's card can have (D37)", () => {
-    expect(LEVELS.map((l) => [l.upgrade, l.label])).toEqual([
-      [0, "基本"],
-      [1, "強化"],
-    ]);
+  test("the 強化 checkbox stands for enhanced when checked and base when not, the two levels a memory's card can have (D37, #73)", () => {
+    expect(levelOf(true)).toBe(1);
+    expect(levelOf(false)).toBe(0);
   });
 
   test("starts at the chosen card's level, and at enhanced with none chosen", () => {
