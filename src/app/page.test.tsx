@@ -50,6 +50,20 @@ describe("extra groups", () => {
   });
 });
 
+describe("a section wider than the screen (#69)", () => {
+  test("scrolls its header and every row in one box, each row on one line with its card column fixed at the left", async () => {
+    await showPage(root, ok(addExtraGroup(TWO_ROWS, "r1", "%%%", DDR)));
+    const scroller = must(section(root, "好調").querySelector<HTMLElement>(".overflow-x-auto"), "the sideways scroller");
+    expect(scroller.textContent).toContain("追加");
+    expect(scroller.querySelectorAll("[data-row]").length).toBe(2);
+    for (const row of scroller.querySelectorAll("[data-row]")) {
+      expect(row.className).not.toContain("flex-wrap");
+      expect(must(row.firstElementChild, "the card column").className).toContain("sticky");
+      expect(row.querySelector(".flex-wrap")).toBeNull();
+    }
+  });
+});
+
 describe("column labels (#54)", () => {
   /** Each label's text as read aloud, and the part of it that shows: all but the screen-reader text. */
   const labels = (within: HTMLElement) =>

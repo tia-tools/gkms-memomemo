@@ -318,18 +318,41 @@ describe("the popover", () => {
     await showPage(root, withJoju());
     await tap(byLabel(section(root, "好調"), "%F% 未所持"));
     const panel = dialog(root);
-    const anchor = must(panel.parentElement, "the anchor");
-    // happy-dom lays nothing out: an anchor at 0 and a panel of no width start at the 8 px margin.
+    const anchor = must(root.querySelector("[data-popover-anchor]")?.parentElement, "the anchor");
+    // happy-dom lays nothing out: an anchor at 0 and a panel of no width start at the 8 px margin,
+    // in the popover layer's coordinates (#69), the layer at 0 too.
     expect(panel.style.left).toBe("8px");
-    Object.defineProperty(anchor, "getBoundingClientRect", { value: () => new DOMRect(100, 0, 88, 26), configurable: true });
-    Object.defineProperty(panel, "offsetWidth", { value: 300, configurable: true });
+    Object.defineProperty(anchor, "getBoundingClientRect", { value: () => new DOMRect(100, 40, 88, 26), configurable: true });
+    Object.defineProperty(panel, "offsetWidth", { value: 200, configurable: true });
     Object.defineProperty(document.documentElement, "clientWidth", { value: 250, configurable: true });
     try {
       await act(() => {
         window.dispatchEvent(new Event("resize"));
       });
-      // Wider than the 250 px screen, from an anchor at 100: it starts at the left margin, 8 - 100.
-      expect(panel.style.left).toBe("-92px");
+      // 200 px wide from an anchor at 100 on a 250 px screen: moved left to end at the right
+      // margin, 250 - 8 - 200 from the layer at 0, and under the anchor, whose bottom is at 66.
+      expect(panel.style.left).toBe("42px");
+      expect(panel.style.top).toBe("66px");
+    } finally {
+      Reflect.deleteProperty(document.documentElement, "clientWidth");
+    }
+  });
+
+  test("moves with its anchor when a section's rows are scrolled sideways (#69)", async () => {
+    await showPage(root, withJoju());
+    await tap(byLabel(section(root, "好調"), "%F% 未所持"));
+    const panel = dialog(root);
+    const anchor = must(root.querySelector("[data-popover-anchor]")?.parentElement, "the anchor");
+    expect(panel.style.left).toBe("8px");
+    Object.defineProperty(anchor, "getBoundingClientRect", { value: () => new DOMRect(60, 40, 88, 26), configurable: true });
+    const scroller = must(section(root, "好調").querySelector<HTMLElement>(".overflow-x-auto"), "the sideways scroller");
+    Object.defineProperty(document.documentElement, "clientWidth", { value: 390, configurable: true });
+    try {
+      await act(() => {
+        scroller.dispatchEvent(new Event("scroll"));
+      });
+      // It fits from the anchor's new place at 60, so it starts there, the layer at 0.
+      expect(panel.style.left).toBe("60px");
     } finally {
       Reflect.deleteProperty(document.documentElement, "clientWidth");
     }
