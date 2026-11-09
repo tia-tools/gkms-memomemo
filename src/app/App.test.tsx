@@ -192,6 +192,8 @@ describe("saving (Milestone 5, D57)", () => {
     await act(async () => {
       window.dispatchEvent(new Event("pagehide"));
     });
+    // The write goes after the memo's earlier writes (src/app/storage.ts writeInTurn), so its failure lands a turn later.
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
     logged.mockRestore();
     expect(root.textContent).toContain(NOTICE_TEXT["save-failed"]);
   });

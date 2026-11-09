@@ -170,32 +170,40 @@ function keeper(storage: PersistentStorage | undefined): (memo: Memo) => Promise
 
 /**
  * Where each key's writes stand: a change counts when it is made, `flying` while its write is
- * unfinished, and `unsaved` while the newest write `started` has failed, since the page still shows
- * the change the store lacks (Codex's review of #29).
+ * unfinished, `unsaved` while the last write has failed, since the page still shows the change the
+ * store lacks, and `queue` the key's writes, which go to the store one at a time (Codex's review of #29).
  */
 interface Writes {
   changes: number;
   flying: number;
-  started: number;
   unsaved: boolean;
+  queue: Promise<void>;
 }
 
-const noWrites = (): Writes => ({ changes: 0, flying: 0, started: 0, unsaved: false });
+const noWrites = (): Writes => ({ changes: 0, flying: 0, unsaved: false, queue: Promise.resolve() });
 
 /**
- * Starts a write of the key, and returns what ends it. Only the newest write's outcome sets
- * `unsaved`, whatever order the writes settle in, and `end` says whether it was the newest.
+ * Writes `value` under `key` once the key's earlier writes have settled, so writes settle in the
+ * order they were made, whatever the store, and the store ends with the newest; `unsaved` then
+ * follows the newest write's outcome. Rejects as the write does.
  */
-function begin(writes: Writes): (ok: boolean) => boolean {
+function writeInTurn(store: Store, key: string, value: unknown, writes: Writes): Promise<void> {
   writes.flying += 1;
-  writes.started += 1;
-  const mine = writes.started;
-  return (ok) => {
+  const turn = writes.queue
+    .then(() => store.put(key, value))
+    .then(
+      () => {
+        writes.unsaved = false;
+      },
+      (error: unknown) => {
+        writes.unsaved = true;
+        throw error;
+      },
+    );
+  writes.queue = turn.catch(() => undefined);
+  return turn.finally(() => {
     writes.flying -= 1;
-    if (mine !== writes.started) return false;
-    writes.unsaved = !ok;
-    return true;
-  };
+  });
 }
 
 /** Whether a key may take what another tab saved: none of this tab's changes to it is waiting, flying, unsaved, or made since `before`. */
@@ -242,17 +250,10 @@ async function reread(store: Store, seen: Seen, memo: Writes, settings: Writes, 
 /** Writes the settings at once (`Saving.settings`), and tells the other tabs once they are written. */
 function writeSettings(store: Store, settings: Settings, on: { writes: Writes; seen: Seen; channel: TabChannel; onError: (error: unknown) => void }): void {
   on.writes.changes += 1;
-  const end = begin(on.writes);
-  store.put(SETTINGS_KEY, settings).then(
-    () => {
-      if (end(true)) on.seen.settings = JSON.stringify(settings);
-      on.channel.post();
-    },
-    (error: unknown) => {
-      end(false);
-      on.onError(error);
-    },
-  );
+  writeInTurn(store, SETTINGS_KEY, settings, on.writes).then(() => {
+    on.seen.settings = JSON.stringify(settings);
+    on.channel.post();
+  }, on.onError);
 }
 
 /**
@@ -274,15 +275,13 @@ export function saving(store: Store, options: SavingOptions): Saving {
     const memo = waiting;
     waiting = null;
     if (memo === null) return;
-    const end = begin(memoWrites);
     try {
-      await store.put(MEMO_KEY, memo);
+      await writeInTurn(store, MEMO_KEY, memo, memoWrites);
     } catch (error) {
-      end(false);
       options.onError(error);
       return;
     }
-    if (end(true)) seen.memo = JSON.stringify(memo);
+    seen.memo = JSON.stringify(memo);
     channel.post();
     // Whether the browser keeps the storage is its own call; a refusal or an error changes nothing here.
     await askToKeep(memo).catch(() => undefined);

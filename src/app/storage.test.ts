@@ -338,11 +338,12 @@ describe("the page's other tabs (#29)", () => {
 });
 
 /** A store whose writes settle when the test says, in any order; a write that succeeds is kept then. */
-function heldStore(): Store & { kept: Map<string, unknown>; settle: (index: number, ok: boolean) => Promise<void> } {
+function heldStore(): Store & { kept: Map<string, unknown>; started: () => number; settle: (index: number, ok: boolean) => Promise<void> } {
   const kept = new Map<string, unknown>();
   const held: { key: string; value: unknown; resolve: () => void; reject: (error: Error) => void }[] = [];
   return {
     kept,
+    started: () => held.length,
     get: (key) => Promise.resolve(structuredClone(kept.get(key))),
     put: (key, value) => new Promise<void>((resolve, reject) => void held.push({ key, value, resolve, reject })),
     settle: async (index, ok) => {
@@ -356,24 +357,37 @@ function heldStore(): Store & { kept: Map<string, unknown>; settle: (index: numb
   };
 }
 
-describe("writes that settle out of order (#29, Codex's review)", () => {
-  test("only the newest write decides whether a key is unsaved, whatever order the writes settle in", async () => {
-    // An older write failing after a newer one succeeded leaves nothing unsaved: another tab's settings are taken.
+describe("a key's writes, one at a time (#29, Codex's review)", () => {
+  test("a key's next write starts only once the one before has settled, so the store ends with the newest", async () => {
+    const store = heldStore();
+    const save = saving(store, { delayMs: 500, onError: () => undefined, timers: manualTimers() });
+    save.settings({ idol: "ttmr", counting: true });
+    save.settings({ idol: "ttmr", counting: false });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(store.started()).toBe(1);
+    await store.settle(0, true);
+    expect(store.started()).toBe(2);
+    await store.settle(1, true);
+    expect(store.kept.get(SETTINGS_KEY)).toEqual({ idol: "ttmr", counting: false });
+  });
+
+  test("a failed write followed by one that succeeds leaves nothing unsaved; the other way round leaves the change unsaved", async () => {
     const store = heldStore();
     const mine = saving(store, { delayMs: 500, onError: () => undefined, timers: manualTimers() });
     mine.settings({ idol: "ttmr", counting: true });
     mine.settings({ idol: "ttmr", counting: false });
-    await store.settle(1, true);
+    await new Promise((resolve) => setTimeout(resolve, 0));
     await store.settle(0, false);
+    await store.settle(1, true);
     store.kept.set(SETTINGS_KEY, { idol: "hski", counting: true });
     expect(await mine.reread()).toEqual({ settings: { idol: "hski", counting: true } });
-    // An older write succeeding after a newer one failed leaves the newer change unsaved: nothing is taken.
     mine.memo(withRow("older"));
     const older = mine.flush();
     mine.memo(withRow("newer"));
     const newer = mine.flush();
-    await store.settle(3, false);
+    await new Promise((resolve) => setTimeout(resolve, 0));
     await store.settle(2, true);
+    await store.settle(3, false);
     await Promise.all([older, newer]);
     store.kept.set(MEMO_KEY, withRow("theirs"));
     expect(await mine.reread()).toEqual({});
