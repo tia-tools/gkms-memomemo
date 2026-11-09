@@ -170,13 +170,32 @@ function keeper(storage: PersistentStorage | undefined): (memo: Memo) => Promise
 
 /**
  * Where each key's writes stand: a change counts when it is made, `flying` while its write is
- * unfinished, and `unsaved` from a failed write until one succeeds, since the page still shows the
- * change the store lacks (Codex's review of #29).
+ * unfinished, and `unsaved` while the newest write `started` has failed, since the page still shows
+ * the change the store lacks (Codex's review of #29).
  */
 interface Writes {
   changes: number;
   flying: number;
+  started: number;
   unsaved: boolean;
+}
+
+const noWrites = (): Writes => ({ changes: 0, flying: 0, started: 0, unsaved: false });
+
+/**
+ * Starts a write of the key, and returns what ends it. Only the newest write's outcome sets
+ * `unsaved`, whatever order the writes settle in, and `end` says whether it was the newest.
+ */
+function begin(writes: Writes): (ok: boolean) => boolean {
+  writes.flying += 1;
+  writes.started += 1;
+  const mine = writes.started;
+  return (ok) => {
+    writes.flying -= 1;
+    if (mine !== writes.started) return false;
+    writes.unsaved = !ok;
+    return true;
+  };
 }
 
 /** Whether a key may take what another tab saved: none of this tab's changes to it is waiting, flying, unsaved, or made since `before`. */
@@ -223,23 +242,17 @@ async function reread(store: Store, seen: Seen, memo: Writes, settings: Writes, 
 /** Writes the settings at once (`Saving.settings`), and tells the other tabs once they are written. */
 function writeSettings(store: Store, settings: Settings, on: { writes: Writes; seen: Seen; channel: TabChannel; onError: (error: unknown) => void }): void {
   on.writes.changes += 1;
-  on.writes.flying += 1;
-  store
-    .put(SETTINGS_KEY, settings)
-    .then(
-      () => {
-        on.writes.unsaved = false;
-        on.seen.settings = JSON.stringify(settings);
-        on.channel.post();
-      },
-      (error: unknown) => {
-        on.writes.unsaved = true;
-        on.onError(error);
-      },
-    )
-    .finally(() => {
-      on.writes.flying -= 1;
-    });
+  const end = begin(on.writes);
+  store.put(SETTINGS_KEY, settings).then(
+    () => {
+      if (end(true)) on.seen.settings = JSON.stringify(settings);
+      on.channel.post();
+    },
+    (error: unknown) => {
+      end(false);
+      on.onError(error);
+    },
+  );
 }
 
 /**
@@ -251,8 +264,8 @@ export function saving(store: Store, options: SavingOptions): Saving {
   const timers = options.timers ?? GLOBAL_TIMERS;
   const channel = options.channel ?? NO_TABS;
   const seen: Seen = { ...(options.seen ?? SEEN_NOTHING) };
-  const memoWrites: Writes = { changes: 0, flying: 0, unsaved: false };
-  const settingsWrites: Writes = { changes: 0, flying: 0, unsaved: false };
+  const memoWrites = noWrites();
+  const settingsWrites = noWrites();
   const askToKeep = keeper(options.storage);
   let waiting: Memo | null = null;
   let cancel: (() => void) | null = null;
@@ -261,18 +274,15 @@ export function saving(store: Store, options: SavingOptions): Saving {
     const memo = waiting;
     waiting = null;
     if (memo === null) return;
-    memoWrites.flying += 1;
+    const end = begin(memoWrites);
     try {
       await store.put(MEMO_KEY, memo);
     } catch (error) {
-      memoWrites.unsaved = true;
+      end(false);
       options.onError(error);
       return;
-    } finally {
-      memoWrites.flying -= 1;
     }
-    memoWrites.unsaved = false;
-    seen.memo = JSON.stringify(memo);
+    if (end(true)) seen.memo = JSON.stringify(memo);
     channel.post();
     // Whether the browser keeps the storage is its own call; a refusal or an error changes nothing here.
     await askToKeep(memo).catch(() => undefined);

@@ -1,7 +1,7 @@
 import { describe, expect, spyOn, test } from "bun:test";
 import { emptyMemo, emptyRow, type Memo } from "../memo/types.ts";
 import { manualTimers, memoryStore } from "../test-support/store.ts";
-import { DEFAULT_SETTINGS, MEMO_KEY, openSaved, readSaved, readSettings, saving, SEEN_NOTHING, SETTINGS_KEY, type PersistentStorage, UNREADABLE_PREFIX } from "./storage.ts";
+import { DEFAULT_SETTINGS, MEMO_KEY, openSaved, readSaved, readSettings, saving, SEEN_NOTHING, SETTINGS_KEY, type PersistentStorage, type Store, UNREADABLE_PREFIX } from "./storage.ts";
 import type { TabChannel } from "./tabs.ts";
 
 const NOW = () => new Date("2026-11-01T12:00:00.000Z");
@@ -334,5 +334,48 @@ describe("the page's other tabs (#29)", () => {
     } finally {
       logged.mockRestore();
     }
+  });
+});
+
+/** A store whose writes settle when the test says, in any order; a write that succeeds is kept then. */
+function heldStore(): Store & { kept: Map<string, unknown>; settle: (index: number, ok: boolean) => Promise<void> } {
+  const kept = new Map<string, unknown>();
+  const held: { key: string; value: unknown; resolve: () => void; reject: (error: Error) => void }[] = [];
+  return {
+    kept,
+    get: (key) => Promise.resolve(structuredClone(kept.get(key))),
+    put: (key, value) => new Promise<void>((resolve, reject) => void held.push({ key, value, resolve, reject })),
+    settle: async (index, ok) => {
+      const write = held[index];
+      if (write === undefined) throw new Error(`no write ${index}`);
+      if (ok) kept.set(write.key, structuredClone(write.value));
+      if (ok) write.resolve();
+      else write.reject(new Error("quota"));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    },
+  };
+}
+
+describe("writes that settle out of order (#29, Codex's review)", () => {
+  test("only the newest write decides whether a key is unsaved, whatever order the writes settle in", async () => {
+    // An older write failing after a newer one succeeded leaves nothing unsaved: another tab's settings are taken.
+    const store = heldStore();
+    const mine = saving(store, { delayMs: 500, onError: () => undefined, timers: manualTimers() });
+    mine.settings({ idol: "ttmr", counting: true });
+    mine.settings({ idol: "ttmr", counting: false });
+    await store.settle(1, true);
+    await store.settle(0, false);
+    store.kept.set(SETTINGS_KEY, { idol: "hski", counting: true });
+    expect(await mine.reread()).toEqual({ settings: { idol: "hski", counting: true } });
+    // An older write succeeding after a newer one failed leaves the newer change unsaved: nothing is taken.
+    mine.memo(withRow("older"));
+    const older = mine.flush();
+    mine.memo(withRow("newer"));
+    const newer = mine.flush();
+    await store.settle(3, false);
+    await store.settle(2, true);
+    await Promise.all([older, newer]);
+    store.kept.set(MEMO_KEY, withRow("theirs"));
+    expect(await mine.reread()).toEqual({});
   });
 });
