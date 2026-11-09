@@ -18,9 +18,10 @@ The work is issue #86 on the project's board (`tia-tools` project 7, see `CLAUDE
 - [x] (2026-11-09 19:58Z) The user chose the cartoon faces over the round thumbnails, the default smile for the page and a contact sheet of every face to look at in Milestone 1 (T5, superseding T1); this plan revised to match.
 - [x] (2026-11-09 20:02Z) The user answered jobs #95 and #96, both A: supportcards' extractor pulls the faces (T6), and the sheet is committed under `public/icons/` (T7).
 - [x] (2026-11-09 20:08Z) Milestone 1 (prototyping): the game has one SD face per idol, `img_sd_<idol id>_face-00`, the default smile, a plain 256 × 256 texture (Surprises & Discoveries). gakumas-supportcards' extractor learned the faces as master-only files on its branch `feat/sd-faces-82` (its issue #82, commit `75ba02f`; its `uv run pytest` 71 passed, each of the four new rules seen to turn a test red when broken); `uv run extract.py --only 'img_sd_'` wrote 15 masters into its `scripts/images/out/master/` and a second run processed none. A contact sheet of all 15 (`scripts/icons/out/check/faces.png`, drawn by a scratch script, not kept) was shown to the user. Remaining: supportcards' branch pushed and merged through a pull request into its `develop`, on the user's go.
-- [ ] Milestone 2: the idol sheet and its index built locally by `scripts/icons/idols.py`, with tests.
-- [ ] Milestone 3: the sheet published where the user decided, and the page able to load it online and offline.
-- [ ] Milestone 4: the table on the page, replacing the drop-down, with tests and a look in Chrome at 390 px and on a desktop window.
+- [x] (2026-11-09 20:00Z) Milestone 2: `scripts/icons/idols.py` builds the face sheet and its index (`4433cd8`): `uv run idols.py` → `13 faces, idols96-a82c359e.webp, 43 KB`; the sheet, opened, shows the 13 faces in the data file's order. `uv run --frozen pytest` 58 passed; six mutations of its rules (the missing-face check, the row order, both halves of the stale-sheet filter, the face file, the kept alpha) each turned a test red.
+- [x] (2026-11-09 20:05Z) Milestone 3: `uv run idols.py --publish` put `public/icons/idols96-a82c359e.webp` and `src/icons/idols.v1.json` in place; `src/app/idols.ts` reads the index (`5a018ea`). `bun run build` puts the sheet in `dist/icons/` and in `dist/sw.js`'s precache list, with no change to the service worker (every file under `public/` is precached); a test checks that the committed index names a sheet that exists in `public/icons/`, so no separate service worker test was added. Five mutations of `idols.ts` each turned a test red.
+- [x] (2026-11-09 20:16Z) Milestone 4: `IdolPicker.tsx` replaces the drop-down `ArtPicker` (`d0caf5c`); the page tests that used the `<select>` now choose through `chooseIdol` and read `chosenIdol` in `src/test-support/page.tsx`. `bun test` 520 passed, `bun run type-check`, `bun run lint` and `bun run build` exit 0; five mutations of the picker (fold on choosing, pressed state, folded at start, lookup by id, the fallback character) each turned a test red. In Chrome on the dev server (Surprises & Discoveries on how 390 px was shown): folded, one line with 花海咲季's face and name; unfolded, 7 + 6 faces inside 390 px, hers ringed; choosing 篠澤広 folded it, showed her face and name, and the rows' card icons switched to her art; after a reload she was still chosen and pressed; at 1200 px the same table. Offline: on `vite preview` the sheet was in the page's install cache (`memomemo-page-…`) after one visit; with the preview server stopped, a reload drew the page and the sheet (43,568 bytes, status 200 from the service worker).
+- [ ] The branch's `/codex-review`, the pull request into `develop` closing #86, and supportcards' #82 pushed and merged through its own pull request, each on the user's go.
 
 ## Surprises & Discoveries
 
@@ -32,6 +33,12 @@ The work is issue #86 on the project's board (`tia-tools` project 7, see `CLAUDE
 
 - Observation: gakumas-supportcards' extractor cannot take these images as it stands. `uv run extract.py --only <regex>` only filters the list its `offered()` builds, and that list holds support cards (`csprt`), P items (`pitem`) and skill cards only; a regex for `img_chr_` matches nothing.
   Evidence: `scripts/images/extract.py` `offered()` and the `--only` help text there, read on 2026-11-09.
+
+- Observation: the face sheet is 43 KB at WebP quality 90 and 34 KB at 80, 31 KB at 75, 29 KB at 60; the alpha, kept lossless, is most of it. Quality 90 is kept: cartoon faces are flat colours and sharp lines, where lossy artefacts show first, and the file is fetched once, at install.
+  Evidence: `90 43 KB`, `80 34 KB`, `75 31 KB`, `60 29 KB` for the 13-face row (2026-11-09).
+
+- Observation: in this session Chrome's window could not be resized (the window stayed 1560 px wide inside, likely full screen), so 390 px was shown by loading the page into a same-origin iframe 390 px wide, whose media queries follow the iframe's width.
+  Evidence: `resize_window` to 390 and to 400 reported success while `innerWidth` stayed 1560; in the iframe `innerWidth` was 390 (2026-11-09).
 
 ## Decision Log
 
@@ -67,7 +74,7 @@ The decisions are numbered T1, T2, … so they cannot be confused with the D num
 
 ## Outcomes & Retrospective
 
-Nothing yet.
+2026-11-09, all four milestones done on the branch: 「カードの絵柄」 is a folded button with the chosen idol's SD face and name, unfolding to the 13 faces, working at 390 px, on a desktop and offline. What remains is review and merging, here and in gakumas-supportcards (#82), whose extractor change this plan relies on to rebuild the sheet. Lesson: the asset manifest settled in minutes what had been carried as an assumption since #14 (several expressions per idol); listing the live manifest belongs at the very start of any plan that names game assets.
 
 ## Context and Orientation
 
@@ -109,7 +116,12 @@ Then, from the root:
     bun test && bun run type-check && bun run lint && bun run build
     bun run dev
 
-Judge each by its exit status. Expected transcripts are added here as the milestones run.
+Judge each by its exit status. Expected from `idols.py` on the faces of 2026-11-09:
+
+    13 faces, idols96-a82c359e.webp, 43 KB
+    published public/icons/idols96-a82c359e.webp and src/icons/idols.v1.json
+
+A `missing:` line names an idol whose face master is not in `--masters`, and the command exits 1; extract the faces first in gakumas-supportcards, `cd scripts/images && uv run extract.py --only 'img_sd_'`.
 
 ## Validation and Acceptance
 
@@ -145,3 +157,5 @@ In `src/app/idols.ts`, define:
 2026-11-09: the user answered the two open decisions (jobs #95 and #96, both A); they are T6 and T7 in the Decision Log, and the Plan of Work, which was written for those answers, stands as it was.
 
 2026-11-09: Milestone 1 done. The game has one SD face per idol, so Milestone 1's handling of several faces per bundle and its face map were dropped, and Milestone 2 takes `face-00` for every idol.
+
+2026-11-09: Milestones 2, 3 and 4 done; the Progress, Surprises & Discoveries, Concrete Steps and Outcomes sections record them. Milestone 3's planned service worker test was replaced by a test that the index names a sheet present in `public/icons/`, since the service worker precaches every file there without a change.
