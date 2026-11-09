@@ -58,7 +58,7 @@ function CardCell({ row, section, plan }: { row: Row; section: SectionId; plan: 
       <CardIcon card={hif?.card} plan={plan} size="var(--hif-icon)" name={hif ? `HIF ${hif.card.name}` : "不明なHIF"} />
       <div class="flex flex-col text-[length:var(--label-font)] leading-tight break-all">
         {labels.length === 0 ? (
-          <span class="text-slate-400">なし</span>
+          <span class="text-slate-400">カスタムなし</span>
         ) : (
           labels.map(({ label, times }, i) => (
             <span key={i}>

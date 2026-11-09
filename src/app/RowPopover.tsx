@@ -53,9 +53,10 @@ function RefusalNote({ refusal, onJump }: { refusal: Refusal; onJump: (row: stri
 /**
  * The row popover (D19): the skill card, its customization and 開幕時獲得, and the H.I.F. ability, in
  * three steps. Adding puts the row at the section's end; with `row` it changes that row's build,
- * prefilled. Either way a build already in the tab is refused, naming its section, with a jump
- * there (D13), and a build its card's rules reject (one saved before the data changed) is never
- * saved: the customization step opens again to fix it. A step with nothing to choose is passed over.
+ * prefilled. Either way a build already in the tab is refused at the popover's top, naming its
+ * section, with a jump there (D13, #72), and a build its card's rules reject (one saved before the
+ * data changed) is never saved: the customization step opens again to fix it. A step with nothing
+ * to choose is passed over.
  */
 export function RowPopover({ plan, section, row, onClose }: { plan: PlanId; section: SectionId; row?: Row; onClose: () => void }) {
   const page = usePage();
@@ -87,6 +88,8 @@ export function RowPopover({ plan, section, row, onClose }: { plan: PlanId; sect
   return (
     <Popover label={row ? "行を変更" : "カードを追加"} onClose={onClose}>
       <div class="flex w-[22rem] max-w-full flex-col gap-2">
+        {/* At the top, where a phone shows it: the foot of the popover can be off the screen (#72). */}
+        {refusal && <RefusalNote refusal={refusal} onJump={jump} />}
         <div class="flex gap-1">
           {STEPS.map(([s, label]) => (
             <Choice key={s} pressed={step === s} disabled={s !== "card" && draft.card === undefined} onClick={() => setStep(s)}>
@@ -97,7 +100,6 @@ export function RowPopover({ plan, section, row, onClose }: { plan: PlanId; sect
         {step === "card" && <CardStep plan={plan} section={section} chosen={draft.card} onPick={pickCard} />}
         {step === "custom" && draft.card && <CustomizeStep card={draft.card} build={draft.build} onBuild={(build) => (setDraft({ ...draft, build }), setBroken(false))} onNext={() => setStep("hif")} />}
         {step === "hif" && <HifStep plan={plan} section={section} chosen={draft.build.hif} onPick={(hif) => finish({ ...draft.build, hif })} />}
-        {refusal && <RefusalNote refusal={refusal} onJump={jump} />}
         {broken && (
           <p role="alert" class="text-xs text-rose-600">
             このカードでは選べない組み合わせです。カスタマイズを選び直してください

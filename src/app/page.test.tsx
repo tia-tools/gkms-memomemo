@@ -64,6 +64,22 @@ describe("a section wider than the screen (#69)", () => {
   });
 });
 
+describe("column labels (#54)", () => {
+  /** Each label's text as read aloud, and the part of it that shows: all but the screen-reader text. */
+  const labels = (within: HTMLElement) =>
+    [...within.querySelectorAll(".sr-only")].map((hidden) => {
+      const label = must(hidden.parentElement, "a column label");
+      return { read: label.textContent, shown: label.textContent?.replace(hidden.textContent ?? "", "") };
+    });
+
+  test("show only % or + on screen, the stat said to assistive technology, in the header and over an extra group", async () => {
+    await showPage(root, ok(addExtraGroup(withRow(emptyMemo(), "r1", "成就+"), "r1", "FFF", DDR)));
+    const found = labels(section(root, "好調"));
+    expect(found.map((l) => l.read)).toEqual(["Vo%", "Da%", "Vi+", "Vo%", "Da+", "Vi%", "Vo+", "Da%", "Vi%", "Vo+", "Da+", "Vi+"]);
+    expect(found.map((l) => l.shown)).toEqual(["%", "%", "+", "%", "+", "%", "+", "%", "%", "+", "+", "+"]);
+  });
+});
+
 describe("an emptied extra group (D27)", () => {
   const withExtra = () => ok(addExtraGroup(withRow(emptyMemo(), "r1", "成就+"), "r1", "%%%", DDR));
 

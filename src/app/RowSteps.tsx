@@ -8,7 +8,7 @@ import { rankedAbilities, rankedCards } from "./counts.ts";
 import { chosenStep, pickStep, stepOpen, switchKaimaku } from "./customize.ts";
 import { CardIcon } from "./Icon.tsx";
 import { usePage } from "./page.ts";
-import { atLevel, byRarity, FILTER_RARITIES, LEVELS, search, startLevel, toggled } from "./picker.ts";
+import { atLevel, byRarity, ENHANCED, FILTER_RARITIES, levelOf, search, startLevel, toggled } from "./picker.ts";
 
 /** A choice that shows whether it is chosen. */
 export function Choice({ pressed, disabled, onClick, children }: { pressed: boolean; disabled?: boolean; onClick: () => void; children: ComponentChildren }) {
@@ -69,16 +69,13 @@ function RarityFilter({ on, onToggle }: { on: ReadonlySet<SkillCardRarity>; onTo
   );
 }
 
-/** The card step's level switch (D66): base or enhanced, one at a time. */
+/** The card step's level switch (D66, #73): checked, the enhanced cards; unchecked, the base ones. */
 function LevelSwitch({ level, onSwitch }: { level: number; onSwitch: (upgrade: number) => void }) {
   return (
-    <div class="flex gap-1" role="group" aria-label="基本・強化">
-      {LEVELS.map(({ upgrade, label }) => (
-        <Choice key={upgrade} pressed={level === upgrade} onClick={() => onSwitch(upgrade)}>
-          {label}
-        </Choice>
-      ))}
-    </div>
+    <label class="flex items-center gap-1 text-xs">
+      <input type="checkbox" checked={level === ENHANCED} onChange={(e) => onSwitch(levelOf(e.currentTarget.checked))} />
+      強化
+    </label>
   );
 }
 
