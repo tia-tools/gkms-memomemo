@@ -76,6 +76,23 @@ export async function type(input: HTMLElement, text: string): Promise<void> {
   });
 }
 
+/** 「カードの絵柄」's folded button, which shows the chosen idol's name (#86). */
+export function artToggle(root: ParentNode): HTMLButtonElement {
+  return must([...root.querySelectorAll<HTMLButtonElement>("button[aria-expanded]")].find((b) => b.textContent?.startsWith("カードの絵柄") === true), "カードの絵柄");
+}
+
+/** The idol 「カードの絵柄」 shows as chosen, by name: the button's text but its face, which is hidden from assistive technology. */
+export function chosenIdol(root: ParentNode): string {
+  const shown = [...artToggle(root).childNodes].filter((node) => !(node instanceof Element && node.getAttribute("aria-hidden") === "true"));
+  return shown.map((node) => node.textContent ?? "").join("").replace("カードの絵柄", "");
+}
+
+/** Chooses an idol in 「カードの絵柄」 by name: unfolds the table, taps her face. */
+export async function chooseIdol(root: ParentNode, name: string): Promise<void> {
+  await tap(artToggle(root));
+  await tap(byLabel(must(root.querySelector('[role="group"][aria-label="カードの絵柄"]'), "the idols' faces"), name));
+}
+
 /** A pick in the open row popover's grid: the button showing that name. */
 export async function pick(root: ParentNode, name: string): Promise<void> {
   await tap(must([...dialog(root).querySelectorAll<HTMLElement>("button[aria-pressed]")].find((b) => b.querySelector("span:last-child")?.textContent === name), `pick ${name}`));
