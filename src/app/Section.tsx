@@ -2,6 +2,7 @@ import type { VNode } from "preact";
 import { useState } from "preact/hooks";
 import { hasGaps } from "../memo/coverage.ts";
 import { FIXED_PATTERNS, type PlanId, type Row, type SectionId } from "../memo/types.ts";
+import { ColumnMark } from "./Group.tsx";
 import { columnLabels, SECTION_LABELS, STATS } from "./labels.ts";
 import { usePage } from "./page.ts";
 import { RowPopover } from "./RowPopover.tsx";
@@ -17,9 +18,7 @@ function ColumnHeader() {
       {FIXED_PATTERNS.map((pattern) => (
         <div key={pattern} class="memo-group flex shrink-0 gap-[var(--cell-gap)]">
           {columnLabels(pattern).map((label, i) => (
-            <span key={label} class="w-[var(--cell-w)] border-t-[3px] text-center" style={{ borderColor: STATS[i]?.color }}>
-              {label}
-            </span>
+            <ColumnMark key={label.stat} label={label} class="w-[var(--cell-w)] border-t-[3px] text-center" color={STATS[i]?.color} />
           ))}
         </div>
       ))}
