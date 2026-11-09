@@ -148,7 +148,8 @@ export interface Saving {
    * Reads the store again, for what another tab saved since this one last read or wrote it (#29).
    * A memo or settings this tab is still writing, began writing while the store was read, or failed
    * to write, is not taken: this tab's change goes over it, and the other tab then takes that. A memo the reader
-   * refuses (a later version of the page wrote it) is not taken either, and is logged.
+   * refuses (a later version of the page wrote it) is not taken either, and is logged. Rereads run
+   * one at a time, in the order asked.
    */
   reread: () => Promise<Reread>;
   /** Calls `heard` whenever another tab says it wrote the store; returns what stops listening. */
@@ -247,6 +248,19 @@ async function reread(store: Store, seen: Seen, memo: Writes, settings: Writes, 
   return found;
 }
 
+/**
+ * Runs each call after the one before has settled, so rereads finish in the order they began and an
+ * older read never lands over a newer one (Codex's review of #29).
+ */
+function oneAtATime<T>(): (run: () => Promise<T>) => Promise<T> {
+  let last: Promise<unknown> = Promise.resolve();
+  return (run) => {
+    const turn = last.then(run);
+    last = turn.catch(() => undefined);
+    return turn;
+  };
+}
+
 /** Writes the settings at once (`Saving.settings`), and tells the other tabs once they are written. */
 function writeSettings(store: Store, settings: Settings, on: { writes: Writes; seen: Seen; channel: TabChannel; onError: (error: unknown) => void }): void {
   on.writes.changes += 1;
@@ -270,6 +284,7 @@ export function saving(store: Store, options: SavingOptions): Saving {
   const askToKeep = keeper(options.storage);
   let waiting: Memo | null = null;
   let cancel: (() => void) | null = null;
+  const rereads = oneAtATime<Reread>();
   const write = async (): Promise<void> => {
     cancel = null;
     const memo = waiting;
@@ -298,7 +313,7 @@ export function saving(store: Store, options: SavingOptions): Saving {
       cancel?.();
       return write();
     },
-    reread: () => reread(store, seen, memoWrites, settingsWrites, () => waiting !== null),
+    reread: () => rereads(() => reread(store, seen, memoWrites, settingsWrites, () => waiting !== null)),
     listen: (heard) => channel.listen(heard),
   };
 }

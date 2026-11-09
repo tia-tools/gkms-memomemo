@@ -357,7 +357,7 @@ function heldStore(): Store & { kept: Map<string, unknown>; started: () => numbe
   };
 }
 
-describe("a key's writes, one at a time (#29, Codex's review)", () => {
+describe("writes and rereads, one at a time (#29, Codex's review)", () => {
   test("a key's next write starts only once the one before has settled, so the store ends with the newest", async () => {
     const store = heldStore();
     const save = saving(store, { delayMs: 500, onError: () => undefined, timers: manualTimers() });
@@ -391,5 +391,24 @@ describe("a key's writes, one at a time (#29, Codex's review)", () => {
     await Promise.all([older, newer]);
     store.kept.set(MEMO_KEY, withRow("theirs"));
     expect(await mine.reread()).toEqual({});
+  });
+
+  test("rereads run one at a time: the next reads the store only once the one before has finished", async () => {
+    const reads: { key: string; give: (value: unknown) => void }[] = [];
+    const store: Store = {
+      get: (key) => new Promise((resolve) => void reads.push({ key, give: resolve })),
+      put: () => Promise.resolve(),
+    };
+    const save = saving(store, { delayMs: 500, onError: noError, timers: manualTimers() });
+    const first = save.reread();
+    const second = save.reread();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(reads.map((r) => r.key)).toEqual([MEMO_KEY, SETTINGS_KEY]);
+    for (const read of reads.splice(0)) read.give(read.key === MEMO_KEY ? withRow("older") : undefined);
+    expect(await first).toEqual({ memo: withRow("older") });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(reads.map((r) => r.key)).toEqual([MEMO_KEY, SETTINGS_KEY]);
+    for (const read of reads.splice(0)) read.give(read.key === MEMO_KEY ? withRow("newer") : undefined);
+    expect(await second).toEqual({ memo: withRow("newer") });
   });
 });
