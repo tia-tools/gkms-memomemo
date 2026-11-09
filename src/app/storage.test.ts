@@ -302,6 +302,26 @@ describe("the page's other tabs (#29)", () => {
     await mine.flush();
   });
 
+  test("a change whose write failed is not replaced by another tab's until a write of it succeeds", async () => {
+    const store = memoryStore();
+    const mine = saving(store, { delayMs: 500, onError: () => undefined, timers: manualTimers() });
+    const other = saving(store, { delayMs: 500, onError: noError, timers: manualTimers() });
+    store.failWith = new Error("quota");
+    mine.memo(withRow("mine"));
+    await mine.flush();
+    mine.settings({ idol: "ttmr", counting: false });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    store.failWith = null;
+    other.memo(withRow("theirs"));
+    await other.flush();
+    other.settings(DEFAULT_SETTINGS);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(await mine.reread()).toEqual({});
+    mine.memo(withRow("mine"));
+    await mine.flush();
+    expect(store.kept.get(MEMO_KEY)).toEqual(withRow("mine"));
+  });
+
   test("a memo this page cannot read is not taken, and is logged once", async () => {
     const store = memoryStore();
     const save = saving(store, { delayMs: 500, onError: noError, timers: manualTimers() });
