@@ -1,7 +1,8 @@
 import { describe, expect, spyOn, test } from "bun:test";
 import { emptyMemo, emptyRow, type Memo } from "../memo/types.ts";
 import { manualTimers, memoryStore } from "../test-support/store.ts";
-import { DEFAULT_SETTINGS, MEMO_KEY, openSaved, readSaved, readSettings, saving, SETTINGS_KEY, type PersistentStorage, UNREADABLE_PREFIX } from "./storage.ts";
+import { DEFAULT_SETTINGS, MEMO_KEY, openSaved, readSaved, readSettings, saving, SEEN_NOTHING, SETTINGS_KEY, type PersistentStorage, type Store, UNREADABLE_PREFIX } from "./storage.ts";
+import type { TabChannel } from "./tabs.ts";
 
 const NOW = () => new Date("2026-11-01T12:00:00.000Z");
 
@@ -29,13 +30,18 @@ describe("readSettings", () => {
 describe("readSaved", () => {
   test("an empty store is an empty memo with the default settings, and nothing is written", async () => {
     const store = memoryStore();
-    expect(await readSaved(store, NOW)).toEqual({ memo: emptyMemo(), settings: DEFAULT_SETTINGS, notice: null });
+    expect(await readSaved(store, NOW)).toEqual({ memo: emptyMemo(), settings: DEFAULT_SETTINGS, notice: null, seen: SEEN_NOTHING });
     expect(store.writes).toEqual([]);
   });
 
   test("reads back the memo and the settings saved", async () => {
     const store = memoryStore({ [MEMO_KEY]: withRow(), [SETTINGS_KEY]: { idol: "ttmr", counting: false } });
-    expect(await readSaved(store, NOW)).toEqual({ memo: withRow(), settings: { idol: "ttmr", counting: false }, notice: null });
+    expect(await readSaved(store, NOW)).toEqual({
+      memo: withRow(),
+      settings: { idol: "ttmr", counting: false },
+      notice: null,
+      seen: { memo: JSON.stringify(withRow()), settings: JSON.stringify({ idol: "ttmr", counting: false }) },
+    });
   });
 
   test("a memo the reader refuses is copied aside under the time, and the page starts empty and says so", async () => {
@@ -43,7 +49,13 @@ describe("readSaved", () => {
     const store = memoryStore({ [MEMO_KEY]: broken, [SETTINGS_KEY]: { idol: "ttmr", counting: true } });
     const logged = spyOn(console, "error").mockImplementation(() => {});
     try {
-      expect(await readSaved(store, NOW)).toEqual({ memo: emptyMemo(), settings: { idol: "ttmr", counting: true }, notice: "unreadable" });
+      expect(await readSaved(store, NOW)).toEqual({
+        memo: emptyMemo(),
+        settings: { idol: "ttmr", counting: true },
+        notice: "unreadable",
+        // What the store holds is seen, so a reread does not take the unreadable memo for another tab's.
+        seen: { memo: JSON.stringify(broken), settings: JSON.stringify({ idol: "ttmr", counting: true }) },
+      });
     } finally {
       logged.mockRestore();
     }
@@ -68,14 +80,14 @@ describe("readSaved", () => {
 describe("openSaved", () => {
   test("opens the store and reads what it holds", async () => {
     const store = memoryStore({ [MEMO_KEY]: withRow() });
-    expect(await openSaved(() => Promise.resolve(store), NOW)).toEqual({ saved: { memo: withRow(), settings: DEFAULT_SETTINGS, notice: null }, store });
+    expect(await openSaved(() => Promise.resolve(store), NOW)).toEqual({ saved: { memo: withRow(), settings: DEFAULT_SETTINGS, notice: null, seen: { memo: JSON.stringify(withRow()), settings: null } }, store });
   });
 
   test("a store that does not open is an empty memo, nothing to save into, and the notice", async () => {
     const logged = spyOn(console, "error").mockImplementation(() => {});
     const opened = await openSaved(() => Promise.reject(new Error("no IndexedDB")), NOW);
     logged.mockRestore();
-    expect(opened).toEqual({ saved: { memo: emptyMemo(), settings: DEFAULT_SETTINGS, notice: "unavailable" }, store: null });
+    expect(opened).toEqual({ saved: { memo: emptyMemo(), settings: DEFAULT_SETTINGS, notice: "unavailable", seen: SEEN_NOTHING }, store: null });
   });
 
   test("an unreadable memo that cannot be copied aside leaves no store, so it is never written over", async () => {
@@ -208,5 +220,195 @@ describe("saving the settings", () => {
     saving(store, { delayMs: 500, onError: (e) => errors.push(e), timers: manualTimers() }).settings(DEFAULT_SETTINGS);
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(errors).toEqual([store.failWith]);
+  });
+});
+
+/** A channel that records how often this tab told the others it wrote. */
+function postsCounted(): TabChannel & { posts: number } {
+  const channel = { posts: 0, post: () => void (channel.posts += 1), listen: () => () => undefined };
+  return channel;
+}
+
+describe("the page's other tabs (#29)", () => {
+  test("each write is told to the other tabs; a failed one is not", async () => {
+    const store = memoryStore();
+    const channel = postsCounted();
+    const save = saving(store, { delayMs: 500, onError: () => undefined, timers: manualTimers(), channel });
+    save.memo(withRow());
+    await save.flush();
+    save.settings({ idol: "ttmr", counting: true });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(channel.posts).toBe(2);
+    store.failWith = new Error("quota");
+    save.memo(withRow("b"));
+    await save.flush();
+    expect(channel.posts).toBe(2);
+  });
+
+  test("a reread finds nothing in what the page read at start", async () => {
+    const store = memoryStore({ [MEMO_KEY]: withRow(), [SETTINGS_KEY]: { idol: "ttmr", counting: false } });
+    const { seen } = await readSaved(store, NOW);
+    const save = saving(store, { delayMs: 500, onError: noError, timers: manualTimers(), seen });
+    expect(await save.reread()).toEqual({});
+  });
+
+  test("a reread finds nothing in what this tab wrote", async () => {
+    const store = memoryStore();
+    const save = saving(store, { delayMs: 500, onError: noError, timers: manualTimers() });
+    save.memo(withRow());
+    await save.flush();
+    save.settings({ idol: "ttmr", counting: false });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(await save.reread()).toEqual({});
+  });
+
+  test("a reread takes what another tab wrote, once", async () => {
+    const store = memoryStore();
+    const mine = saving(store, { delayMs: 500, onError: noError, timers: manualTimers(), seen: (await readSaved(store, NOW)).seen });
+    const other = saving(store, { delayMs: 500, onError: noError, timers: manualTimers() });
+    other.memo(withRow("theirs"));
+    await other.flush();
+    other.settings({ idol: "ttmr", counting: false });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(await mine.reread()).toEqual({ memo: withRow("theirs"), settings: { idol: "ttmr", counting: false } });
+    expect(await mine.reread()).toEqual({});
+  });
+
+  test("a memo this tab has waiting is not replaced by another tab's: it is written over it", async () => {
+    const store = memoryStore();
+    const timers = manualTimers();
+    const mine = saving(store, { delayMs: 500, onError: noError, timers });
+    const other = saving(store, { delayMs: 500, onError: noError, timers: manualTimers() });
+    other.memo(withRow("theirs"));
+    await other.flush();
+    mine.memo(withRow("mine"));
+    expect(await mine.reread()).toEqual({});
+    await mine.flush();
+    expect(store.kept.get(MEMO_KEY)).toEqual(withRow("mine"));
+  });
+
+  test("a change made while the store is read is not replaced by what was read", async () => {
+    const store = memoryStore();
+    const mine = saving(store, { delayMs: 500, onError: noError, timers: manualTimers() });
+    const other = saving(store, { delayMs: 500, onError: noError, timers: manualTimers() });
+    other.memo(withRow("theirs"));
+    await other.flush();
+    other.settings({ idol: "ttmr", counting: false });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const reading = mine.reread();
+    mine.memo(withRow("mine"));
+    mine.settings(DEFAULT_SETTINGS);
+    expect(await reading).toEqual({});
+    await mine.flush();
+  });
+
+  test("a change whose write failed is not replaced by another tab's until a write of it succeeds", async () => {
+    const store = memoryStore();
+    const mine = saving(store, { delayMs: 500, onError: () => undefined, timers: manualTimers() });
+    const other = saving(store, { delayMs: 500, onError: noError, timers: manualTimers() });
+    store.failWith = new Error("quota");
+    mine.memo(withRow("mine"));
+    await mine.flush();
+    mine.settings({ idol: "ttmr", counting: false });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    store.failWith = null;
+    other.memo(withRow("theirs"));
+    await other.flush();
+    other.settings(DEFAULT_SETTINGS);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(await mine.reread()).toEqual({});
+    mine.memo(withRow("mine"));
+    await mine.flush();
+    expect(store.kept.get(MEMO_KEY)).toEqual(withRow("mine"));
+  });
+
+  test("a memo this page cannot read is not taken, and is logged once", async () => {
+    const store = memoryStore();
+    const save = saving(store, { delayMs: 500, onError: noError, timers: manualTimers() });
+    await store.put(MEMO_KEY, { ...withRow(), formatVersion: 2 });
+    const logged = spyOn(console, "error").mockImplementation(() => {});
+    try {
+      expect(await save.reread()).toEqual({});
+      expect(await save.reread()).toEqual({});
+      expect(logged).toHaveBeenCalledTimes(1);
+    } finally {
+      logged.mockRestore();
+    }
+  });
+});
+
+/** A store whose writes settle when the test says, in any order; a write that succeeds is kept then. */
+function heldStore(): Store & { kept: Map<string, unknown>; started: () => number; settle: (index: number, ok: boolean) => Promise<void> } {
+  const kept = new Map<string, unknown>();
+  const held: { key: string; value: unknown; resolve: () => void; reject: (error: Error) => void }[] = [];
+  return {
+    kept,
+    started: () => held.length,
+    get: (key) => Promise.resolve(structuredClone(kept.get(key))),
+    put: (key, value) => new Promise<void>((resolve, reject) => void held.push({ key, value, resolve, reject })),
+    settle: async (index, ok) => {
+      const write = held[index];
+      if (write === undefined) throw new Error(`no write ${index}`);
+      if (ok) kept.set(write.key, structuredClone(write.value));
+      if (ok) write.resolve();
+      else write.reject(new Error("quota"));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    },
+  };
+}
+
+describe("writes and rereads, one at a time (#29, Codex's review)", () => {
+  test("a key's next write starts only once the one before has settled, so the store ends with the newest", async () => {
+    const store = heldStore();
+    const save = saving(store, { delayMs: 500, onError: () => undefined, timers: manualTimers() });
+    save.settings({ idol: "ttmr", counting: true });
+    save.settings({ idol: "ttmr", counting: false });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(store.started()).toBe(1);
+    await store.settle(0, true);
+    expect(store.started()).toBe(2);
+    await store.settle(1, true);
+    expect(store.kept.get(SETTINGS_KEY)).toEqual({ idol: "ttmr", counting: false });
+  });
+
+  test("a failed write followed by one that succeeds leaves nothing unsaved; the other way round leaves the change unsaved", async () => {
+    const store = heldStore();
+    const mine = saving(store, { delayMs: 500, onError: () => undefined, timers: manualTimers() });
+    mine.settings({ idol: "ttmr", counting: true });
+    mine.settings({ idol: "ttmr", counting: false });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await store.settle(0, false);
+    await store.settle(1, true);
+    store.kept.set(SETTINGS_KEY, { idol: "hski", counting: true });
+    expect(await mine.reread()).toEqual({ settings: { idol: "hski", counting: true } });
+    mine.memo(withRow("older"));
+    const older = mine.flush();
+    mine.memo(withRow("newer"));
+    const newer = mine.flush();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await store.settle(2, true);
+    await store.settle(3, false);
+    await Promise.all([older, newer]);
+    store.kept.set(MEMO_KEY, withRow("theirs"));
+    expect(await mine.reread()).toEqual({});
+  });
+
+  test("rereads run one at a time: the next reads the store only once the one before has finished", async () => {
+    const reads: { key: string; give: (value: unknown) => void }[] = [];
+    const store: Store = {
+      get: (key) => new Promise((resolve) => void reads.push({ key, give: resolve })),
+      put: () => Promise.resolve(),
+    };
+    const save = saving(store, { delayMs: 500, onError: noError, timers: manualTimers() });
+    const first = save.reread();
+    const second = save.reread();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(reads.map((r) => r.key)).toEqual([MEMO_KEY, SETTINGS_KEY]);
+    for (const read of reads.splice(0)) read.give(read.key === MEMO_KEY ? withRow("older") : undefined);
+    expect(await first).toEqual({ memo: withRow("older") });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(reads.map((r) => r.key)).toEqual([MEMO_KEY, SETTINGS_KEY]);
+    for (const read of reads.splice(0)) read.give(read.key === MEMO_KEY ? withRow("newer") : undefined);
+    expect(await second).toEqual({ memo: withRow("newer") });
   });
 });

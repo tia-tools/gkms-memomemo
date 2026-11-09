@@ -195,6 +195,19 @@ async function freshCounts(deps: CountsDeps, cache: CountsCache, key: Request): 
 }
 
 /**
+ * A kept answer as the browser is to get it. On the live site a kept answer reached the browser with
+ * `max-age=14400`, the zone's default Browser Cache TTL, rather than the hour this route stores, while
+ * an answer the Worker built kept its own (#49). Whether the cache's copy carries that value or the
+ * edge raises it on the way out is not known, so the answer is built again with the route's value;
+ * whether that holds is read on the live site after a deploy.
+ */
+function asKept(kept: Response): Response {
+  const headers = new Headers(kept.headers);
+  headers.set("Cache-Control", COUNTS_CACHE);
+  return new Response(kept.body, { status: kept.status, headers });
+}
+
+/**
  * `GET /counts`: the counts from the cache, else from one query, then kept in the cache for an hour.
  * The cache key is the route alone, so a query string cannot skip the cache and read D1 on every
  * request. A D1 failure is a 503, never cached.
@@ -205,7 +218,8 @@ export async function serveCounts(request: Request, deps: CountsDeps): Promise<R
   }
   const key = new Request(new URL(COUNTS_ROUTE, request.url));
   const cache = await deps.cache();
-  const response = (await cache.match(key)) ?? (await freshCounts(deps, cache, key));
+  const kept = await cache.match(key);
+  const response = kept === undefined ? await freshCounts(deps, cache, key) : asKept(kept);
   return request.method === "HEAD" ? new Response(null, { status: response.status, headers: response.headers }) : response;
 }
 

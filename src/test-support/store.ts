@@ -1,9 +1,11 @@
 /**
  * Stand-ins for the browser's storage in tests (src/app/storage.ts): a store over a Map, which
- * structured-clones what it keeps as IndexedDB does, and timers that run only when the test says.
+ * structured-clones what it keeps as IndexedDB does, timers that run only when the test says, and
+ * channels linking tabs of the page as a BroadcastChannel does (src/app/tabs.ts).
  */
 
 import type { Store, Timers } from "../app/storage.ts";
+import type { TabChannel } from "../app/tabs.ts";
 
 export interface MemoryStore extends Store {
   /** What the store holds, by key. */
@@ -51,6 +53,29 @@ export function manualTimers(): ManualTimers {
       const runs = [...waiting];
       waiting.clear();
       for (const run of runs) run();
+    },
+  };
+}
+
+/**
+ * Channels for tabs of the page in one browser: a post reaches every other tab's listeners, not the
+ * poster's, on a later turn of the event loop, as a BroadcastChannel's message does.
+ */
+export function linkedTabs(): { tab: () => TabChannel } {
+  const tabs: Set<() => void>[] = [];
+  return {
+    tab: () => {
+      const mine = new Set<() => void>();
+      tabs.push(mine);
+      return {
+        post: () => {
+          for (const other of tabs) if (other !== mine) for (const heard of other) setTimeout(heard, 0);
+        },
+        listen: (heard) => {
+          mine.add(heard);
+          return () => mine.delete(heard);
+        },
+      };
     },
   };
 }
