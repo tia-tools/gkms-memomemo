@@ -114,10 +114,11 @@ describe("the memory popover", () => {
 });
 
 describe("the row popover", () => {
-  test("refuses a build already in the tab, naming its section, and jumps to its row", async () => {
+  test("refuses a build already in the tab at the popover's top, naming its section, and jumps to its row (#72)", async () => {
     await showPage(root, withJoju());
     await addRowThroughPopover(root, "集中", "成就+", HIF.card.name);
-    expect(byText(root, '[role="alert"]', "同じ組み合わせが「好調」にありますその行へ")).toBeTruthy();
+    const note = byText(root, '[role="alert"]', "同じ組み合わせが「好調」にありますその行へ");
+    expect(note.parentElement?.firstElementChild).toBe(note);
     expect(section(root, "集中").textContent).not.toContain("成就+");
     await tap(byText(dialog(root), "button", "その行へ"));
     expect(must(document.getElementById("row-r1"), "row r1").className).toContain("highlight");
