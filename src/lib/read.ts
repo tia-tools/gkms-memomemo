@@ -1,8 +1,10 @@
 /**
  * Readers for untrusted JSON: each checks one value and returns it typed, or throws a `ReadError`
  * naming the path of the value and what was expected there (`cards[3].rarity: expected N | R`).
- * Shared by the skill card file's loader (src/data/load.ts) and the memo's reader
- * (src/memo/read.ts), each of which turns a `ReadError` into its own error.
+ * Shared by the memo's reader (src/memo/read.ts), the saved settings, the sprite sheet index, the
+ * counts and the icon scripts' stamps and fingerprints, each of which turns a `ReadError` into its
+ * own error. The game's data is checked by gkms-library's own format
+ * files instead (src/data/formats/).
  */
 
 /** A value does not have the shape its reader expects; the message names where. */

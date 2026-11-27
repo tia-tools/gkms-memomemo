@@ -18,10 +18,10 @@ export const NOTICE_TEXT: Record<Notice, string> = {
 
 /**
  * The page (docs/plans/EXECPLAN_MEMORY_MEMO.md, Milestones 4 and 5): the title, then the memo once
- * the skill card file has loaded and the saved memo has been read. The icons' index is bundled with
- * the page (docs/plans/EXECPLAN_GAME_STYLE_ICONS.md, I3), so only the card file is fetched. What
+ * the card pool has loaded and the saved memo has been read. The icons' index is bundled with
+ * the page (docs/plans/EXECPLAN_GAME_STYLE_ICONS.md, I3), so only the game's data is fetched. What
  * reaches outside the page is passed in, so a test needs no network and no IndexedDB: `load` gets
- * the card file (src/data/load.ts), `openStore` the browser's store (src/app/idb.ts), and `storage`
+ * the pool from gkms-library (src/data/library.ts), `openStore` the browser's store (src/app/idb.ts), and `storage`
  * is `navigator.storage`, asked to keep it (src/app/storage.ts), `countsApi` the Worker's counts
  * (src/app/counts.ts), and `channel` the page's other open tabs (src/app/tabs.ts, #29).
  */
