@@ -1,17 +1,17 @@
 # Guards: the game-style icons' completeness (docs/plans/EXECPLAN_GAME_STYLE_ICONS.md, I7). Daily,
-# after gakumas-supportcards' data update (11:30 UTC), it lists the cards the page offers that have
-# no game-style icon (new cards, drawn as their empty frame) and those the game changed since their
-# screenshot (which keep their old icon), keeps one open issue listing them, and posts to the
-# user's Discord through nudge when that list changes. It builds and uploads nothing, since the
-# screenshots are taken by hand, and holds no secret: the issue is written with this run's own
-# token, the post goes with a GitHub OIDC token (Taka499/nudge). infra/workflows.test.ts pins its
-# shape. GitHub stops a public repository's schedule after 60 days without activity; re-enable it
+# after gkms-library's evening data update (20:50 Japan time, 11:50 UTC; docs/plans/EXECPLAN_LIBRARY_DATA.md),
+# it lists the cards the page offers that have no game-style icon (new cards, drawn as their empty
+# frame) and those the game changed since their screenshot (which keep their old icon), keeps one
+# open issue listing them, and posts to the user's Discord through nudge when that list changes. It
+# builds and uploads nothing, since the screenshots are taken by hand, and holds no secret: the
+# issue is written with this run's own token, the post goes with a GitHub OIDC token
+# (Taka499/nudge). infra/workflows.test.ts pins its shape. GitHub stops a public repository's schedule after 60 days without activity; re-enable it
 # from the Actions tab if the daily runs stop.
 name: Icons
 
 on:
   schedule:
-    - cron: "45 11 * * *"
+    - cron: "20 12 * * *"
   workflow_dispatch:
 
 permissions:
