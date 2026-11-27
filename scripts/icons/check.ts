@@ -13,7 +13,7 @@
 
 import { offered } from "../../src/app/catalog.ts";
 import { type IconIndex, parseIconIndex } from "../../src/app/sheets.ts";
-import type { SkillCardDataFile } from "../../src/data/contract.ts";
+import type { Pool } from "../../src/data/pool.ts";
 import { parseSkillCardData } from "../../src/data/load.ts";
 import committed from "../../src/icons/index.v1.json";
 import { loadFingerprints, PRODUCE_CARD_URL } from "./fingerprint.ts";
@@ -32,7 +32,7 @@ export interface Needed {
 }
 
 /** The offered cards, in the file's order, that have no cell, or whose stamp no longer matches the game. */
-export function needed(data: SkillCardDataFile, index: IconIndex, stamps: Stamps, current: ReadonlyMap<string, string>): Needed[] {
+export function needed(data: Pool, index: IconIndex, stamps: Stamps, current: ReadonlyMap<string, string>): Needed[] {
   const built = new Set(index.plans.flatMap((p) => p.cells));
   const out: Needed[] = [];
   for (const card of data.cards.filter(offered)) {

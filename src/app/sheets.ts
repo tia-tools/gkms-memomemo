@@ -8,7 +8,7 @@
  */
 
 import { imageKey, SHEETS } from "../../infra/worker/img.ts";
-import type { SkillCardRarity, SkillCardType } from "../data/contract.ts";
+import type { CardRarity, CardType } from "../data/pool.ts";
 import { child, fail, integer, isFields, list, object, oneOf, type Read, ReadError, req, string } from "../lib/read.ts";
 import { PLAN_IDS, type PlanId } from "../memo/types.ts";
 import committed from "../icons/index.v1.json" with { type: "json" };
@@ -124,7 +124,7 @@ export const FRAMES_URL = "/icons/frames112.webp";
 export const FRAME_ORDER: readonly string[] = ["N-active", "N-mental", "R-active", "R-mental", "SR-active", "SR-mental", "SSR-active", "SSR-mental"];
 
 /** The empty frame of a rarity and type, or null for one the frames lack (Legend, which the pool has none of). */
-export function frameCell(rarity: SkillCardRarity, type: SkillCardType): IconCell | null {
+export function frameCell(rarity: CardRarity, type: CardType): IconCell | null {
   const at = FRAME_ORDER.indexOf(`${rarity}-${type}`);
   return at < 0 ? null : { url: FRAMES_URL, columns: FRAME_ORDER.length, rows: 1, index: at };
 }

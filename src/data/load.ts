@@ -1,5 +1,5 @@
 /**
- * Reads the skill card file gakumas-supportcards publishes (src/data/contract.ts) from untrusted
+ * Reads the skill card file gakumas-supportcards publishes (as the pool of src/data/pool.ts) from untrusted
  * JSON. Every value is checked against the contract and copied into a fresh object, so a field the
  * contract does not name is dropped. Anything else that does not match refuses the whole file, with
  * the path of the first bad value: the page never works from part of the card list. One check goes
@@ -10,18 +10,10 @@
 
 import { SKILLCARDS_ROUTE } from "../../infra/worker/data.ts";
 import { boolean, fail, integer, isFields, list, object, oneOf, type Read, ReadError, req, string } from "../lib/read.ts";
-import {
-  type CustomizationKind,
-  type CustomizationStep,
-  type HifAbility,
-  type Idol,
-  SKILLCARD_DATA_FORMAT_VERSION,
-  type SkillCard,
-  type SkillCardDataFile,
-  type SkillCardPlan,
-  type SkillCardRarity,
-  type SkillCardType,
-} from "./contract.ts";
+import type { CardPlan, CardRarity, CardType, CustomizationKind, CustomizationStep, HifAbility, Idol, Pool, PoolCard } from "./pool.ts";
+
+/** The version of gakumas-supportcards' file this reader reads. */
+const SKILLCARD_DATA_FORMAT_VERSION = 1;
 
 /** The skill card file could not be had or does not match the contract; the message names where. */
 export class SkillCardDataError extends Error {
@@ -31,9 +23,9 @@ export class SkillCardDataError extends Error {
   }
 }
 
-const PLANS: readonly SkillCardPlan[] = ["sense", "logic", "anomaly", "free"];
-const RARITIES: readonly SkillCardRarity[] = ["N", "R", "SR", "SSR", "Legend"];
-const TYPES: readonly SkillCardType[] = ["active", "mental"];
+const PLANS: readonly CardPlan[] = ["sense", "logic", "anomaly", "free"];
+const RARITIES: readonly CardRarity[] = ["N", "R", "SR", "SSR", "Legend"];
+const TYPES: readonly CardType[] = ["active", "mental"];
 
 const idol: Read<Idol> = (value, path) => {
   const f = object(value, path);
@@ -50,17 +42,17 @@ const kind: Read<CustomizationKind> = (value, path) => {
   return { id: req(f, "id", string, path), steps: req(f, "steps", list(step), path) };
 };
 
-const art: Read<SkillCard["art"]> = (value, path) => {
+const art: Read<PoolCard["art"]> = (value, path) => {
   const f = object(value, path);
   return { asset: req(f, "asset", string, path), perIdol: req(f, "perIdol", boolean, path) };
 };
 
-const customization: Read<SkillCard["customization"]> = (value, path) => {
+const customization: Read<PoolCard["customization"]> = (value, path) => {
   const f = object(value, path);
   return { limit: req(f, "limit", integer, path), kinds: req(f, "kinds", list(kind), path) };
 };
 
-const card: Read<SkillCard> = (value, path) => {
+const card: Read<PoolCard> = (value, path) => {
   const f = object(value, path);
   return {
     id: req(f, "id", string, path),
@@ -82,7 +74,7 @@ const hifAbility: Read<HifAbility> = (value, path) => {
 };
 
 /** The skill card file, checked whole; throws `SkillCardDataError` at the first value that does not match. */
-export function parseSkillCardData(json: unknown): SkillCardDataFile {
+export function parseSkillCardData(json: unknown): Pool {
   try {
     return readFile(json);
   } catch (error) {
@@ -91,7 +83,7 @@ export function parseSkillCardData(json: unknown): SkillCardDataFile {
   }
 }
 
-function readFile(json: unknown): SkillCardDataFile {
+function readFile(json: unknown): Pool {
   if (!isFields(json)) throw new SkillCardDataError("the skill card file: expected an object");
   const version = json["formatVersion"];
   if (version !== SKILLCARD_DATA_FORMAT_VERSION) {
@@ -104,7 +96,7 @@ function readFile(json: unknown): SkillCardDataFile {
   if (idols.length === 0) fail("idols", "at least one idol");
   const cards = req(json, "cards", list(card), "");
   if (cards.length === 0) fail("cards", "at least one card");
-  return { formatVersion: version, idols, cards, hifAbilities: req(json, "hifAbilities", list(hifAbility), "") };
+  return { idols, cards, hifAbilities: req(json, "hifAbilities", list(hifAbility), "") };
 }
 
 /**
@@ -112,7 +104,7 @@ function readFile(json: unknown): SkillCardDataFile {
  * `get` is the fetch to use, passed in so a test needs no network. Rejects with `SkillCardDataError`
  * when the route answers with an error status or the file does not match.
  */
-export async function loadSkillCardData(get: (url: string) => Promise<Response>): Promise<SkillCardDataFile> {
+export async function loadSkillCardData(get: (url: string) => Promise<Response>): Promise<Pool> {
   const response = await get(SKILLCARDS_ROUTE);
   if (!response.ok) throw new SkillCardDataError(`${SKILLCARDS_ROUTE}: HTTP ${response.status}`);
   let json: unknown;

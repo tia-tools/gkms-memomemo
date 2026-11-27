@@ -7,7 +7,7 @@
  * the caller's (ranked by counts, D65).
  */
 
-import type { SkillCardRarity } from "../data/contract.ts";
+import type { CardRarity } from "../data/pool.ts";
 
 const KATAKANA_FIRST = 0x30a1;
 const KATAKANA_LAST = 0x30f6;
@@ -30,10 +30,10 @@ export function search<T>(entries: readonly T[], query: string, nameOf: (entry: 
 }
 
 /** The rarity filter's toggles, highest first: the rarities the pool holds (D38: no Legend). */
-export const FILTER_RARITIES = ["SSR", "SR", "R", "N"] as const satisfies readonly SkillCardRarity[];
+export const FILTER_RARITIES = ["SSR", "SR", "R", "N"] as const satisfies readonly CardRarity[];
 
 /** The cards of the rarities that are on; every card when none is on. */
-export function byRarity<T extends { rarity: SkillCardRarity }>(cards: readonly T[], on: ReadonlySet<SkillCardRarity>): T[] {
+export function byRarity<T extends { rarity: CardRarity }>(cards: readonly T[], on: ReadonlySet<CardRarity>): T[] {
   return on.size === 0 ? [...cards] : cards.filter((card) => on.has(card.rarity));
 }
 

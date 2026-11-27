@@ -10,7 +10,7 @@
  */
 
 import { offered } from "../../src/app/catalog.ts";
-import type { SkillCardDataFile } from "../../src/data/contract.ts";
+import type { Pool } from "../../src/data/pool.ts";
 import { parseSkillCardData } from "../../src/data/load.ts";
 
 export interface OfferedCard {
@@ -31,7 +31,7 @@ export interface Offered {
 }
 
 /** The idols in the game's order and the offered cards in the file's order. */
-export function offeredCards(data: SkillCardDataFile): Offered {
+export function offeredCards(data: Pool): Offered {
   return {
     idols: data.idols.map((idol) => idol.id),
     cards: data.cards.filter(offered).map((c) => ({

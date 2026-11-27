@@ -4,7 +4,7 @@ import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import { render } from "preact";
 import { act } from "preact/test-utils";
-import type { Idol } from "../data/contract.ts";
+import type { Idol } from "../data/pool.ts";
 import { artToggle, byLabel, chosenIdol, must, tap } from "../test-support/page.tsx";
 import type { IdolIcons } from "./idols.ts";
 import { IdolPicker } from "./IdolPicker.tsx";

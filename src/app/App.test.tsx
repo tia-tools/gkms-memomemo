@@ -4,8 +4,9 @@ import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { render } from "preact";
 import { act } from "preact/test-utils";
-import { parseSkillCardData, SkillCardDataError } from "../data/load.ts";
+import { SkillCardDataError } from "../data/load.ts";
 import { addRowThroughPopover, byText, CATALOG, chooseIdol, chosenIdol, must, section } from "../test-support/page.tsx";
+import { SKILL_CARDS } from "../test-support/skillcards.ts";
 import { linkedTabs, type MemoryStore, memoryStore } from "../test-support/store.ts";
 import type { CountEvent } from "../../infra/worker/count-contract.ts";
 import { App, NOTICE_TEXT } from "./App.tsx";
@@ -13,7 +14,7 @@ import type { CountsApi } from "./counts.ts";
 import { MEMO_KEY, SETTINGS_KEY, type Store, UNREADABLE_PREFIX } from "./storage.ts";
 import type { TabChannel } from "./tabs.ts";
 
-const DATA = parseSkillCardData(JSON.parse(await Bun.file(new URL("../data/fixtures/skillcards.v1.json", import.meta.url)).text()));
+const DATA = SKILL_CARDS;
 const HIF_CARD = must(CATALOG.tabAbilities("sense")[0], "a センス ability").card.name;
 
 let root: HTMLElement;

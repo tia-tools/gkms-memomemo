@@ -1,6 +1,6 @@
 import type { ComponentChildren } from "preact";
 import { useEffect, useMemo, useState } from "preact/hooks";
-import type { Idol } from "../data/contract.ts";
+import type { Idol } from "../data/pool.ts";
 import { hasGaps } from "../memo/coverage.ts";
 import { findRow } from "../memo/edit.ts";
 import { type Build, emptyMemo, type Memo, PLAN_IDS, planOf, type PlanId, type SectionId, sectionsOf } from "../memo/types.ts";

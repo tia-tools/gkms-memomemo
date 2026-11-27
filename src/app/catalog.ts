@@ -5,23 +5,23 @@
  * a saved row the data no longer knows is drawn as unknown (D31).
  */
 
-import type { CustomizationKind, HifAbility, SkillCard, SkillCardDataFile } from "../data/contract.ts";
+import type { CustomizationKind, HifAbility, PoolCard, Pool } from "../data/pool.ts";
 import type { ChosenStep, PlanId } from "../memo/types.ts";
 
 /** An H.I.F. ability with the card it belongs to, at its base level (its name and art). */
 export interface HifEntry {
   ability: HifAbility;
-  card: SkillCard;
+  card: PoolCard;
 }
 
 export interface Catalog {
-  data: SkillCardDataFile;
+  data: Pool;
   /** The card at that level, or undefined when the file does not have it. */
-  card: (id: string, upgrade: number) => SkillCard | undefined;
+  card: (id: string, upgrade: number) => PoolCard | undefined;
   /** The ability and its card, or undefined when the file does not have both. */
   hif: (id: string) => HifEntry | undefined;
   /** The cards a tab offers (D8, D54): the plan's cards, then the free ones, each in the game's order, base before +. */
-  tabCards: (plan: PlanId) => SkillCard[];
+  tabCards: (plan: PlanId) => PoolCard[];
   /** The H.I.F. abilities a tab offers: those of the plan's cards, in their cards' game order. */
   tabAbilities: (plan: PlanId) => HifEntry[];
 }
@@ -37,11 +37,11 @@ export const N_MEMORY_CARD = "p_card-00-men-0_003";
  * 気分転換, はげしく, スパート), which cannot be a produce memory. A saved row of one is still drawn as
  * a known card (D31).
  */
-export function offered(card: SkillCard): boolean {
+export function offered(card: PoolCard): boolean {
   return card.rarity !== "N" || card.id === N_MEMORY_CARD;
 }
 
-export function makeCatalog(data: SkillCardDataFile): Catalog {
+export function makeCatalog(data: Pool): Catalog {
   const cards = new Map(data.cards.map((c) => [cardKey(c.id, c.upgrade), c]));
   const place = new Map(data.cards.map((c, i) => [c.id, i]));
   const hifs = new Map<string, HifEntry>();
@@ -84,7 +84,7 @@ export function stepLabel(kind: CustomizationKind, step: number): ChosenLabel {
 }
 
 /** A row's customization in the card's kind order; a kind or step the card lacks reads 不明. */
-export function customizationLabels(card: SkillCard | undefined, chosen: readonly ChosenStep[]): ChosenLabel[] {
+export function customizationLabels(card: PoolCard | undefined, chosen: readonly ChosenStep[]): ChosenLabel[] {
   const kinds = card?.customization.kinds ?? [];
   const known = kinds.flatMap((kind) => chosen.filter((c) => c.kind === kind.id && kind.steps.some((s) => s.step === c.step)).map((c) => stepLabel(kind, c.step)));
   const unknown = chosen.length - known.length;

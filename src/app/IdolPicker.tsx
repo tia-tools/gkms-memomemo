@@ -1,5 +1,5 @@
 import { useState } from "preact/hooks";
-import type { Idol } from "../data/contract.ts";
+import type { Idol } from "../data/pool.ts";
 import { bundledIdolIcons, fallbackGlyph, idolCell, type IdolIcons } from "./idols.ts";
 import { spriteStyle } from "./sheets.ts";
 

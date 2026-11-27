@@ -1,6 +1,6 @@
 import type { ComponentChildren } from "preact";
 import { useMemo, useState } from "preact/hooks";
-import type { SkillCard, SkillCardRarity } from "../data/contract.ts";
+import type { PoolCard, CardRarity } from "../data/pool.ts";
 import { type BuildProblem, type CardRules, isBuildProblem, kaimakuRule, kaimakuSwitch, stepLimit, withCustomization } from "../memo/build.ts";
 import type { Build, PlanId, SectionId } from "../memo/types.ts";
 import { type HifEntry, stepText } from "./catalog.ts";
@@ -38,7 +38,7 @@ function IconGrid<T>({ entries, keyOf, nameOf, cardOf, chosen, plan, onPick }: {
   keyOf: (entry: T) => string;
   nameOf: (entry: T) => string;
   /** The card whose icon stands for the entry: a card itself, or an ability's base card. */
-  cardOf: (entry: T) => SkillCard;
+  cardOf: (entry: T) => PoolCard;
   chosen: (entry: T) => boolean;
   plan: PlanId;
   onPick: (entry: T) => void;
@@ -57,7 +57,7 @@ function IconGrid<T>({ entries, keyOf, nameOf, cardOf, chosen, plan, onPick }: {
 }
 
 /** The card step's rarity toggles (D56); with none on, every rarity shows. */
-function RarityFilter({ on, onToggle }: { on: ReadonlySet<SkillCardRarity>; onToggle: (rarity: SkillCardRarity) => void }) {
+function RarityFilter({ on, onToggle }: { on: ReadonlySet<CardRarity>; onToggle: (rarity: CardRarity) => void }) {
   return (
     <div class="flex gap-1" role="group" aria-label="レアリティ">
       {FILTER_RARITIES.map((rarity) => (
@@ -83,10 +83,10 @@ function LevelSwitch({ level, onSwitch }: { level: number; onSwitch: (upgrade: n
  * Step 1: the skill card, the plan's cards then the free ones, each block ranked by the section's
  * counts (D8, D19), by name and by rarity (D56), at one level, the chosen card's or enhanced (D66).
  */
-export function CardStep({ plan, section, chosen, onPick }: { plan: PlanId; section: SectionId; chosen: SkillCard | undefined; onPick: (card: SkillCard) => void }) {
+export function CardStep({ plan, section, chosen, onPick }: { plan: PlanId; section: SectionId; chosen: PoolCard | undefined; onPick: (card: PoolCard) => void }) {
   const { catalog, counts } = usePage();
   const [query, setQuery] = useState("");
-  const [rarities, setRarities] = useState<ReadonlySet<SkillCardRarity>>(new Set());
+  const [rarities, setRarities] = useState<ReadonlySet<CardRarity>>(new Set());
   const [level, setLevel] = useState(() => startLevel(chosen));
   const order = useMemo(() => rankedCards(catalog.tabCards(plan), counts?.get(section)), [catalog, plan, counts, section]);
   const cards = useMemo(() => byRarity(atLevel(search(order, query, (c) => c.name), level), rarities), [order, query, level, rarities]);
@@ -139,7 +139,7 @@ function KaimakuSwitch({ build, card, onBuild }: { build: Build; card: CardRules
 }
 
 /** Step 2: the customization, なし first, a kind's steps on its own line, and 開幕時獲得 (D7, D19, D39, D40). */
-export function CustomizeStep({ card, build, onBuild, onNext }: { card: SkillCard; build: Build; onBuild: (build: Build) => void; onNext: () => void }) {
+export function CustomizeStep({ card, build, onBuild, onNext }: { card: PoolCard; build: Build; onBuild: (build: Build) => void; onNext: () => void }) {
   const apply = (result: Build | BuildProblem) => {
     if (!isBuildProblem(result)) onBuild(result);
   };

@@ -36,12 +36,11 @@ const customized = (file: LooseFile) => file.cards.findIndex((c) => c.customizat
 
 describe("parseSkillCardData, the real file", () => {
   test("keeps every field of every entry: the parsed data equals the file", () => {
-    expect(FIXTURE).toStrictEqual(parseSkillCardData(FIXTURE));
+    expect(FIXTURE).toStrictEqual({ formatVersion: 1, ...parseSkillCardData(FIXTURE) });
   });
 
   test("holds 181 cards at level 0 and 180 at level 1, 13 idols from hski, and 115 H.I.F. abilities", () => {
     const data = parseSkillCardData(FIXTURE);
-    expect(data.formatVersion).toBe(1);
     expect([data.cards.filter((c) => c.upgrade === 0).length, data.cards.filter((c) => c.upgrade === 1).length]).toEqual([181, 180]);
     expect(data.cards.length).toBe(361);
     expect(data.idols.length).toBe(13);
