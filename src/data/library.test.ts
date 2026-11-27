@@ -4,7 +4,7 @@ import { LIBRARY, LibraryError, loadLibrary, POINTER } from "./library.ts";
 
 const text = (name: string): Promise<string> => Bun.file(new URL(`fixtures/${name}`, import.meta.url)).text();
 
-/** The pointer as the library answered it on 2026-11-27 at 13:12Z, and the two releases it named. */
+/** The pointer as the library answered it on 2026-11-27 at 13:21Z, and the two releases it named. */
 const POINTER_TEXT = await text("latest.v1.20261127T1126Z.json");
 const SKILL_CARDS_PATH = "data/skill-cards/v1/20261127T1126Z-a09c6f2a.json";
 const IDOLS_PATH = "data/idols/v1/20261116T1124Z-5122c626.json";
