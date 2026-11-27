@@ -4,7 +4,7 @@ import { httpCounts } from "./app/counts.ts";
 import { openIndexedDb } from "./app/idb.ts";
 import { loadedUrls, startOffline } from "./app/offline.ts";
 import { broadcastTabs, NO_TABS } from "./app/tabs.ts";
-import { loadSkillCardData } from "./data/load.ts";
+import { loadLibrary } from "./data/library.ts";
 // The game's font, IBM Plex Sans JP, at the two weights the page uses (D67); each loads its slices as text needs them.
 import "@fontsource/ibm-plex-sans-jp/500.css";
 import "@fontsource/ibm-plex-sans-jp/700.css";
@@ -12,7 +12,8 @@ import "./index.css";
 
 const root = document.getElementById("app");
 if (!root) throw new Error("#app not found");
-const load = () => loadSkillCardData((url) => fetch(url));
+// The game's data straight from gkms-library's address (docs/plans/EXECPLAN_LIBRARY_DATA.md, L5).
+const load = () => loadLibrary((url) => fetch(url));
 // A browser with no IndexedDB for the page throws here or rejects; either way the page saves nothing and says so (src/app/storage.ts openSaved).
 const openStore = () => openIndexedDb(indexedDB);
 // navigator.storage is missing from a page over plain http, such as the dev server opened from a phone.

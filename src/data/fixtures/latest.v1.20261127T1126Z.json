@@ -1,0 +1,37 @@
+{
+  "pointerVersion": 1,
+  "files": [
+    {
+      "format": "idols",
+      "formatVersion": 1,
+      "release": "20261116T1124Z-5122c626",
+      "path": "data/idols/v1/20261116T1124Z-5122c626.json",
+      "sha256": "5122c6268d0cd6d1902d1668a0b13cd9f4e35fc30f369c63a4d4297f21fa5206",
+      "entries": 14
+    },
+    {
+      "format": "items",
+      "formatVersion": 1,
+      "release": "20261127T1126Z-ce1389aa",
+      "path": "data/items/v1/20261127T1126Z-ce1389aa.json",
+      "sha256": "ce1389aa1993a3677046ebbc98b9204b6b03f948b77bd554c2d9c15796938fba",
+      "entries": 1124
+    },
+    {
+      "format": "skill-cards",
+      "formatVersion": 1,
+      "release": "20261127T1126Z-a09c6f2a",
+      "path": "data/skill-cards/v1/20261127T1126Z-a09c6f2a.json",
+      "sha256": "a09c6f2a4247f3c21205541f02166f776165b8dcd89a3d741c7cc3cf7e21996e",
+      "entries": 1841
+    },
+    {
+      "format": "support-cards",
+      "formatVersion": 1,
+      "release": "20261127T1126Z-44f93c3c",
+      "path": "data/support-cards/v1/20261127T1126Z-44f93c3c.json",
+      "sha256": "44f93c3c2dee577d3a345b66fa810f807186b60d5bbd916a29cbb9fc6673481a",
+      "entries": 218
+    }
+  ]
+}

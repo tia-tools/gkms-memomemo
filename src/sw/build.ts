@@ -32,7 +32,8 @@ function kept(path: string): boolean {
   return path !== SW_FILE && !path.endsWith(".map") && !path.startsWith(".vite/") && !path.startsWith(FONT_DIR);
 }
 
-export function swManifest(files: readonly BuiltFile[], sheets: readonly string[], data: string, sheetPrefix: string): SwManifest {
+/** `library` is the library's origin and `pointer` its pointer's path there (src/data/library.ts). */
+export function swManifest(files: readonly BuiltFile[], sheets: readonly string[], library: string, pointer: string, sheetPrefix: string): SwManifest {
   const page = files.filter((f) => kept(f.path)).toSorted((a, b) => urlOf(a.path).localeCompare(urlOf(b.path)));
   const fonts = files.filter((f) => f.path.startsWith(FONT_DIR)).map((f) => urlOf(f.path));
   const hash = createHash("sha256");
@@ -45,7 +46,8 @@ export function swManifest(files: readonly BuiltFile[], sheets: readonly string[
   return {
     version: hash.digest("hex").slice(0, 16),
     precache: page.map((f) => urlOf(f.path)),
-    data,
+    library,
+    pointer,
     sheetPrefix,
     sheets: [...sheets].toSorted(),
     fontPrefix: `/${FONT_DIR}`,

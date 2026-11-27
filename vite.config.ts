@@ -3,27 +3,18 @@ import { join, relative, sep } from "node:path";
 import preact from "@preact/preset-vite";
 import tailwindcss from "@tailwindcss/vite";
 import { type Connect, defineConfig, type Plugin } from "vite";
-import { SKILLCARDS_ROUTE } from "./infra/worker/data.ts";
 import { imageKey } from "./infra/worker/img.ts";
 import { parseIconIndex, SHEET_URL_PREFIX } from "./src/app/sheets.ts";
+import { LIBRARY, POINTER } from "./src/data/library.ts";
 import { type BuiltFile, FONT_DIR, SW_FILE, swManifest, withManifest } from "./src/sw/build.ts";
 
-/** The gakumas-supportcards checkout the dev server borrows from; by default beside this one. */
-const SIBLING = process.env["SUPPORTCARDS_DIR"] ?? join(import.meta.dirname, "../gakumas-supportcards");
-
 /**
- * What the Worker answers in production, from local files: the skill card data from the sibling's
- * built file when there is one, else this repository's fixture, and `/img/*` (this app's sprite
- * sheets) from the icon pipeline's local build in scripts/icons/out, under the Worker's own
- * `imageKey` rule. Adopted from gkms-hif-final-stats' vite.config.ts.
+ * What the Worker answers in production, from local files: `/img/*` (this app's sprite sheets) from
+ * the icon pipeline's local build in scripts/icons/out, under the Worker's own `imageKey` rule. The
+ * page fetches the game's data and faces from gkms-library's address itself, on the dev server too
+ * (docs/plans/EXECPLAN_LIBRARY_DATA.md, L5). Adopted from gkms-hif-final-stats' vite.config.ts.
  */
 function localFile(path: string): { file: string; type: string } | null {
-  if (path === SKILLCARDS_ROUTE) {
-    const built = join(SIBLING, "dist/data/skillcards.v1.json");
-    const fixture = join(import.meta.dirname, "src/data/fixtures/skillcards.v1.json");
-    const file = [built, fixture].find((f) => existsSync(f));
-    return file === undefined ? null : { file, type: "application/json; charset=utf-8" };
-  }
   const key = imageKey(path);
   const file = key === null ? null : join(import.meta.dirname, "scripts/icons/out", key);
   return file !== null && existsSync(file) ? { file, type: "image/webp" } : null;
@@ -33,9 +24,9 @@ function localFile(path: string): { file: string; type: string } | null {
 const answerLocally: Connect.NextHandleFunction = (req, res, next) => {
   const path = (req.url ?? "").split("?")[0] ?? "";
   const found = localFile(path);
-  // A missing image or data file answers as the Worker would, not with the page the fallback would serve.
-  if (found === null && (path.startsWith("/img/") || path === SKILLCARDS_ROUTE)) {
-    res.statusCode = path === SKILLCARDS_ROUTE ? 502 : 404;
+  // A missing image answers as the Worker would, not with the page the fallback would serve.
+  if (found === null && path.startsWith("/img/")) {
+    res.statusCode = 404;
     res.end();
     return;
   }
@@ -103,7 +94,7 @@ function serviceWorker(): Plugin {
       if (shared.length > 0) return this.error(`${SW_FILE} must stand alone; it imports or exports ${shared.join(", ")}`);
       if (bundle["index.html"] === undefined) return this.error("index.html is not built yet; the worker's manifest must cover it");
       const built = Object.values(bundle).map((file): BuiltFile => ({ path: file.fileName, bytes: file.type === "chunk" ? file.code : file.source }));
-      sw.code = withManifest(sw.code, swManifest([...built, ...publicFiles()], bundledSheets(), SKILLCARDS_ROUTE, SHEET_URL_PREFIX));
+      sw.code = withManifest(sw.code, swManifest([...built, ...publicFiles()], bundledSheets(), LIBRARY, `/${POINTER}`, SHEET_URL_PREFIX));
     },
   };
 }

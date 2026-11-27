@@ -4,22 +4,22 @@
  * and those whose drawing the game has changed since their screenshot (their stamp's fingerprint
  * differs from the game table's now; they keep the old icon until retaken, I6).
  *
- *     bun scripts/icons/check.ts [--data <path or URL>] [--tables <path or URL>] --out <dir>
+ *     bun scripts/icons/check.ts [--library <address or directory>] [--tables <path or URL>] --out <dir>
  *
- * Reads the live skill card file, the committed index (src/icons/index.v1.json) and stamps
+ * Reads the pool from gkms-library (library.ts), the committed index (src/icons/index.v1.json) and stamps
  * (scripts/icons/stamps.json), and ProduceCard.yaml; writes <dir>/needed.json and <dir>/body.md
  * for issue.ts. Builds and uploads nothing: screenshots are taken by hand.
  */
 
 import { offered } from "../../src/app/catalog.ts";
 import { type IconIndex, parseIconIndex } from "../../src/app/sheets.ts";
-import type { SkillCardDataFile } from "../../src/data/contract.ts";
-import { parseSkillCardData } from "../../src/data/load.ts";
+import type { Pool } from "../../src/data/pool.ts";
+import { LIBRARY } from "../../src/data/library.ts";
 import committed from "../../src/icons/index.v1.json";
 import { loadFingerprints, PRODUCE_CARD_URL } from "./fingerprint.ts";
+import { readLibrary } from "./library.ts";
 import { parseStamps, type Stamps } from "./stamp.ts";
 
-export const DATA_URL = "https://gakumas-supportcards.tia.run/data/skillcards.v1.json";
 export const ISSUE_TITLE = "Screenshots needed for game-style icons";
 const MARKER = "icons-check";
 
@@ -32,7 +32,7 @@ export interface Needed {
 }
 
 /** The offered cards, in the file's order, that have no cell, or whose stamp no longer matches the game. */
-export function needed(data: SkillCardDataFile, index: IconIndex, stamps: Stamps, current: ReadonlyMap<string, string>): Needed[] {
+export function needed(data: Pool, index: IconIndex, stamps: Stamps, current: ReadonlyMap<string, string>): Needed[] {
   const built = new Set(index.plans.flatMap((p) => p.cells));
   const out: Needed[] = [];
   for (const card of data.cards.filter(offered)) {
@@ -92,13 +92,6 @@ export function summary(list: readonly Needed[]): string {
   return `${fresh} new, ${list.length - fresh} changed: ${names.join(", ")}${more}`;
 }
 
-async function json(source: string): Promise<unknown> {
-  if (!/^https?:\/\//.test(source)) return Bun.file(source).json();
-  const response = await fetch(source);
-  if (!response.ok) throw new Error(`${source}: HTTP ${response.status}`);
-  return response.json();
-}
-
 function arg(name: string, fallback: string): string {
   const at = Bun.argv.indexOf(name);
   return at > 0 ? (Bun.argv[at + 1] ?? fallback) : fallback;
@@ -107,10 +100,10 @@ function arg(name: string, fallback: string): string {
 if (import.meta.main) {
   const out = arg("--out", "");
   if (out === "") {
-    console.error("usage: bun scripts/icons/check.ts [--data <path or URL>] [--tables <path or URL>] --out <dir>");
+    console.error("usage: bun scripts/icons/check.ts [--library <address or directory>] [--tables <path or URL>] --out <dir>");
     process.exit(1);
   }
-  const data = parseSkillCardData(await json(arg("--data", DATA_URL)));
+  const data = await readLibrary(arg("--library", LIBRARY));
   const stamps = parseStamps(await Bun.file(new URL("stamps.json", import.meta.url)).json());
   const list = needed(data, parseIconIndex(committed), stamps, await loadFingerprints(arg("--tables", PRODUCE_CARD_URL)));
   const count = list.length;

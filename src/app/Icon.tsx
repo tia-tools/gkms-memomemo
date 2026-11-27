@@ -1,4 +1,4 @@
-import type { SkillCard } from "../data/contract.ts";
+import type { PoolCard } from "../data/pool.ts";
 import type { PlanId } from "../memo/types.ts";
 import { usePage } from "./page.ts";
 import { frameCell, iconCell, spriteStyle } from "./sheets.ts";
@@ -9,7 +9,7 @@ import { frameCell, iconCell, spriteStyle } from "./sheets.ts";
  * the sheets lack is drawn as the empty frame of its rarity and type with its name inside (I5); an
  * unknown card (D31 of the memo plan) as its name in a grey box.
  */
-export function CardIcon({ card, plan, size, name }: { card: SkillCard | undefined; plan: PlanId; size: string; name: string }) {
+export function CardIcon({ card, plan, size, name }: { card: PoolCard | undefined; plan: PlanId; size: string; name: string }) {
   const { sheets, idol, defaultIdol } = usePage();
   const cell = card === undefined ? null : iconCell(sheets, plan, card, idol, defaultIdol);
   if (cell !== null) return <span role="img" aria-label={name} class="inline-block shrink-0 rounded bg-no-repeat" style={spriteStyle(cell, size)} />;

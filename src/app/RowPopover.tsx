@@ -1,5 +1,5 @@
 import { useRef, useState } from "preact/hooks";
-import type { SkillCard } from "../data/contract.ts";
+import type { PoolCard } from "../data/pool.ts";
 import { buildProblem, newBuild } from "../memo/build.ts";
 import { addRow, changeBuild, isRefusal, type Refusal } from "../memo/edit.ts";
 import type { Build, PlanId, Row, SectionId } from "../memo/types.ts";
@@ -20,7 +20,7 @@ const STEPS: readonly [Step, string][] = [
 
 /** The build being put together; until a card is chosen it has none. */
 interface Draft {
-  card: SkillCard | undefined;
+  card: PoolCard | undefined;
   build: Build;
 }
 
@@ -31,7 +31,7 @@ const NO_BUILD: Build = { card: "", upgrade: 0, customization: [], kaimaku: fals
  * the pickers do not offer (D54) counts as not chosen, like an unknown one, so it cannot be saved
  * again: the player picks a card first.
  */
-function draftOf(row: Row | undefined, found: SkillCard | undefined): Draft {
+function draftOf(row: Row | undefined, found: PoolCard | undefined): Draft {
   if (row === undefined) return { card: undefined, build: NO_BUILD };
   const card = found && offered(found) ? found : undefined;
   return { card, build: card ? fitKaimaku(row.build, card) : row.build };
@@ -77,7 +77,7 @@ export function RowPopover({ plan, section, row, onClose }: { plan: PlanId; sect
     if (!row) page.countRow(section, build);
     onClose();
   };
-  const pickCard = (card: SkillCard) => {
+  const pickCard = (card: PoolCard) => {
     const build = card === draft.card ? draft.build : newBuild(card.id, card, draft.build.hif);
     setDraft({ card, build });
     setRefusal(null);

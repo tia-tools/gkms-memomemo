@@ -4,7 +4,7 @@
  * one edit; the card's own options and limit come from the data file.
  */
 
-import type { SkillCard, SkillCardRarity } from "../data/contract.ts";
+import type { PoolCard, CardRarity } from "../data/pool.ts";
 import type { Build, ChosenStep } from "./types.ts";
 
 /** D39: a produce memory's customization steps add up to at most this, whatever the card's limit. */
@@ -15,14 +15,14 @@ export const MEMORY_STEP_CAP = 2;
  * is on. A card no entry matches cannot have it (today SSR and N + cards). `alwaysOn`: the player
  * cannot switch it off (a base card's memory is always 開幕時獲得).
  */
-export const KAIMAKU_RULES: readonly { upgrade: number; rarity?: SkillCardRarity; cap: number; alwaysOn: boolean }[] = [
+export const KAIMAKU_RULES: readonly { upgrade: number; rarity?: CardRarity; cap: number; alwaysOn: boolean }[] = [
   { upgrade: 0, cap: 0, alwaysOn: true },
   { upgrade: 1, rarity: "R", cap: MEMORY_STEP_CAP, alwaysOn: false },
   { upgrade: 1, rarity: "SR", cap: 0, alwaysOn: false },
 ];
 
 /** What a build's rules read from its card in the data file. */
-export type CardRules = Pick<SkillCard, "upgrade" | "rarity" | "customization">;
+export type CardRules = Pick<PoolCard, "upgrade" | "rarity" | "customization">;
 
 function byKindThenStep(a: ChosenStep, b: ChosenStep): number {
   if (a.kind !== b.kind) return a.kind < b.kind ? -1 : 1;

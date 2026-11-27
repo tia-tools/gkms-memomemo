@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "preact/hooks";
-import type { SkillCardDataFile } from "../data/contract.ts";
+import type { Pool } from "../data/pool.ts";
 import { makeCatalog } from "./catalog.ts";
 import { type CountsApi, NO_COUNTS } from "./counts.ts";
 import { MemoPage } from "./MemoPage.tsx";
@@ -7,7 +7,7 @@ import { bundledIcons } from "./sheets.ts";
 import { NO_TABS, type TabChannel } from "./tabs.ts";
 import { NOT_SAVING, type Notice, openSaved, type PersistentStorage, SAVE_DELAY_MS, type Saved, type Saving, saving, type Store } from "./storage.ts";
 
-type Start = { status: "loading" } | { status: "ready"; data: SkillCardDataFile; saved: Saved; save: Saving } | { status: "failed" };
+type Start = { status: "loading" } | { status: "ready"; data: Pool; saved: Saved; save: Saving } | { status: "failed" };
 
 /** What the page says about saving (D57), above the memo. */
 export const NOTICE_TEXT: Record<Notice, string> = {
@@ -18,10 +18,10 @@ export const NOTICE_TEXT: Record<Notice, string> = {
 
 /**
  * The page (docs/plans/EXECPLAN_MEMORY_MEMO.md, Milestones 4 and 5): the title, then the memo once
- * the skill card file has loaded and the saved memo has been read. The icons' index is bundled with
- * the page (docs/plans/EXECPLAN_GAME_STYLE_ICONS.md, I3), so only the card file is fetched. What
+ * the card pool has loaded and the saved memo has been read. The icons' index is bundled with
+ * the page (docs/plans/EXECPLAN_GAME_STYLE_ICONS.md, I3), so only the game's data is fetched. What
  * reaches outside the page is passed in, so a test needs no network and no IndexedDB: `load` gets
- * the card file (src/data/load.ts), `openStore` the browser's store (src/app/idb.ts), and `storage`
+ * the pool from gkms-library (src/data/library.ts), `openStore` the browser's store (src/app/idb.ts), and `storage`
  * is `navigator.storage`, asked to keep it (src/app/storage.ts), `countsApi` the Worker's counts
  * (src/app/counts.ts), and `channel` the page's other open tabs (src/app/tabs.ts, #29).
  */
@@ -32,7 +32,7 @@ export function App({
   countsApi = NO_COUNTS,
   channel = NO_TABS,
 }: {
-  load: () => Promise<SkillCardDataFile>;
+  load: () => Promise<Pool>;
   openStore: () => Promise<Store>;
   storage?: PersistentStorage;
   countsApi?: CountsApi;

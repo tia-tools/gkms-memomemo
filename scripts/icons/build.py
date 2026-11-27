@@ -18,7 +18,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-from art import Card, load_master, master_variants, place, read_offered
+from art import MASTERS, Card, load_master, master_variants, place, read_offered, require_masters
 from frames import frames_row
 from overlay import Veil, from_rgba
 from sheets import PLANS, grid, index, paint_cell, plan_cells, sheet_key
@@ -36,12 +36,13 @@ def webp(rgba: np.ndarray, quality: int) -> bytes:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("--masters", type=Path, default=HERE / "../../../gakumas-supportcards/scripts/images/out/master")
+    parser.add_argument("--masters", type=Path, default=MASTERS)
     parser.add_argument("--cards", type=Path, default=HERE / "out/offered.json")
     parser.add_argument("--frames", type=Path, default=HERE / "../../temp/image.png")
     parser.add_argument("--out", type=Path, default=HERE / "out")
     parser.add_argument("--quality", type=int, default=QUALITY)
     args = parser.parse_args()
+    require_masters(args.masters)
 
     offered = read_offered(args.cards)
     lifted = json.loads((args.out / "lifted.json").read_text())

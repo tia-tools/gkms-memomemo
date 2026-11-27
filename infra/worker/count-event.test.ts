@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { SkillCard } from "../../src/data/contract.ts";
+import type { PoolCard } from "../../src/data/pool.ts";
 import { cardNamed, kindLabelled, SKILL_CARDS } from "../../src/test-support/skillcards.ts";
 import type { CountEvent } from "./count-contract.ts";
 import { countRules, parseCountEvent, type ReadEvent } from "./count-event.ts";
@@ -10,7 +10,7 @@ const ZENTO = cardNamed("前途洋々+"); // free
 const CHOSEN = cardNamed("挑戦+"); // センス N: in the pool, not offered (D54)
 const HYOGEN = cardNamed("表現の基本"); // the one N card offered
 
-function hifOf(plan: SkillCard["plan"]): string {
+function hifOf(plan: PoolCard["plan"]): string {
   const ability = SKILL_CARDS.hifAbilities.find((h) => SKILL_CARDS.cards.find((c) => c.id === h.card)?.plan === plan);
   if (ability === undefined) throw new Error(`no ${plan} H.I.F. ability in the fixture`);
   return ability.id;

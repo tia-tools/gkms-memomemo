@@ -1,0 +1,14 @@
+---
+status: accepted
+---
+
+# The game's data, the art masters and the idols' faces come from gkms-library, read by the browser itself
+
+gkms-library (`tia-tools/gkms-library`, `https://gkms-library.tia.run`) publishes the game's data and images for every `tia.run` app, twice a day, as neutral facts; this app was the first to move to it (its plan's decision L6). Three things follow here.
+- **The data.** The page fetches the library's pointer `data/latest.v1.json` and the `skill-cards` v1 and `idols` v1 releases it names straight from the library's address, not through this app's Worker (`src/data/library.ts`); each is checked by the library's own format file, copied verbatim into `src/data/formats/` and pinned by its SHA-256. The card pool (no P-idol unique, support-card event, trouble or Legend card; of the starters only level 0 of 表現の基本; levels 0 and 1) and the H.I.F. abilities are cut here (`src/data/pool.ts`), since the library lists every card. The Worker's count check reads the same files server-side through the same code. The service worker keeps the pointer network-first and each release cache-first, so the page still opens offline.
+- **The faces.** 「カードの絵柄」 draws each idol's face from `img/w112/img_sd_<idol id>_face-00.webp` at the library's address, one image per idol, kept by the service worker; a new idol's face appears with no work here. This replaces ADR 0005's committed face sheet.
+- **The masters.** The icon pipeline paints its game-style icons (ADR 0002) on skill card masters synced from the library's private bucket with its `bun run sync-masters` into `scripts/icons/out/masters`, no longer on gakumas-supportcards' local files.
+
+The alternatives were to keep the data going through this app's Worker in one answer at this origin, which kept the service worker as it was at one Worker request per page load on the account's shared Free-plan allowance, and to keep a committed face sheet built from synced masters, which kept a rebuild and a commit for every new idol. The cost of this choice is a second origin the page depends on at start (the page fails to start, as before, when the data cannot be had and none is kept), a page bundle carrying Valibot for the format files, and a skill card release about five times the old file (996 KB, 42 KB compressed).
+
+Source: issue #109; the user's answers B to job #111 (fetch from the library's address) and A to job #112 (faces from the library), recorded in `docs/plans/EXECPLAN_LIBRARY_DATA.md` § Decision Log (L1–L6); evidence level: user decision, with a test showing the pool cut from the library's 2026-11-27 releases equals the file gakumas-supportcards published the same minute (361 cards, 115 abilities, 14 idols), and the built page checked in Chrome on `vite preview` (data from the library, 14 faces drawn, kept by the service worker).

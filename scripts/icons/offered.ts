@@ -3,15 +3,15 @@
  * (docs/plans/EXECPLAN_GAME_STYLE_ICONS.md, I8): which cards there are and which the page offers
  * comes from the page's own reader and rule, never from a second copy in Python.
  *
- *     bun scripts/icons/offered.ts [data file] > scripts/icons/out/offered.json
+ *     bun scripts/icons/offered.ts [library address or directory] > scripts/icons/out/offered.json
  *
- * The data file defaults to the committed fixture; pass the live file (downloaded from
- * https://gakumas-supportcards.tia.run/data/skillcards.v1.json) to build for cards added since.
+ * The pool is read from gkms-library's address by default (library.ts); pass a directory laid out
+ * like it, such as gkms-library's `out/site/`, to read a local copy.
  */
 
 import { offered } from "../../src/app/catalog.ts";
-import type { SkillCardDataFile } from "../../src/data/contract.ts";
-import { parseSkillCardData } from "../../src/data/load.ts";
+import type { Pool } from "../../src/data/pool.ts";
+import { readLibrary } from "./library.ts";
 
 export interface OfferedCard {
   id: string;
@@ -31,7 +31,7 @@ export interface Offered {
 }
 
 /** The idols in the game's order and the offered cards in the file's order. */
-export function offeredCards(data: SkillCardDataFile): Offered {
+export function offeredCards(data: Pool): Offered {
   return {
     idols: data.idols.map((idol) => idol.id),
     cards: data.cards.filter(offered).map((c) => ({
@@ -49,7 +49,6 @@ export function offeredCards(data: SkillCardDataFile): Offered {
 }
 
 if (import.meta.main) {
-  const path = Bun.argv[2] ?? new URL("../../src/data/fixtures/skillcards.v1.json", import.meta.url).pathname;
-  const data = parseSkillCardData(await Bun.file(path).json());
+  const data = await readLibrary(Bun.argv[2]);
   process.stdout.write(`${JSON.stringify(offeredCards(data), null, 1)}\n`);
 }

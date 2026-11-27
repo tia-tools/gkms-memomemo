@@ -1,8 +1,8 @@
 # gkms-memomemo.tia.run Worker
 
-One Cloudflare Worker serves the whole page: the built page as static assets, this app's game-style skill card sprite sheets from the R2 bucket `tia-assets`, read only, gakumas-supportcards' skill card data at this origin, and the anonymous counts that rank the page's pickers, kept in the D1 database `gkms-memomemo` (`docs/adr/0002`; `docs/plans/EXECPLAN_MEMORY_MEMO.md`, decisions D11, D22, D24, D41 and D42; `docs/plans/EXECPLAN_GAME_STYLE_ICONS.md`). The sheets are built and uploaded from a person's machine by the icon pipeline in `scripts/icons/`; the Worker never writes to the bucket. The sheets' index is not served: it is committed as `src/icons/index.v1.json` and bundled into the page. `wrangler.toml` runs the Worker's code only for `/img/*`, `/data/skillcards.json`, `/count` and `/counts` (`run_worker_first`); every other path is answered by the assets directly. Both come from one list, `WORKER_FIRST` in `worker.ts`: `route` answers exactly its paths and sends the rest to the assets, and `wrangler.test.ts` keeps `run_worker_first` equal to it.
+One Cloudflare Worker serves the whole page: the built page as static assets, this app's game-style skill card sprite sheets from the R2 bucket `tia-assets`, read only, and the anonymous counts that rank the page's pickers, kept in the D1 database `gkms-memomemo` (`docs/adr/0002`; `docs/plans/EXECPLAN_MEMORY_MEMO.md`, decisions D11, D24, D41 and D42; `docs/plans/EXECPLAN_GAME_STYLE_ICONS.md`). The game's data and the idols' faces are not served here: the page fetches them from gkms-library's address itself (`docs/adr/0006`). The sheets are built and uploaded from a person's machine by the icon pipeline in `scripts/icons/`; the Worker never writes to the bucket. The sheets' index is not served: it is committed as `src/icons/index.v1.json` and bundled into the page. `wrangler.toml` runs the Worker's code only for `/img/*`, `/count` and `/counts` (`run_worker_first`); every other path is answered by the assets directly. Both come from one list, `WORKER_FIRST` in `worker.ts`: `route` answers exactly its paths and sends the rest to the assets, and `wrangler.test.ts` keeps `run_worker_first` equal to it.
 
-That split matters on the Workers Free plan the `tia.run` account is on. Requests answered by the assets are free and unlimited. Every request that runs the Worker counts toward the account's 100,000 a day, which every `tia.run` Worker shares, and past it those requests fail until 00:00 UTC. That is why the page loads a few sprite sheets rather than one image per icon (D42; the plan's Surprises & Discoveries). The page's service worker keeps every sheet it has shown, and answers it from its cache from then on, so a returning player's sheets cost no Worker request; the data file it asks for on every visit, through the browser's hour-long HTTP cache, and keeps the last copy for when there is no network (D58).
+That split matters on the Workers Free plan the `tia.run` account is on. Requests answered by the assets are free and unlimited. Every request that runs the Worker counts toward the account's 100,000 a day, which every `tia.run` Worker shares, and past it those requests fail until 00:00 UTC. That is why the page loads a few sprite sheets rather than one image per icon (D42; the plan's Surprises & Discoveries). The page's service worker keeps every sheet it has shown, and answers it from its cache from then on, so a returning player's sheets cost no Worker request; the game's data comes from gkms-library, never through this Worker (D58; `docs/adr/0006`).
 
 | Route | Serves |
 |---|---|
@@ -12,7 +12,6 @@ That split matters on the Workers Free plan the `tia.run` account is on. Request
 | `/sw.js` | the service worker, built from `src/sw/` by `bun run build`, a static asset (no Worker request) |
 | `/manifest.webmanifest`, `/icons/app-192.png`, `/icons/app-512.png`, `/icons/app-maskable-512.png`, `/icons/apple-touch-icon.png` | the web app manifest and the home-screen icons, static assets from `public/` (no Worker request) |
 | any other `/img/` path | a 404 marked `no-store`: gakumas-supportcards' own sheets and index under `sheet112/`, the single icons under `w112/`, the private `master/` prefix and everything else in the bucket are never served |
-| `/data/skillcards.json` | gakumas-supportcards' `https://gakumas-supportcards.tia.run/data/skillcards.v1.json`, passed through with an hour's cache; a failure upstream is a 502 marked `no-store` (`data.ts`) |
 | `POST /count` | one count event, sent by the page when a row is created: adds 1 to the row's card, H.I.F. ability and customization in its section, under the player's daily cap (`count.ts` `handleCount`; § Counts) |
 | `GET /counts` | every count, by section and kind, as JSON cached for an hour (`count.ts` `serveCounts`; § Counts) |
 
@@ -70,7 +69,7 @@ Both are `WITHOUT ROWID`, so a new row is one row written, not two.
 4. 400 for a body that is not such an event;
 5. 503 while `HASH_SALT` is unset, so nothing is counted unsalted;
 6. 400 without `CF-Connecting-IP`;
-7. 503 when the skill card file cannot be had, and 400 for an event naming anything the section's tab does not offer (`count-event.ts`, checked against the file `/data/skillcards.json` passes through, kept in the isolate for an hour by `count-data.ts`);
+7. 503 when the card pool cannot be had, and 400 for an event naming anything the section's tab does not offer (`count-event.ts`, checked against the pool `count-data.ts` reads from gkms-library through the page's own `src/data/library.ts`: the pointer asked at most every five minutes, the releases read again only when it names new ones);
 8. 429 when the player's cap row for the day has reached 200 events. The cap is one upsert whose `n` rises only under the cap, so it is exact, and a refused event writes nothing;
 9. otherwise 200, after one batch of upserts adds 1 to each count. A D1 failure is a 503. One in that batch, after the cap has taken its place, leaves the place taken with nothing counted; the page does not retry, so nothing is ever counted twice (D63).
 
@@ -112,8 +111,8 @@ Once deployed, and once the sheets the committed index names are uploaded (`scri
 
     curl -sI https://gkms-memomemo.tia.run/ | head -3
     # -> HTTP/2 200, content-type: text/html
-    curl -s https://gkms-memomemo.tia.run/data/skillcards.json | jq '.formatVersion, (.cards | length)'
-    # -> 1, then the number of cards the sibling publishes
+    curl -s https://gkms-memomemo.tia.run/sw.js | grep -o '"library":"[^"]*"'
+    # -> "library":"https://gkms-library.tia.run": the page reads the game's data from the library
     jq '[.plans[].sheets[]] | length' src/icons/index.v1.json
     # -> 39 (three plans × 13 idols)
     curl -sI "https://gkms-memomemo.tia.run/img/$(jq -r '.plans[0].sheets[0].file' src/icons/index.v1.json)"

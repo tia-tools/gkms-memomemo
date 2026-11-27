@@ -18,7 +18,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-from art import Card, load_master, master_variants, place, read_offered
+from art import MASTERS, Card, load_master, master_variants, place, read_offered, require_masters
 from cells import Identified, assign
 from identify import Candidate, Candidates, probe_mask
 from overlay import difference, fit_veil, lift, paint, slots, template, to_rgba
@@ -63,10 +63,11 @@ def contact(rows: list[list[np.ndarray]], path: Path) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--shots", type=Path, default=HERE / "../../temp/skill_cards")
-    parser.add_argument("--masters", type=Path, default=HERE / "../../../gakumas-supportcards/scripts/images/out/master")
+    parser.add_argument("--masters", type=Path, default=MASTERS)
     parser.add_argument("--cards", type=Path, default=HERE / "out/offered.json")
     parser.add_argument("--out", type=Path, default=HERE / "out")
     args = parser.parse_args()
+    require_masters(args.masters)
 
     offered = read_offered(args.cards)
     shots = list_shots(args.shots)

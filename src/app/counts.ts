@@ -6,7 +6,7 @@
  */
 
 import { cardCountId, COUNT_ROUTE, type CountEvent, COUNTS_ROUTE, stepCountId } from "../../infra/worker/count-contract.ts";
-import type { SkillCard } from "../data/contract.ts";
+import type { PoolCard } from "../data/pool.ts";
 import { child, fail, integer, object, req, type Read, ReadError } from "../lib/read.ts";
 import { type Build, SECTION_IDS, type SectionId } from "../memo/types.ts";
 import type { HifEntry } from "./catalog.ts";
@@ -69,8 +69,8 @@ export function ranked<T>(entries: readonly T[], counts: ReadonlyMap<string, num
 }
 
 /** The card step's order (D19): the plan's cards, then the free ones, each block ranked on its own. */
-export function rankedCards(cards: readonly SkillCard[], counts: SectionCounts | undefined): SkillCard[] {
-  const id = (c: SkillCard) => cardCountId(c.id, c.upgrade);
+export function rankedCards(cards: readonly PoolCard[], counts: SectionCounts | undefined): PoolCard[] {
+  const id = (c: PoolCard) => cardCountId(c.id, c.upgrade);
   return [...ranked(cards.filter((c) => c.plan !== "free"), counts?.card, id), ...ranked(cards.filter((c) => c.plan === "free"), counts?.card, id)];
 }
 
