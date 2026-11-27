@@ -26,22 +26,34 @@ export function libraryUpstream(get: (url: string) => Promise<Response>): RulesU
 }
 
 /**
- * The rules of the pool the pointer names, the pointer asked at most every `POINTER_TTL_MS` and the
- * releases read only when it names others than the rules were made from. While the library cannot
- * be read, the last rules had are used, so an event can still be checked, and the next call tries
- * again; with none, the answer is null.
+ * The rules of the pool the pointer names. The pointer is asked at most every `POINTER_TTL_MS`,
+ * whether the last try succeeded or not, and requests arriving during a try share it, so no request
+ * pays for the releases' parse more than once in that time, even while a pool cannot be read; the
+ * releases are read only when the pointer names others than the rules were made from. While the
+ * library cannot be read, the last rules had are used, so an event can still be checked; with none,
+ * the answer is null.
  */
 export function keptRules(upstream: RulesUpstream, now: () => number): () => Promise<CountRules | null> {
-  let kept: { rules: CountRules; key: string; at: number } | null = null;
-  return async () => {
-    if (kept !== null && now() - kept.at < POINTER_TTL_MS) return kept.rules;
+  let kept: { rules: CountRules; key: string } | null = null;
+  let tried = Number.NEGATIVE_INFINITY;
+  let trying: Promise<CountRules | null> | null = null;
+  const tryNow = async (): Promise<CountRules | null> => {
+    tried = now();
     try {
       const pointer = await upstream.pointer();
       const key = poolKey(pointer);
-      kept = kept !== null && kept.key === key ? { ...kept, at: now() } : { rules: await upstream.rules(pointer), key, at: now() };
-      return kept.rules;
+      if (kept === null || kept.key !== key) kept = { rules: await upstream.rules(pointer), key };
     } catch {
-      return kept?.rules ?? null;
+      // The last rules had stay in use; the next try is after POINTER_TTL_MS.
     }
+    return kept?.rules ?? null;
+  };
+  return () => {
+    if (trying !== null) return trying;
+    if (now() - tried < POINTER_TTL_MS) return Promise.resolve(kept?.rules ?? null);
+    trying = tryNow().finally(() => {
+      trying = null;
+    });
+    return trying;
   };
 }

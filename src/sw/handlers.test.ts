@@ -21,6 +21,7 @@ const LIBRARY = MANIFEST.library;
 const POINTER = `${LIBRARY}/data/latest.v1.json`;
 const RELEASE_A = "/data/skill-cards/v1/20261126T1126Z-aaaaaaaa.json";
 const RELEASE_B = "/data/skill-cards/v1/20261127T1126Z-bbbbbbbb.json";
+const RELEASE_C = "/data/skill-cards/v1/20261128T0250Z-cccccccc.json";
 const IDOLS = "/data/idols/v1/20261116T1124Z-5122c626.json";
 const FACE = "/img/w112/img_sd_hkne_face-00.webp";
 /** A pointer naming these releases, as the library writes it (only `files[].path` matters to the worker). */
@@ -191,10 +192,41 @@ describe("respond, the library's files", () => {
   test("a fresh pointer naming only releases already kept replaces the kept one at once", async () => {
     const { caches, network, worker } = world();
     await loadData(worker, RELEASE_A, IDOLS);
-    await ask(worker, `${LIBRARY}${RELEASE_B}`);
+    network.answers.set("/data/latest.v1.json", pointing(IDOLS));
+    await ask(worker, POINTER);
+    expect(caches.kept()["memomemo-data"]?.toSorted()).toEqual([`${LIBRARY}${IDOLS}`, POINTER].toSorted());
+    expect(await caches.text("memomemo-data", POINTER)).toBe(pointing(IDOLS));
+  });
+
+  test("a release named neither by the kept set nor by a pending pointer is not kept for long: the cache holds at most two sets", async () => {
+    const { caches, network, worker } = world();
+    await loadData(worker, RELEASE_A, IDOLS);
+    expect(await ask(worker, `${LIBRARY}${RELEASE_B}`)).toBe("release b");
+    expect(caches.kept()["memomemo-data"]?.toSorted()).toEqual([`${LIBRARY}${RELEASE_A}`, `${LIBRARY}${IDOLS}`, POINTER].toSorted());
     network.answers.set("/data/latest.v1.json", pointing(RELEASE_B, IDOLS));
     await ask(worker, POINTER);
-    expect(caches.kept()["memomemo-data"]?.toSorted()).toEqual([`${LIBRARY}${IDOLS}`, `${LIBRARY}${RELEASE_B}`, POINTER].toSorted());
+    network.answers.set(RELEASE_C, "release c");
+    network.answers.set("/data/latest.v1.json", pointing(RELEASE_C, IDOLS));
+    await ask(worker, POINTER);
+    await ask(worker, `${LIBRARY}${RELEASE_B}`);
+    expect(caches.kept()["memomemo-data"]?.toSorted()).toEqual([`${LIBRARY}${RELEASE_A}`, `${LIBRARY}${IDOLS}`, POINTER].toSorted());
+  });
+
+  test("two settlings at once leave a complete set, though one's write lands after the other has pruned", async () => {
+    let slow = false;
+    const network = fakeNetwork({ ...ANSWERS, [RELEASE_C]: "release c", "/data/latest.v1.json": pointing(RELEASE_B, RELEASE_C, IDOLS) });
+    const caches = fakeCaches(network, (name, url) => (slow && name === "memomemo-data" && url === POINTER ? ((slow = false), 20) : 0));
+    const worker: Worker = { caches, fetch: network.fetch, manifest: MANIFEST, origin: ORIGIN };
+    await loadData(worker, RELEASE_B, RELEASE_C, IDOLS);
+    network.answers.set("/data/latest.v1.json", pointing(RELEASE_B, IDOLS));
+    slow = true;
+    const first = ask(worker, POINTER);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    network.answers.set("/data/latest.v1.json", pointing(RELEASE_C, IDOLS));
+    await Promise.all([first, ask(worker, POINTER)]);
+    const pointer = JSON.parse((await caches.text("memomemo-data", POINTER)) ?? "{}");
+    const named: string[] = pointer.files.map((file: { path: string }) => `${LIBRARY}/${file.path}`);
+    expect(named.filter((url) => !(caches.kept()["memomemo-data"] ?? []).includes(url))).toEqual([]);
   });
 
   test("an error status for the pointer gives the copy kept, and is not kept itself; with nothing kept it is passed on", async () => {

@@ -105,19 +105,40 @@ describe("keptRules", () => {
     expect(seen).toEqual({ pointers: 2, pools: 2 });
   });
 
-  test("while the library cannot be read, keeps the last rules had, and tries again on the next call", async () => {
+  test("while the library cannot be read, keeps the last rules had, and tries again only after five minutes", async () => {
     let clock = 0;
     const { u, seen, current } = upstream([a]);
     const rules = keptRules(u, () => clock);
     await rules();
     current.pointer = null;
     clock = POINTER_TTL_MS;
-    expect(await rules()).toBe(a);
-    expect(await rules()).toBe(a);
-    expect(seen.pointers).toBe(3);
+    expect([await rules(), await rules()]).toEqual([a, a]);
+    expect(seen.pointers).toBe(2);
     current.pointer = NEW;
+    clock = 2 * POINTER_TTL_MS;
     expect(await rules()).toBe(a);
-    expect(seen.pools).toBe(2);
+    expect(seen).toEqual({ pointers: 3, pools: 2 });
+  });
+
+  test("a pool that cannot be read is not read again on every request, only after five minutes", async () => {
+    let clock = 0;
+    const { u, seen, current } = upstream([a]);
+    const rules = keptRules(u, () => clock);
+    await rules();
+    current.pointer = NEW;
+    clock = POINTER_TTL_MS;
+    for (let i = 0; i < 5; i++) expect(await rules()).toBe(a);
+    expect(seen).toEqual({ pointers: 2, pools: 2 });
+    clock = 2 * POINTER_TTL_MS;
+    await rules();
+    expect(seen).toEqual({ pointers: 3, pools: 3 });
+  });
+
+  test("requests arriving during a try share it", async () => {
+    const { u, seen } = upstream([a]);
+    const rules = keptRules(u, () => 0);
+    expect(await Promise.all([rules(), rules(), rules()])).toEqual([a, a, a]);
+    expect(seen).toEqual({ pointers: 1, pools: 1 });
   });
 
   test("with no rules had and none to be had, is null", async () => {

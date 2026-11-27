@@ -81,32 +81,55 @@ async function cacheFirst(worker: Worker, request: Request, cache: CacheLike, ke
   return answer;
 }
 
-/**
- * Promotes a fresh pointer once every release it names is kept: it replaces the pointer in the data
- * cache, and the releases it no longer names are dropped. Until then the data cache keeps the last
- * complete set, so a page that loses the network between the pointer and its releases still starts
- * offline from the set before. A pending pointer the worker cannot read is dropped, promoting nothing.
- */
-async function settleData(worker: Worker): Promise<void> {
-  const names = cacheNames(worker.manifest.version);
-  const [data, next] = await Promise.all([worker.caches.open(names.data), worker.caches.open(names.next)]);
-  const url = new URL(worker.manifest.pointer, worker.manifest.library).href;
-  const pending = await kept(next, url);
-  if (pending === undefined) return;
-  const named = pointedReleases(
-    await pending
+/** The release paths a kept pointer names, or null when there is none or it cannot be read. */
+async function namedBy(response: Response | undefined): Promise<string[] | null> {
+  if (response === undefined) return null;
+  return pointedReleases(
+    await response
       .clone()
       .json()
       .catch(() => null),
   );
-  if (named === null) {
+}
+
+/**
+ * One settling of the data cache. A pending pointer whose releases are all kept is promoted: it
+ * replaces the pointer in the data cache, and the releases it does not name are dropped. Until then
+ * the data cache keeps the last complete set, so a page that loses the network between the pointer
+ * and its releases still starts offline from the set before; any release named neither by that set
+ * nor by the pending pointer (one an older tab fetched, or one of a pending pointer since replaced)
+ * is dropped, so the cache holds at most two sets. A pending pointer the worker cannot read is
+ * dropped, promoting nothing; with no readable pointer kept, nothing is dropped.
+ */
+async function settleOnce(worker: Worker): Promise<void> {
+  const names = cacheNames(worker.manifest.version);
+  const [data, next] = await Promise.all([worker.caches.open(names.data), worker.caches.open(names.next)]);
+  const url = new URL(worker.manifest.pointer, worker.manifest.library).href;
+  const pending = await kept(next, url);
+  const pendingNamed = await namedBy(pending);
+  if (pending !== undefined && pendingNamed === null) await next.delete(url);
+  const held = (await data.keys()).map((request) => request.url);
+  if (pending !== undefined && pendingNamed !== null && missingReleases(pendingNamed, held, worker.manifest).length === 0) {
+    await data.put(url, pending);
     await next.delete(url);
+    await dropStaleData(worker, data, pendingNamed);
     return;
   }
-  if (missingReleases(named, (await data.keys()).map((request) => request.url), worker.manifest).length > 0) return;
-  await data.put(url, pending);
-  await next.delete(url);
-  await dropStaleData(worker, data, named);
+  const installedNamed = await namedBy(await kept(data, url));
+  if (installedNamed !== null) await dropStaleData(worker, data, [...installedNamed, ...(pendingNamed ?? [])]);
+}
+
+/** Each worker's settlings, one after another: the Cache API has no transaction, so two at once could prune each other's set. */
+const settling = new WeakMap<Worker, Promise<void>>();
+
+/** Settles the data cache once the settlings asked before have finished (`settleOnce`). */
+function settleData(worker: Worker): Promise<void> {
+  const run = (settling.get(worker) ?? Promise.resolve()).then(() => settleOnce(worker));
+  settling.set(
+    worker,
+    run.catch(() => undefined),
+  );
+  return run;
 }
 
 /**
