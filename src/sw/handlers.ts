@@ -122,9 +122,13 @@ async function settleOnce(worker: Worker): Promise<void> {
 /** Each worker's settlings, one after another: the Cache API has no transaction, so two at once could prune each other's set. */
 const settling = new WeakMap<Worker, Promise<void>>();
 
-/** Settles the data cache once the settlings asked before have finished (`settleOnce`). */
-function settleData(worker: Worker): Promise<void> {
-  const run = (settling.get(worker) ?? Promise.resolve()).then(() => settleOnce(worker));
+/**
+ * Settles the data cache once the settlings asked before have finished (`settleOnce`); `first`, a
+ * write of a fresh pending pointer, runs in the same turn, so no settling running meanwhile can
+ * promote an older pending pointer and delete this one.
+ */
+function settleData(worker: Worker, first: () => Promise<void> = () => Promise.resolve()): Promise<void> {
+  const run = (settling.get(worker) ?? Promise.resolve()).then(first).then(() => settleOnce(worker));
   settling.set(
     worker,
     run.catch(() => undefined),
@@ -148,8 +152,9 @@ async function pointer(worker: Worker, request: Request): Promise<Response> {
     return copy;
   }
   if (!answer.ok) return (await kept(data, request.url)) ?? answer;
-  await (await worker.caches.open(names.next)).put(request.url, answer.clone());
-  await settleData(worker);
+  const next = await worker.caches.open(names.next);
+  const fresh = answer.clone();
+  await settleData(worker, () => next.put(request.url, fresh));
   return answer;
 }
 
@@ -207,12 +212,16 @@ export async function keepLoaded(urls: readonly unknown[], worker: Worker): Prom
   const names = cacheNames(worker.manifest.version);
   await Promise.all(
     worthKeeping(urls, worker.origin, worker.manifest).map(async (url) => {
-      const name = cacheOf(routeOf({ url, method: "GET", navigate: false }, worker.origin, worker.manifest), names);
+      const route = routeOf({ url, method: "GET", navigate: false }, worker.origin, worker.manifest);
+      const name = cacheOf(route, names);
       if (name === null) return;
       const cache = await worker.caches.open(name);
       if ((await kept(cache, url)) !== undefined) return;
       const answer = await worker.fetch(url).catch(() => null);
-      if (answer?.status === 200) await cache.put(url, answer);
+      if (answer?.status !== 200) return;
+      // A pending pointer is written in a settling's turn (settleData); anything else at once.
+      if (route === "pointer") await settleData(worker, () => cache.put(url, answer));
+      else await cache.put(url, answer);
     }),
   );
   await settleData(worker);

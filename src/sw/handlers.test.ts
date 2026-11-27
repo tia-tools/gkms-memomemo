@@ -147,13 +147,13 @@ describe("respond", () => {
 
 });
 
-describe("respond, the library's files", () => {
-  /** The pointer, then each release it names, asked as the page asks them. */
-  const loadData = async (worker: Worker, ...releases: string[]) => {
-    await ask(worker, POINTER);
-    for (const path of releases) await ask(worker, `${LIBRARY}${path}`);
-  };
+/** The pointer, then each release it names, asked as the page asks them. */
+async function loadData(worker: Worker, ...releases: string[]): Promise<void> {
+  await ask(worker, POINTER);
+  for (const path of releases) await ask(worker, `${LIBRARY}${path}`);
+}
 
+describe("respond, the library's files", () => {
   test("so do a kept pointer, release, face and sheet, whatever the answer's Vary", async () => {
     const { network, worker } = world();
     network.vary = "Origin";
@@ -212,23 +212,6 @@ describe("respond, the library's files", () => {
     expect(caches.kept()["memomemo-data"]?.toSorted()).toEqual([`${LIBRARY}${RELEASE_A}`, `${LIBRARY}${IDOLS}`, POINTER].toSorted());
   });
 
-  test("two settlings at once leave a complete set, though one's write lands after the other has pruned", async () => {
-    let slow = false;
-    const network = fakeNetwork({ ...ANSWERS, [RELEASE_C]: "release c", "/data/latest.v1.json": pointing(RELEASE_B, RELEASE_C, IDOLS) });
-    const caches = fakeCaches(network, (name, url) => (slow && name === "memomemo-data" && url === POINTER ? ((slow = false), 20) : 0));
-    const worker: Worker = { caches, fetch: network.fetch, manifest: MANIFEST, origin: ORIGIN };
-    await loadData(worker, RELEASE_B, RELEASE_C, IDOLS);
-    network.answers.set("/data/latest.v1.json", pointing(RELEASE_B, IDOLS));
-    slow = true;
-    const first = ask(worker, POINTER);
-    await new Promise((resolve) => setTimeout(resolve, 5));
-    network.answers.set("/data/latest.v1.json", pointing(RELEASE_C, IDOLS));
-    await Promise.all([first, ask(worker, POINTER)]);
-    const pointer = JSON.parse((await caches.text("memomemo-data", POINTER)) ?? "{}");
-    const named: string[] = pointer.files.map((file: { path: string }) => `${LIBRARY}/${file.path}`);
-    expect(named.filter((url) => !(caches.kept()["memomemo-data"] ?? []).includes(url))).toEqual([]);
-  });
-
   test("an error status for the pointer gives the copy kept, and is not kept itself; with nothing kept it is passed on", async () => {
     const { caches, network, worker } = world();
     await loadData(worker, RELEASE_A, IDOLS);
@@ -275,6 +258,43 @@ describe("respond, the library's files", () => {
     network.answers.delete(FACE);
     expect(await ask(worker, `${LIBRARY}${FACE}`)).toBe(404);
     expect(caches.kept()["memomemo-faces"]).toEqual([]);
+  });
+});
+
+describe("respond, the library's files when settlings overlap", () => {
+  test("two settlings at once leave a complete set, though one's write lands after the other has pruned", async () => {
+    let slow = false;
+    const network = fakeNetwork({ ...ANSWERS, [RELEASE_C]: "release c", "/data/latest.v1.json": pointing(RELEASE_B, RELEASE_C, IDOLS) });
+    const caches = fakeCaches(network, (name, url) => (slow && name === "memomemo-data" && url === POINTER ? ((slow = false), 20) : 0));
+    const worker: Worker = { caches, fetch: network.fetch, manifest: MANIFEST, origin: ORIGIN };
+    await loadData(worker, RELEASE_B, RELEASE_C, IDOLS);
+    network.answers.set("/data/latest.v1.json", pointing(RELEASE_B, IDOLS));
+    slow = true;
+    const first = ask(worker, POINTER);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    network.answers.set("/data/latest.v1.json", pointing(RELEASE_C, IDOLS));
+    await Promise.all([first, ask(worker, POINTER)]);
+    const pointer = JSON.parse((await caches.text("memomemo-data", POINTER)) ?? "{}");
+    const named: string[] = pointer.files.map((file: { path: string }) => `${LIBRARY}/${file.path}`);
+    expect(named.filter((url) => !(caches.kept()["memomemo-data"] ?? []).includes(url))).toEqual([]);
+  });
+
+
+  test("a fresh pointer arriving while another is being promoted stays pending, and is promoted once its releases are kept", async () => {
+    let slow = false;
+    const network = fakeNetwork({ ...ANSWERS, [RELEASE_C]: "release c", "/data/latest.v1.json": pointing(RELEASE_B, RELEASE_C, IDOLS) });
+    const caches = fakeCaches(network, (name, url) => (slow && name === "memomemo-data" && url === POINTER ? ((slow = false), 20) : 0));
+    const worker: Worker = { caches, fetch: network.fetch, manifest: MANIFEST, origin: ORIGIN };
+    await loadData(worker, RELEASE_B, RELEASE_C, IDOLS);
+    network.answers.set("/data/latest.v1.json", pointing(RELEASE_B, IDOLS));
+    slow = true;
+    const first = ask(worker, POINTER);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    network.answers.set("/data/latest.v1.json", pointing(RELEASE_A, IDOLS));
+    await Promise.all([first, ask(worker, POINTER)]);
+    expect(await caches.text("memomemo-data-next", POINTER)).toBe(pointing(RELEASE_A, IDOLS));
+    await ask(worker, `${LIBRARY}${RELEASE_A}`);
+    expect(await caches.text("memomemo-data", POINTER)).toBe(pointing(RELEASE_A, IDOLS));
   });
 });
 
