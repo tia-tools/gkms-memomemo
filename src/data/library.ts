@@ -17,6 +17,17 @@ import { type Pool, pool } from "./pool.ts";
 export const LIBRARY = "https://gkms-library.tia.run";
 /** The pointer, relative to the address: the one file that changes under its name, kept five minutes. */
 export const POINTER = "data/latest.v1.json";
+/**
+ * The formats this page reads, each at the version of its copied format file (src/data/formats/).
+ * Of the formats the pointer names (idols, items, skill-cards, support-cards), only these. Both the
+ * page's lookup (`releasePath`) and the service worker's idea of a release (`RELEASE_DIRS`) come from
+ * this one list, so a version bump changes both (#116).
+ */
+export const READS = { "skill-cards": 1, idols: 1 } as const satisfies Record<string, number>;
+type ReadFormat = keyof typeof READS;
+
+/** Where the releases this page reads are, relative to the address; the service worker counts only these toward the pointer's set. */
+export const RELEASE_DIRS: readonly string[] = Object.entries(READS).map(([format, version]) => `data/${format}/v${version}/`);
 
 /** A file could not be had or does not have its format's shape; the message names the file and where. */
 export class LibraryError extends Error {
@@ -28,10 +39,11 @@ export class LibraryError extends Error {
 
 type Get = (url: string) => Promise<Response>;
 
-/** Where, relative to the address, the pointer says the newest release of this format at version 1 is. */
-export function releasePath(pointer: Latest, format: "skill-cards" | "idols"): string {
-  const entry = pointer.files.find((file) => file.format === format && file.formatVersion === 1);
-  if (entry === undefined) throw new LibraryError(`${POINTER}: names no release of ${format} v1`);
+/** Where, relative to the address, the pointer says the newest release of this format, at the version this page reads, is. */
+export function releasePath(pointer: Latest, format: ReadFormat): string {
+  const version = READS[format];
+  const entry = pointer.files.find((file) => file.format === format && file.formatVersion === version);
+  if (entry === undefined) throw new LibraryError(`${POINTER}: names no release of ${format} v${version}`);
   return entry.path;
 }
 

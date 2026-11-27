@@ -87,13 +87,14 @@ async function cacheFirst(worker: Worker, request: Request, cache: CacheLike, ke
 }
 
 /** The release paths a kept pointer names, or null when there is none or it cannot be read. */
-async function namedBy(response: Response | undefined): Promise<string[] | null> {
+async function namedBy(response: Response | undefined, manifest: SwManifest): Promise<string[] | null> {
   if (response === undefined) return null;
   return pointedReleases(
     await response
       .clone()
       .json()
       .catch(() => null),
+    manifest,
   );
 }
 
@@ -111,7 +112,7 @@ async function settleOnce(worker: Worker): Promise<void> {
   const [data, next] = await Promise.all([worker.caches.open(names.data), worker.caches.open(names.next)]);
   const url = new URL(worker.manifest.pointer, worker.manifest.library).href;
   const pending = await kept(next, url);
-  const pendingNamed = await namedBy(pending);
+  const pendingNamed = await namedBy(pending, worker.manifest);
   if (pending !== undefined && pendingNamed === null) await next.delete(url);
   const held = (await data.keys()).map((request) => request.url);
   if (pending !== undefined && pendingNamed !== null && missingReleases(pendingNamed, held, worker.manifest).length === 0) {
@@ -120,7 +121,7 @@ async function settleOnce(worker: Worker): Promise<void> {
     await dropStaleData(worker, data, pendingNamed);
     return;
   }
-  const installedNamed = await namedBy(await kept(data, url));
+  const installedNamed = await namedBy(await kept(data, url), worker.manifest);
   if (installedNamed !== null) await dropStaleData(worker, data, [...installedNamed, ...(pendingNamed ?? [])]);
 }
 

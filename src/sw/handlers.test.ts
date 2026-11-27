@@ -12,6 +12,7 @@ const MANIFEST: SwManifest = {
   precache: ["/", "/assets/index-abc.js"],
   library: "https://gkms-library.tia.run",
   pointer: "/data/latest.v1.json",
+  releaseDirs: ["/data/skill-cards/v1/", "/data/idols/v1/"],
   sheetPrefix: "/img/",
   sheets: [SHEET],
   fontPrefix: "/fonts/",
@@ -24,8 +25,13 @@ const RELEASE_B = "/data/skill-cards/v1/20261127T1126Z-bbbbbbbb.json";
 const RELEASE_C = "/data/skill-cards/v1/20261128T0250Z-cccccccc.json";
 const IDOLS = "/data/idols/v1/20261116T1124Z-5122c626.json";
 const FACE = "/img/w112/img_sd_hkne_face-00.webp";
-/** A pointer naming these releases, as the library writes it (only `files[].path` matters to the worker). */
-const pointing = (...paths: string[]): string => JSON.stringify({ pointerVersion: 1, files: paths.map((path) => ({ path: path.slice(1) })) });
+/** Releases of formats the page does not read; the real pointer names them beside the page's own (#116). */
+const OTHER_FORMATS = ["/data/items/v1/20261127T1126Z-ce1389aa.json", "/data/support-cards/v1/20261127T1126Z-44f93c3c.json"];
+/**
+ * A pointer naming these releases and, as the library's real pointer does, the releases of the
+ * formats the page does not read (only `files[].path` matters to the worker).
+ */
+const pointing = (...paths: string[]): string => JSON.stringify({ pointerVersion: 1, files: [...paths, ...OTHER_FORMATS].map((path) => ({ path: path.slice(1) })) });
 /** The fake network answers by path, whatever the origin: the page's paths and the library's do not overlap. */
 const ANSWERS = {
   "/": "<html>v2</html>",
@@ -275,7 +281,7 @@ describe("respond, the library's files when settlings overlap", () => {
     network.answers.set("/data/latest.v1.json", pointing(RELEASE_C, IDOLS));
     await Promise.all([first, ask(worker, POINTER)]);
     const pointer = JSON.parse((await caches.text("memomemo-data", POINTER)) ?? "{}");
-    const named: string[] = pointer.files.map((file: { path: string }) => `${LIBRARY}/${file.path}`);
+    const named: string[] = pointer.files.map((file: { path: string }) => `${LIBRARY}/${file.path}`).filter((url: string) => !OTHER_FORMATS.some((path) => url.endsWith(path)));
     expect(named.filter((url) => !(caches.kept()["memomemo-data"] ?? []).includes(url))).toEqual([]);
   });
 
