@@ -5,7 +5,7 @@
  * under `bun test` with fakes; sw.ts wires them to the worker's events.
  */
 
-import { cacheNames, cacheOf, pointedReleases, type RequestFacts, routeOf, staleCaches, staleData, staleKept, type SwManifest, worthKeeping } from "./routes.ts";
+import { cacheNames, cacheOf, missingReleases, pointedReleases, type RequestFacts, routeOf, staleCaches, staleData, staleKept, type SwManifest, worthKeeping } from "./routes.ts";
 
 /** The slice of a `Cache` the worker uses. */
 export interface CacheLike {
@@ -72,23 +72,6 @@ export async function activate(worker: Worker): Promise<void> {
   await dropStaleData(worker, await worker.caches.open(names.data), null);
 }
 
-/** From the network, a copy kept when it answers 200; the copy when the network fails or answers otherwise. */
-async function networkFirst(worker: Worker, request: Request, cache: CacheLike, key: string): Promise<Response> {
-  let answer: Response;
-  try {
-    answer = await worker.fetch(request);
-  } catch (error) {
-    const copy = await kept(cache, key);
-    if (copy === undefined) throw error;
-    return copy;
-  }
-  if (answer.ok) {
-    await cache.put(key, answer.clone());
-    return answer;
-  }
-  return (await kept(cache, key)) ?? answer;
-}
-
 /** From the cache; from the network otherwise, keeping a 200 when `keep` is given. */
 async function cacheFirst(worker: Worker, request: Request, cache: CacheLike, keep: boolean): Promise<Response> {
   const copy = await kept(cache, request);
@@ -99,19 +82,58 @@ async function cacheFirst(worker: Worker, request: Request, cache: CacheLike, ke
 }
 
 /**
- * The library's pointer, from the network with the last copy kept; once a fresh one is kept, the
- * releases it no longer names are dropped, so the data cache holds one consistent set.
+ * Promotes a fresh pointer once every release it names is kept: it replaces the pointer in the data
+ * cache, and the releases it no longer names are dropped. Until then the data cache keeps the last
+ * complete set, so a page that loses the network between the pointer and its releases still starts
+ * offline from the set before. A pending pointer the worker cannot read is dropped, promoting nothing.
  */
-async function pointer(worker: Worker, request: Request, data: CacheLike): Promise<Response> {
-  const answer = await networkFirst(worker, request, data, request.url);
-  if (answer.ok) {
-    const json: unknown = await answer
+async function settleData(worker: Worker): Promise<void> {
+  const names = cacheNames(worker.manifest.version);
+  const [data, next] = await Promise.all([worker.caches.open(names.data), worker.caches.open(names.next)]);
+  const url = new URL(worker.manifest.pointer, worker.manifest.library).href;
+  const pending = await kept(next, url);
+  if (pending === undefined) return;
+  const named = pointedReleases(
+    await pending
       .clone()
       .json()
-      .catch(() => null);
-    const named = pointedReleases(json);
-    if (named !== null) await dropStaleData(worker, data, named);
+      .catch(() => null),
+  );
+  if (named === null) {
+    await next.delete(url);
+    return;
   }
+  if (missingReleases(named, (await data.keys()).map((request) => request.url), worker.manifest).length > 0) return;
+  await data.put(url, pending);
+  await next.delete(url);
+  await dropStaleData(worker, data, named);
+}
+
+/**
+ * The library's pointer: from the network, held as pending until its releases are kept
+ * (`settleData`); the last complete one when the network fails or answers otherwise.
+ */
+async function pointer(worker: Worker, request: Request): Promise<Response> {
+  const names = cacheNames(worker.manifest.version);
+  const data = await worker.caches.open(names.data);
+  let answer: Response;
+  try {
+    answer = await worker.fetch(request);
+  } catch (error) {
+    const copy = await kept(data, request.url);
+    if (copy === undefined) throw error;
+    return copy;
+  }
+  if (!answer.ok) return (await kept(data, request.url)) ?? answer;
+  await (await worker.caches.open(names.next)).put(request.url, answer.clone());
+  await settleData(worker);
+  return answer;
+}
+
+/** A release, from the cache once kept; a newly kept one may complete a pending pointer's set. */
+async function release(worker: Worker, request: Request, data: CacheLike): Promise<Response> {
+  const answer = await cacheFirst(worker, request, data, true);
+  await settleData(worker);
   return answer;
 }
 
@@ -141,9 +163,9 @@ export function respond(request: Request, facts: RequestFacts, worker: Worker): 
     case "precached":
       return open(names.page).then((page) => cacheFirst(worker, request, page, false));
     case "pointer":
-      return open(names.data).then((data) => pointer(worker, request, data));
+      return pointer(worker, request);
     case "release":
-      return open(names.data).then((data) => cacheFirst(worker, request, data, true));
+      return open(names.data).then((data) => release(worker, request, data));
     case "face":
       return open(names.faces).then((faces) => cacheFirst(worker, request, faces, true));
     case "sheet":
@@ -170,4 +192,5 @@ export async function keepLoaded(urls: readonly unknown[], worker: Worker): Prom
       if (answer?.status === 200) await cache.put(url, answer);
     }),
   );
+  await settleData(worker);
 }

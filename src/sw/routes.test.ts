@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { cacheNames, cacheOf, pointedReleases, routeOf, staleCaches, staleData, staleKept, type SwManifest, worthKeeping } from "./routes.ts";
+import { cacheNames, cacheOf, missingReleases, pointedReleases, routeOf, staleCaches, staleData, staleKept, type SwManifest, worthKeeping } from "./routes.ts";
 
 const ORIGIN = "https://gkms-memomemo.tia.run";
 const SHEET = "/img/gkms-memomemo/sheet112/sense-hski-0000aaaa.webp";
@@ -68,21 +68,27 @@ describe("routeOf", () => {
 
 describe("cacheNames and staleCaches", () => {
   test("only the page's cache carries the version", () => {
-    expect(cacheNames("v1")).toEqual({ page: "memomemo-page-v1", data: "memomemo-data", sheets: "memomemo-sheets", fonts: "memomemo-fonts", faces: "memomemo-faces" });
+    expect(cacheNames("v1")).toEqual({ page: "memomemo-page-v1", data: "memomemo-data", next: "memomemo-data-next", sheets: "memomemo-sheets", fonts: "memomemo-fonts", faces: "memomemo-faces" });
   });
 
   test("an activation deletes earlier versions' pages, keeps the data, the sheets, the font and the faces, and touches no other cache", () => {
-    const existing = ["memomemo-page-v0", "memomemo-page-v1", "memomemo-data", "memomemo-sheets", "memomemo-fonts", "memomemo-faces", "memomemo-other", "someone-else"];
+    const existing = ["memomemo-page-v0", "memomemo-page-v1", "memomemo-data", "memomemo-data-next", "memomemo-sheets", "memomemo-fonts", "memomemo-faces", "memomemo-other", "someone-else"];
     expect(staleCaches(existing, "v1")).toEqual(["memomemo-page-v0", "memomemo-other"]);
     expect(staleCaches([], "v1")).toEqual([]);
   });
 });
 
 describe("cacheOf", () => {
-  test("the pointer and releases go in the data cache, a face in the faces', a sheet and a font in theirs, nothing else anywhere", () => {
+  test("a fresh pointer waits apart, a release goes in the data cache, a face in the faces', a sheet and a font in theirs, nothing else anywhere", () => {
     const names = cacheNames("v1");
     const routes = ["pointer", "release", "face", "sheet", "font", "page", "precached", "network"] as const;
-    expect(routes.map((route) => cacheOf(route, names))).toEqual([names.data, names.data, names.faces, names.sheets, names.fonts, null, null, null]);
+    expect(routes.map((route) => cacheOf(route, names))).toEqual([names.next, names.data, names.faces, names.sheets, names.fonts, null, null, null]);
+  });
+
+  test("missingReleases names the releases a pointer names that are not kept", () => {
+    const named = ["/data/skill-cards/v1/a.json", "/data/idols/v1/b.json"];
+    expect(missingReleases(named, [`${LIBRARY}/data/idols/v1/b.json`, POINTER], MANIFEST)).toEqual(["/data/skill-cards/v1/a.json"]);
+    expect(missingReleases(named, named.map((path) => `${LIBRARY}${path}`), MANIFEST)).toEqual([]);
   });
 });
 

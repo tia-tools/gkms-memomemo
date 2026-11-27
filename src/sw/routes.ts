@@ -80,8 +80,10 @@ export const CACHE_PREFIX = "memomemo-";
 
 export interface CacheNames {
   page: string;
-  /** The library's pointer and releases. */
+  /** The library's pointer and the releases it names: always a complete set, so the page can start offline from it. */
   data: string;
+  /** A fresh pointer whose releases are not all kept yet; it replaces the one in `data` once they are. */
+  next: string;
   sheets: string;
   fonts: string;
   faces: string;
@@ -92,6 +94,7 @@ export function cacheNames(version: string): CacheNames {
   return {
     page: `${CACHE_PREFIX}page-${version}`,
     data: `${CACHE_PREFIX}data`,
+    next: `${CACHE_PREFIX}data-next`,
     sheets: `${CACHE_PREFIX}sheets`,
     fonts: `${CACHE_PREFIX}fonts`,
     faces: `${CACHE_PREFIX}faces`,
@@ -102,6 +105,7 @@ export function cacheNames(version: string): CacheNames {
 export function cacheOf(route: Route, names: CacheNames): string | null {
   switch (route) {
     case "pointer":
+      return names.next;
     case "release":
       return names.data;
     case "face":
@@ -128,6 +132,12 @@ export function pointedReleases(json: unknown): string[] | null {
     paths.push(`/${file.path}`);
   }
   return paths;
+}
+
+/** The releases of `named` (paths at the library) that `kept` (absolute URLs) does not hold yet. */
+export function missingReleases(named: readonly string[], kept: readonly string[], manifest: SwManifest): string[] {
+  const held = new Set(kept);
+  return named.filter((path) => !held.has(new URL(path, manifest.library).href));
 }
 
 /**

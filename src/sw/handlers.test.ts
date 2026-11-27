@@ -147,28 +147,59 @@ describe("respond", () => {
 });
 
 describe("respond, the library's files", () => {
+  /** The pointer, then each release it names, asked as the page asks them. */
+  const loadData = async (worker: Worker, ...releases: string[]) => {
+    await ask(worker, POINTER);
+    for (const path of releases) await ask(worker, `${LIBRARY}${path}`);
+  };
+
   test("so do a kept pointer, release, face and sheet, whatever the answer's Vary", async () => {
     const { network, worker } = world();
     network.vary = "Origin";
-    for (const url of [POINTER, `${LIBRARY}${RELEASE_A}`, `${LIBRARY}${FACE}`, `${ORIGIN}${SHEET}`]) await ask(worker, url);
+    await loadData(worker, RELEASE_A, IDOLS);
+    for (const url of [`${LIBRARY}${FACE}`, `${ORIGIN}${SHEET}`]) await ask(worker, url);
     network.offline = true;
     const withOrigin = (url: string) => respond(new Request(url, { headers: { Origin: ORIGIN } }), { url, method: "GET", navigate: false }, worker);
     const texts = await Promise.all([POINTER, `${LIBRARY}${RELEASE_A}`, `${LIBRARY}${FACE}`, `${ORIGIN}${SHEET}`].map((url) => withOrigin(url)?.then((r) => r.text()) ?? Promise.resolve(null)));
     expect(texts).toEqual([pointing(RELEASE_A, IDOLS), "release a", "face", "sheet"]);
   });
 
-  test("the library's pointer comes from the network, and its last copy is kept for when there is none (L5)", async () => {
-    const { network, worker } = world();
+  test("the library's pointer comes from the network; once its releases are kept, it is the copy for when there is none (L5)", async () => {
+    const { caches, network, worker } = world();
     expect(await ask(worker, POINTER)).toBe(pointing(RELEASE_A, IDOLS));
+    expect(caches.kept()["memomemo-data"]).toEqual([]);
+    await loadData(worker, RELEASE_A, IDOLS);
+    network.offline = true;
+    expect(await ask(worker, POINTER)).toBe(pointing(RELEASE_A, IDOLS));
+  });
+
+  test("a fresh pointer replaces the kept one only once its releases are kept: losing the network in between keeps the set before", async () => {
+    const { caches, network, worker } = world();
+    await loadData(worker, RELEASE_A, IDOLS);
     network.answers.set("/data/latest.v1.json", pointing(RELEASE_B, IDOLS));
     expect(await ask(worker, POINTER)).toBe(pointing(RELEASE_B, IDOLS));
+    network.offline = true;
+    expect([await ask(worker, POINTER), await ask(worker, `${LIBRARY}${RELEASE_A}`), await ask(worker, `${LIBRARY}${IDOLS}`)]).toEqual([pointing(RELEASE_A, IDOLS), "release a", "idols"]);
+    network.offline = false;
+    await ask(worker, `${LIBRARY}${RELEASE_B}`);
+    expect(caches.kept()["memomemo-data"]?.toSorted()).toEqual([`${LIBRARY}${IDOLS}`, `${LIBRARY}${RELEASE_B}`, POINTER].toSorted());
+    expect(caches.kept()["memomemo-data-next"]).toEqual([]);
     network.offline = true;
     expect(await ask(worker, POINTER)).toBe(pointing(RELEASE_B, IDOLS));
   });
 
+  test("a fresh pointer naming only releases already kept replaces the kept one at once", async () => {
+    const { caches, network, worker } = world();
+    await loadData(worker, RELEASE_A, IDOLS);
+    await ask(worker, `${LIBRARY}${RELEASE_B}`);
+    network.answers.set("/data/latest.v1.json", pointing(RELEASE_B, IDOLS));
+    await ask(worker, POINTER);
+    expect(caches.kept()["memomemo-data"]?.toSorted()).toEqual([`${LIBRARY}${IDOLS}`, `${LIBRARY}${RELEASE_B}`, POINTER].toSorted());
+  });
+
   test("an error status for the pointer gives the copy kept, and is not kept itself; with nothing kept it is passed on", async () => {
     const { caches, network, worker } = world();
-    await ask(worker, POINTER);
+    await loadData(worker, RELEASE_A, IDOLS);
     network.answers.set("/data/latest.v1.json", 502);
     expect(await ask(worker, POINTER)).toBe(pointing(RELEASE_A, IDOLS));
     expect(await caches.text("memomemo-data", POINTER)).toBe(pointing(RELEASE_A, IDOLS));
@@ -181,30 +212,21 @@ describe("respond, the library's files", () => {
     expect(await ask(worker, POINTER).then(String, () => "failed")).toBe("failed");
   });
 
+  test("a pointer the worker cannot read drops nothing and replaces nothing", async () => {
+    const { caches, network, worker } = world();
+    await loadData(worker, RELEASE_A, IDOLS);
+    network.answers.set("/data/latest.v1.json", "not json");
+    await ask(worker, POINTER);
+    expect(caches.kept()["memomemo-data"]?.toSorted()).toEqual([`${LIBRARY}${RELEASE_A}`, `${LIBRARY}${IDOLS}`, POINTER].toSorted());
+    expect(caches.kept()["memomemo-data-next"]).toEqual([]);
+  });
+
   test("a release is fetched once, then kept: offline it still comes", async () => {
     const { network, worker } = world();
     expect(await ask(worker, `${LIBRARY}${RELEASE_A}`)).toBe("release a");
     network.offline = true;
     expect(await ask(worker, `${LIBRARY}${RELEASE_A}`)).toBe("release a");
     expect(network.fetched).toEqual([`${LIBRARY}${RELEASE_A}`]);
-  });
-
-  test("a fresh pointer drops the releases it no longer names, keeping the ones it does", async () => {
-    const { caches, network, worker } = world();
-    await ask(worker, POINTER);
-    await ask(worker, `${LIBRARY}${RELEASE_A}`);
-    await ask(worker, `${LIBRARY}${IDOLS}`);
-    network.answers.set("/data/latest.v1.json", pointing(RELEASE_B, IDOLS));
-    await ask(worker, POINTER);
-    expect(caches.kept()["memomemo-data"]).toEqual([POINTER, `${LIBRARY}${IDOLS}`]);
-  });
-
-  test("a pointer the worker cannot read drops nothing", async () => {
-    const { caches, network, worker } = world();
-    await ask(worker, `${LIBRARY}${RELEASE_A}`);
-    network.answers.set("/data/latest.v1.json", "not json");
-    await ask(worker, POINTER);
-    expect(caches.kept()["memomemo-data"]).toEqual([`${LIBRARY}${RELEASE_A}`, POINTER]);
   });
 
   test("a face is fetched once, then kept in the faces' own cache: offline it is still drawn (L6)", async () => {
@@ -222,7 +244,6 @@ describe("respond, the library's files", () => {
     expect(await ask(worker, `${LIBRARY}${FACE}`)).toBe(404);
     expect(caches.kept()["memomemo-faces"]).toEqual([]);
   });
-
 });
 
 describe("respond, the sheets, the font and the rest", () => {
@@ -259,9 +280,10 @@ describe("respond, the sheets, the font and the rest", () => {
 describe("keepLoaded", () => {
   test("keeps the library's pointer, releases and faces and the sheets a first visit loaded, from the network, which the HTTP cache answers", async () => {
     const { caches, worker } = world();
-    await keepLoaded([`${ORIGIN}/assets/index-abc.js`, POINTER, `${LIBRARY}${RELEASE_A}`, `${LIBRARY}${FACE}`, `${ORIGIN}${SHEET}`, `${ORIGIN}${FONT}`], worker);
+    await keepLoaded([`${ORIGIN}/assets/index-abc.js`, POINTER, `${LIBRARY}${RELEASE_A}`, `${LIBRARY}${IDOLS}`, `${LIBRARY}${FACE}`, `${ORIGIN}${SHEET}`, `${ORIGIN}${FONT}`], worker);
     expect(caches.kept()).toEqual({
-      "memomemo-data": [POINTER, `${LIBRARY}${RELEASE_A}`],
+      "memomemo-data-next": [],
+      "memomemo-data": [`${LIBRARY}${RELEASE_A}`, `${LIBRARY}${IDOLS}`, POINTER],
       "memomemo-faces": [`${LIBRARY}${FACE}`],
       "memomemo-sheets": [`${ORIGIN}${SHEET}`],
       "memomemo-fonts": [`${ORIGIN}${FONT}`],
@@ -283,6 +305,6 @@ describe("keepLoaded", () => {
     network.offline = false;
     network.answers.set("/data/latest.v1.json", 502);
     await keepLoaded([POINTER], worker);
-    expect(caches.kept()).toEqual({ "memomemo-data": [], "memomemo-sheets": [] });
+    expect(caches.kept()).toEqual({ "memomemo-data-next": [], "memomemo-sheets": [], "memomemo-data": [] });
   });
 });
