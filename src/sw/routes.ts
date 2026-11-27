@@ -11,8 +11,14 @@ export interface SwManifest {
   version: string;
   /** The page itself, fetched into its cache at install: `/`, the built scripts and styles, and public/'s files. */
   precache: readonly string[];
-  /** The skill card data's route (infra/worker/data.ts). */
-  data: string;
+  /**
+   * gkms-library's origin (src/data/library.ts), whose data the page fetches and whose faces it draws
+   * (docs/plans/EXECPLAN_LIBRARY_DATA.md, L5 and L6). The worker cannot import library.ts, which the
+   * page shares, so the build writes these in.
+   */
+  library: string;
+  /** The library's pointer, by its path there: `/data/latest.v1.json`. */
+  pointer: string;
   /** Where the sprite sheets are (infra/worker/img.ts). */
   sheetPrefix: string;
   /** Every sheet the bundled index names (src/icons/index.v1.json); a kept sheet it no longer names is dropped. */
@@ -27,13 +33,16 @@ export interface SwManifest {
  * - `page`: a navigation, from the network while there is one, else the page kept at install, so a
  *   page online is always the one deployed;
  * - `precached`: a file of the page, from the cache, since its name or the worker changes with it;
- * - `data`: the skill card file, from the network, the last copy kept for when there is none;
+ * - `pointer`: the library's pointer, from the network, the last copy kept for when there is none;
+ * - `release`: a release of the library's data, from the cache once fetched, its name never getting
+ *   other content;
+ * - `face`: an idol's face at the library's address, from the cache once drawn, likewise;
  * - `sheet`: a sprite sheet, from the cache once shown, its name never changing meaning;
  * - `font`: a slice of the font, from the cache once used, its name holding its hash (D68): kept
  *   as the page needs it rather than at install, since the page uses a few of its slices;
  * - `network`: anything else, left to the browser as if there were no service worker.
  */
-export type Route = "page" | "precached" | "data" | "sheet" | "font" | "network";
+export type Route = "page" | "precached" | "pointer" | "release" | "face" | "sheet" | "font" | "network";
 
 export interface RequestFacts {
   url: string;
@@ -42,12 +51,25 @@ export interface RequestFacts {
   navigate: boolean;
 }
 
+/** A release's path at the library: `data/<format>/v<N>/<release>.json`. */
+const RELEASE = /^\/data\/[a-z-]+\/v\d+\/[^/]+\.json$/;
+/** An idol's face at the library: `img/w112/img_sd_<idol id>_face-00.webp`. */
+const FACE = /^\/img\/w112\/img_sd_[a-z0-9]{4}_face-00\.webp$/;
+
+/** The route of a GET to the library's origin with no query; anything else there is left to the browser. */
+function libraryRoute(pathname: string, manifest: SwManifest): Route {
+  if (pathname === manifest.pointer) return "pointer";
+  if (RELEASE.test(pathname)) return "release";
+  return FACE.test(pathname) ? "face" : "network";
+}
+
 export function routeOf(request: RequestFacts, origin: string, manifest: SwManifest): Route {
   const url = new URL(request.url);
-  if (request.method !== "GET" || url.origin !== origin) return "network";
+  if (request.method !== "GET") return "network";
+  if (url.origin === manifest.library) return url.search === "" ? libraryRoute(url.pathname, manifest) : "network";
+  if (url.origin !== origin) return "network";
   if (request.navigate) return "page";
   if (url.search !== "") return "network";
-  if (url.pathname === manifest.data) return "data";
   if (url.pathname.startsWith(manifest.sheetPrefix)) return "sheet";
   if (url.pathname.startsWith(manifest.fontPrefix)) return "font";
   return manifest.precache.includes(url.pathname) ? "precached" : "network";
@@ -58,14 +80,69 @@ export const CACHE_PREFIX = "memomemo-";
 
 export interface CacheNames {
   page: string;
+  /** The library's pointer and releases. */
   data: string;
   sheets: string;
   fonts: string;
+  faces: string;
 }
 
-/** The page's cache is per version; the data, the sheets and the font outlive a deploy. */
+/** The page's cache is per version; the data, the sheets, the font and the faces outlive a deploy. */
 export function cacheNames(version: string): CacheNames {
-  return { page: `${CACHE_PREFIX}page-${version}`, data: `${CACHE_PREFIX}data`, sheets: `${CACHE_PREFIX}sheets`, fonts: `${CACHE_PREFIX}fonts` };
+  return {
+    page: `${CACHE_PREFIX}page-${version}`,
+    data: `${CACHE_PREFIX}data`,
+    sheets: `${CACHE_PREFIX}sheets`,
+    fonts: `${CACHE_PREFIX}fonts`,
+    faces: `${CACHE_PREFIX}faces`,
+  };
+}
+
+/** The cache a kept route's answers go in, or null for a route the worker does not keep that way. */
+export function cacheOf(route: Route, names: CacheNames): string | null {
+  switch (route) {
+    case "pointer":
+    case "release":
+      return names.data;
+    case "face":
+      return names.faces;
+    case "sheet":
+      return names.sheets;
+    case "font":
+      return names.fonts;
+    default:
+      return null;
+  }
+}
+
+/**
+ * The release paths a kept pointer names, read loosely: the page checks the pointer whole with its
+ * format, which the worker cannot import. Null when it has no list of paths, so nothing is dropped
+ * on its word.
+ */
+export function pointedReleases(json: unknown): string[] | null {
+  if (typeof json !== "object" || json === null || !("files" in json) || !Array.isArray(json.files)) return null;
+  const paths: string[] = [];
+  for (const file of json.files) {
+    if (typeof file !== "object" || file === null || !("path" in file) || typeof file.path !== "string") return null;
+    paths.push(`/${file.path}`);
+  }
+  return paths;
+}
+
+/**
+ * Of the data cache's kept URLs, those to delete: anything that is neither the library's pointer
+ * nor a release of it (such as the skill card file this page read before it moved to the library),
+ * and, when `named` is given, a release the kept pointer no longer names.
+ */
+export function staleData(kept: readonly string[], named: readonly string[] | null, manifest: SwManifest): string[] {
+  return kept.filter((url) => {
+    const at = new URL(url);
+    if (at.origin !== manifest.library || at.search !== "") return true;
+    if (at.pathname === manifest.pointer) return false;
+    if (!RELEASE.test(at.pathname)) return true;
+    return named !== null && !named.includes(at.pathname);
+  });
 }
 
 /** The caches an activation deletes: this page's caches the version does not use, so earlier versions' pages. */
@@ -92,11 +169,11 @@ function parses(url: string): boolean {
 
 /**
  * Of the URLs a page loaded before its service worker controlled it (its first visit), those to
- * keep for offline use: the data file, the sheets and the font's slices. Anything else named is ignored, so a message
+ * keep for offline use: the library's pointer and releases, the faces, the sheets and the font's slices. Anything else named is ignored, so a message
  * cannot make the worker fetch what it would not keep anyway.
  */
 export function worthKeeping(urls: readonly unknown[], origin: string, manifest: SwManifest): string[] {
   const keep = urls.filter((url): url is string => typeof url === "string" && parses(url));
   const routes = keep.map((url) => routeOf({ url, method: "GET", navigate: false }, origin, manifest));
-  return [...new Set(keep.filter((_, i) => routes[i] === "data" || routes[i] === "sheet" || routes[i] === "font"))];
+  return [...new Set(keep.filter((_, i) => cacheOf(routes[i] ?? "network", cacheNames("")) !== null))];
 }

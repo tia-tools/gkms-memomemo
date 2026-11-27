@@ -5,7 +5,7 @@
  * under `bun test` with fakes; sw.ts wires them to the worker's events.
  */
 
-import { cacheNames, type RequestFacts, routeOf, staleCaches, staleKept, type SwManifest, worthKeeping } from "./routes.ts";
+import { cacheNames, cacheOf, pointedReleases, type RequestFacts, routeOf, staleCaches, staleData, staleKept, type SwManifest, worthKeeping } from "./routes.ts";
 
 /** The slice of a `Cache` the worker uses. */
 export interface CacheLike {
@@ -53,12 +53,23 @@ async function dropStale(cache: CacheLike, named: readonly string[]): Promise<vo
   await Promise.all(stale.map((url) => cache.delete(url)));
 }
 
-/** Deletes earlier versions' pages, the sheets the bundled index no longer names, and the font files the build no longer wrote. */
+/** Drops from the data cache what is not the library's pointer or a release of it, and, with `named`, a release the pointer no longer names. */
+async function dropStaleData(worker: Worker, data: CacheLike, named: readonly string[] | null): Promise<void> {
+  const stale = staleData((await data.keys()).map((request) => request.url), named, worker.manifest);
+  await Promise.all(stale.map((url) => data.delete(url)));
+}
+
+/**
+ * Deletes earlier versions' pages, the sheets the bundled index no longer names, the font files the
+ * build no longer wrote, and anything in the data cache that is not the library's (the skill card
+ * file kept before the page moved to the library).
+ */
 export async function activate(worker: Worker): Promise<void> {
   await Promise.all(staleCaches(await worker.caches.keys(), worker.manifest.version).map((name) => worker.caches.delete(name)));
   const names = cacheNames(worker.manifest.version);
   await dropStale(await worker.caches.open(names.sheets), worker.manifest.sheets);
   await dropStale(await worker.caches.open(names.fonts), worker.manifest.fonts);
+  await dropStaleData(worker, await worker.caches.open(names.data), null);
 }
 
 /** From the network, a copy kept when it answers 200; the copy when the network fails or answers otherwise. */
@@ -87,6 +98,23 @@ async function cacheFirst(worker: Worker, request: Request, cache: CacheLike, ke
   return answer;
 }
 
+/**
+ * The library's pointer, from the network with the last copy kept; once a fresh one is kept, the
+ * releases it no longer names are dropped, so the data cache holds one consistent set.
+ */
+async function pointer(worker: Worker, request: Request, data: CacheLike): Promise<Response> {
+  const answer = await networkFirst(worker, request, data, request.url);
+  if (answer.ok) {
+    const json: unknown = await answer
+      .clone()
+      .json()
+      .catch(() => null);
+    const named = pointedReleases(json);
+    if (named !== null) await dropStaleData(worker, data, named);
+  }
+  return answer;
+}
+
 /** The page kept at install, for a navigation the network cannot answer. */
 async function pageOffline(worker: Worker, request: Request, page: CacheLike): Promise<Response> {
   try {
@@ -112,8 +140,12 @@ export function respond(request: Request, facts: RequestFacts, worker: Worker): 
       return open(names.page).then((page) => pageOffline(worker, request, page));
     case "precached":
       return open(names.page).then((page) => cacheFirst(worker, request, page, false));
-    case "data":
-      return open(names.data).then((data) => networkFirst(worker, request, data, new URL(worker.manifest.data, worker.origin).href));
+    case "pointer":
+      return open(names.data).then((data) => pointer(worker, request, data));
+    case "release":
+      return open(names.data).then((data) => cacheFirst(worker, request, data, true));
+    case "face":
+      return open(names.faces).then((faces) => cacheFirst(worker, request, faces, true));
     case "sheet":
       return open(names.sheets).then((sheets) => cacheFirst(worker, request, sheets, true));
     case "font":
@@ -123,16 +155,16 @@ export function respond(request: Request, facts: RequestFacts, worker: Worker): 
 
 /**
  * Keeps what a page loaded before this worker controlled it (`urls`, its first visit's resources):
- * the data file, the sheets and the font's slices, fetched again, which the browser's HTTP cache answers. A failure
- * leaves that file to be kept on the next visit, when the worker sees its request.
+ * the library's pointer and releases, the faces, the sheets and the font's slices, fetched again, which the
+ * browser's HTTP cache answers. A failure leaves that file to be kept on the next visit, when the worker sees its request.
  */
 export async function keepLoaded(urls: readonly unknown[], worker: Worker): Promise<void> {
   const names = cacheNames(worker.manifest.version);
-  const dataUrl = new URL(worker.manifest.data, worker.origin).href;
   await Promise.all(
     worthKeeping(urls, worker.origin, worker.manifest).map(async (url) => {
-      const fonts = new URL(url).pathname.startsWith(worker.manifest.fontPrefix);
-      const cache = await worker.caches.open(url === dataUrl ? names.data : fonts ? names.fonts : names.sheets);
+      const name = cacheOf(routeOf({ url, method: "GET", navigate: false }, worker.origin, worker.manifest), names);
+      if (name === null) return;
+      const cache = await worker.caches.open(name);
       if ((await kept(cache, url)) !== undefined) return;
       const answer = await worker.fetch(url).catch(() => null);
       if (answer?.status === 200) await cache.put(url, answer);

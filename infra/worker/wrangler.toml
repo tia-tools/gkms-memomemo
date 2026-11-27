@@ -15,7 +15,7 @@ routes = [
 [assets]
 directory = "../../dist"
 binding = "ASSETS"
-run_worker_first = ["/img/*", "/data/skillcards.json", "/count", "/counts"]
+run_worker_first = ["/img/*", "/count", "/counts"]
 
 # The anonymous counts and the per-player daily cap (decision D41), tables in migrations/. The
 # database was created in Milestone 7 (`bunx wrangler d1 create gkms-memomemo --location apac`,
