@@ -17,7 +17,7 @@ const HSKI = "/img/gkms-memomemo/sheet112/sense-hski-0000aaaa.webp";
 const SHEETS = [TTMR, HSKI];
 
 const LIBRARY = "https://gkms-library.tia.run";
-const manifestOf = (files = FILES) => swManifest(files, SHEETS, LIBRARY, "/data/latest.v1.json", "/img/");
+const manifestOf = (files = FILES) => swManifest(files, SHEETS, { library: LIBRARY, pointer: "/data/latest.v1.json", releaseDirs: ["/data/skill-cards/v1/", "/data/idols/v1/"] }, "/img/");
 
 describe("swManifest", () => {
   test("keeps the page at /, its scripts, styles and static files, but not the worker, source maps, Vite's manifests or the font", () => {
@@ -34,9 +34,9 @@ describe("swManifest", () => {
     expect(manifestOf(other).version).toBe(manifestOf().version);
   });
 
-  test("carries the library's origin and pointer, the sheet prefix and the sheets, sorted", () => {
-    const { library, pointer, sheetPrefix, sheets } = manifestOf();
-    expect({ library, pointer, sheetPrefix, sheets }).toEqual({ library: LIBRARY, pointer: "/data/latest.v1.json", sheetPrefix: "/img/", sheets: [HSKI, TTMR] });
+  test("carries the library's origin, pointer and the directories of the releases the page reads, the sheet prefix and the sheets, sorted", () => {
+    const { library, pointer, releaseDirs, sheetPrefix, sheets } = manifestOf();
+    expect({ library, pointer, releaseDirs, sheetPrefix, sheets }).toEqual({ library: LIBRARY, pointer: "/data/latest.v1.json", releaseDirs: ["/data/skill-cards/v1/", "/data/idols/v1/"], sheetPrefix: "/img/", sheets: [HSKI, TTMR] });
   });
 
   test("the version is the same for the same files, whatever their order", () => {
@@ -62,7 +62,7 @@ describe("swManifest", () => {
   test("a file's bytes cannot be shifted into its neighbour's name to give the same version", () => {
     const a = [{ path: "a", bytes: "bc" }];
     const b = [{ path: "ab", bytes: "c" }];
-    expect(swManifest(a, [], "https://l", "/p", "/img/").version).not.toBe(swManifest(b, [], "https://l", "/p", "/img/").version);
+    expect(swManifest(a, [], { library: "https://l", pointer: "/p", releaseDirs: [] }, "/img/").version).not.toBe(swManifest(b, [], { library: "https://l", pointer: "/p", releaseDirs: [] }, "/img/").version);
   });
 
   test("nor can two files be merged into one that holds the next one's name", () => {
@@ -71,7 +71,7 @@ describe("swManifest", () => {
       { path: "b", bytes: "y" },
     ];
     const one = [{ path: "a", bytes: "x/b\0y" }];
-    expect(swManifest(two, [], "https://l", "/p", "/img/").version).not.toBe(swManifest(one, [], "https://l", "/p", "/img/").version);
+    expect(swManifest(two, [], { library: "https://l", pointer: "/p", releaseDirs: [] }, "/img/").version).not.toBe(swManifest(one, [], { library: "https://l", pointer: "/p", releaseDirs: [] }, "/img/").version);
   });
 });
 

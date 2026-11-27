@@ -9,6 +9,7 @@ const MANIFEST: SwManifest = {
   precache: ["/", "/assets/index-abc.js", "/assets/index-abc.css", "/icons/frames112.webp", "/manifest.webmanifest"],
   library: "https://gkms-library.tia.run",
   pointer: "/data/latest.v1.json",
+  releaseDirs: ["/data/skill-cards/v1/", "/data/idols/v1/"],
   sheetPrefix: "/img/",
   sheets: [SHEET],
   fontPrefix: "/fonts/",
@@ -41,7 +42,7 @@ describe("routeOf", () => {
   });
 
   test("anything else there, a query or another method is left to the network", () => {
-    const others = [`${LIBRARY}/img/w112/img_general_skillcard_act-3_029.webp`, `${LIBRARY}/formats/idols.v1.ts`, `${LIBRARY}/data/latest.v2.json`, `${LIBRARY}/data/x.json`, `${POINTER}?x`, `${RELEASE}?x`, `${FACE}?v=1`];
+    const others = [`${LIBRARY}/img/w112/img_general_skillcard_act-3_029.webp`, `${LIBRARY}/formats/idols.v1.ts`, `${LIBRARY}/data/latest.v2.json`, `${LIBRARY}/data/x.json`, `${LIBRARY}/data/items/v1/20261127T1126Z-ce1389aa.json`, `${LIBRARY}/data/skill-cards/v2/a.json`, `${POINTER}?x`, `${RELEASE}?x`, `${FACE}?v=1`];
     expect(others.map((url) => at(url))).toEqual(others.map(() => "network"));
     expect(at(RELEASE, "HEAD")).toBe("network");
     expect(at(`${ORIGIN}/data/latest.v1.json`)).toBe("network");
@@ -95,12 +96,13 @@ describe("cacheOf", () => {
 describe("pointedReleases and staleData", () => {
   const OTHER = `${LIBRARY}/data/skill-cards/v1/20261126T1126Z-00000000.json`;
 
-  test("a pointer's paths are read as paths at the library", () => {
-    expect(pointedReleases({ files: [{ path: "data/idols/v1/a.json" }, { path: "data/skill-cards/v1/b.json" }] })).toEqual(["/data/idols/v1/a.json", "/data/skill-cards/v1/b.json"]);
+  test("a pointer's paths are read as paths at the library, only the releases of the formats the page reads (#116)", () => {
+    const files = ["data/idols/v1/a.json", "data/items/v1/c.json", "data/skill-cards/v1/b.json", "data/support-cards/v1/d.json", "data/skill-cards/v2/e.json"].map((path) => ({ path }));
+    expect(pointedReleases({ files }, MANIFEST)).toEqual(["/data/idols/v1/a.json", "/data/skill-cards/v1/b.json"]);
   });
 
   test("a pointer with no list of paths names nothing", () => {
-    for (const json of [null, 3, {}, { files: {} }, { files: [{}] }, { files: [{ path: 1 }] }]) expect(pointedReleases(json)).toBeNull();
+    for (const json of [null, 3, {}, { files: {} }, { files: [{}] }, { files: [{ path: 1 }] }]) expect(pointedReleases(json, MANIFEST)).toBeNull();
   });
 
   test("drops what is not the library's pointer or a release, and a release the pointer no longer names", () => {

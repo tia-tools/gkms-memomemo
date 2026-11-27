@@ -5,7 +5,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { type Connect, defineConfig, type Plugin } from "vite";
 import { imageKey } from "./infra/worker/img.ts";
 import { parseIconIndex, SHEET_URL_PREFIX } from "./src/app/sheets.ts";
-import { LIBRARY, POINTER } from "./src/data/library.ts";
+import { LIBRARY, POINTER, RELEASE_DIRS } from "./src/data/library.ts";
 import { type BuiltFile, FONT_DIR, SW_FILE, swManifest, withManifest } from "./src/sw/build.ts";
 
 /**
@@ -94,7 +94,7 @@ function serviceWorker(): Plugin {
       if (shared.length > 0) return this.error(`${SW_FILE} must stand alone; it imports or exports ${shared.join(", ")}`);
       if (bundle["index.html"] === undefined) return this.error("index.html is not built yet; the worker's manifest must cover it");
       const built = Object.values(bundle).map((file): BuiltFile => ({ path: file.fileName, bytes: file.type === "chunk" ? file.code : file.source }));
-      sw.code = withManifest(sw.code, swManifest([...built, ...publicFiles()], bundledSheets(), LIBRARY, `/${POINTER}`, SHEET_URL_PREFIX));
+      sw.code = withManifest(sw.code, swManifest([...built, ...publicFiles()], bundledSheets(), { library: LIBRARY, pointer: `/${POINTER}`, releaseDirs: RELEASE_DIRS.map((dir) => `/${dir}`) }, SHEET_URL_PREFIX));
     },
   };
 }

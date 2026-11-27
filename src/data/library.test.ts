@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { SKILL_CARDS } from "../test-support/skillcards.ts";
-import { LIBRARY, LibraryError, loadLibrary, POINTER } from "./library.ts";
+import { parse as parseLatest } from "./formats/latest.v1.ts";
+import { LIBRARY, LibraryError, loadLibrary, POINTER, RELEASE_DIRS, releasePath } from "./library.ts";
 
 const text = (name: string): Promise<string> => Bun.file(new URL(`fixtures/${name}`, import.meta.url)).text();
 
@@ -35,6 +36,15 @@ async function refusal(files: Record<string, string | number>): Promise<Error> {
   if (!(outcome instanceof LibraryError)) throw new Error(`expected a LibraryError, got ${String(outcome)}`);
   return outcome;
 }
+
+describe("RELEASE_DIRS", () => {
+  test("holds exactly the directories of the releases the page's own lookup takes, so the service worker cannot count others (#116)", () => {
+    const pointer = parseLatest(JSON.parse(POINTER_TEXT));
+    const taken = (["skill-cards", "idols"] as const).map((format) => releasePath(pointer, format));
+    expect(taken.map((path) => RELEASE_DIRS.filter((dir) => path.startsWith(dir)).length)).toEqual([1, 1]);
+    expect(RELEASE_DIRS.toSorted()).toEqual(taken.map((path) => path.slice(0, path.lastIndexOf("/") + 1)).toSorted());
+  });
+});
 
 describe("loadLibrary", () => {
   test("reads the pointer, then the two releases it names, into the pool", async () => {
