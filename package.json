@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@fontsource/ibm-plex-sans-jp": "5.3.1",
-    "preact": "^10.29.8"
+    "preact": "^10.29.8",
+    "valibot": "^1"
   }
 }
