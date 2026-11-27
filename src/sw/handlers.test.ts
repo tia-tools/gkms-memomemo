@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 import { fakeCaches, fakeNetwork, ORIGIN } from "../test-support/caches.ts";
 import { activate, install, keepLoaded, respond, type Worker } from "./handlers.ts";
 import type { SwManifest } from "./routes.ts";
@@ -10,13 +10,34 @@ const OLD_FONT = "/fonts/ibm-plex-sans-jp-119-500-normal-Old999.woff2";
 const MANIFEST: SwManifest = {
   version: "v2",
   precache: ["/", "/assets/index-abc.js"],
-  data: "/data/skillcards.json",
+  library: "https://gkms-library.tia.run",
+  pointer: "/data/latest.v1.json",
   sheetPrefix: "/img/",
   sheets: [SHEET],
   fontPrefix: "/fonts/",
   fonts: [FONT],
 };
-const ANSWERS = { "/": "<html>v2</html>", "/assets/index-abc.js": "js v2", "/data/skillcards.json": "data 1", [SHEET]: "sheet", [FONT]: "font" };
+const LIBRARY = MANIFEST.library;
+const POINTER = `${LIBRARY}/data/latest.v1.json`;
+const RELEASE_A = "/data/skill-cards/v1/20261126T1126Z-aaaaaaaa.json";
+const RELEASE_B = "/data/skill-cards/v1/20261127T1126Z-bbbbbbbb.json";
+const RELEASE_C = "/data/skill-cards/v1/20261128T0250Z-cccccccc.json";
+const IDOLS = "/data/idols/v1/20261116T1124Z-5122c626.json";
+const FACE = "/img/w112/img_sd_hkne_face-00.webp";
+/** A pointer naming these releases, as the library writes it (only `files[].path` matters to the worker). */
+const pointing = (...paths: string[]): string => JSON.stringify({ pointerVersion: 1, files: paths.map((path) => ({ path: path.slice(1) })) });
+/** The fake network answers by path, whatever the origin: the page's paths and the library's do not overlap. */
+const ANSWERS = {
+  "/": "<html>v2</html>",
+  "/assets/index-abc.js": "js v2",
+  "/data/latest.v1.json": pointing(RELEASE_A, IDOLS),
+  [RELEASE_A]: "release a",
+  [RELEASE_B]: "release b",
+  [IDOLS]: "idols",
+  [FACE]: "face",
+  [SHEET]: "sheet",
+  [FONT]: "font",
+};
 
 function world(answers: Record<string, string | number> = ANSWERS) {
   const network = fakeNetwork(answers);
@@ -25,9 +46,9 @@ function world(answers: Record<string, string | number> = ANSWERS) {
   return { network, caches, worker };
 }
 
-/** Asks the worker for `path` as the page would; null when it leaves the request to the browser. */
+/** Asks the worker for `path` (on this page's origin, or a full URL) as the page would; null when it leaves the request to the browser. */
 async function ask(worker: Worker, path: string, navigate = false): Promise<string | number | null> {
-  const request = new Request(`${ORIGIN}${path}`);
+  const request = new Request(path.startsWith("https://") ? path : `${ORIGIN}${path}`);
   const answer = respond(request, { url: request.url, method: "GET", navigate }, worker);
   if (answer === null) return null;
   const response = await answer;
@@ -48,7 +69,7 @@ describe("install", () => {
 });
 
 describe("activate", () => {
-  test("deletes earlier versions' pages, the sheets the index and the font files the build no longer names, keeping the rest", async () => {
+  test("deletes earlier versions' pages, the sheets the index and the font files the build no longer names, and what in the data cache is not the library's, keeping the rest", async () => {
     const { caches, worker } = world();
     const older = await caches.open("memomemo-page-v1");
     await older.put("/", new Response("v1"));
@@ -58,13 +79,17 @@ describe("activate", () => {
     const fonts = await caches.open("memomemo-fonts");
     await fonts.put(FONT, new Response("font"));
     await fonts.put(OLD_FONT, new Response("old"));
-    await (await caches.open("memomemo-data")).put("/data/skillcards.json", new Response("data"));
+    const data = await caches.open("memomemo-data");
+    await data.put("/data/skillcards.json", new Response("the file kept before the library"));
+    await data.put(POINTER, new Response(pointing(RELEASE_A)));
+    await data.put(`${LIBRARY}${RELEASE_A}`, new Response("release a"));
+    await data.put(`${LIBRARY}${RELEASE_B}`, new Response("release b"));
     await install(worker);
     await activate(worker);
     expect(caches.kept()).toEqual({
       "memomemo-sheets": [`${ORIGIN}${SHEET}`],
       "memomemo-fonts": [`${ORIGIN}${FONT}`],
-      "memomemo-data": [`${ORIGIN}/data/skillcards.json`],
+      "memomemo-data": [POINTER, `${LIBRARY}${RELEASE_A}`, `${LIBRARY}${RELEASE_B}`],
       "memomemo-page-v2": [`${ORIGIN}/`, `${ORIGIN}/assets/index-abc.js`],
     });
   });
@@ -120,46 +145,190 @@ describe("respond", () => {
     expect(await answer?.then((r) => r.text())).toBe("js v2");
   });
 
-  test("so do a kept data file and sheet, whatever the answer's Vary", async () => {
+});
+
+/** The pointer, then each release it names, asked as the page asks them. */
+async function loadData(worker: Worker, ...releases: string[]): Promise<void> {
+  await ask(worker, POINTER);
+  for (const path of releases) await ask(worker, `${LIBRARY}${path}`);
+}
+
+describe("respond, the library's files", () => {
+  test("so do a kept pointer, release, face and sheet, whatever the answer's Vary", async () => {
     const { network, worker } = world();
     network.vary = "Origin";
-    await ask(worker, "/data/skillcards.json");
-    await ask(worker, SHEET);
+    await loadData(worker, RELEASE_A, IDOLS);
+    for (const url of [`${LIBRARY}${FACE}`, `${ORIGIN}${SHEET}`]) await ask(worker, url);
     network.offline = true;
-    const withOrigin = (path: string) => new Request(`${ORIGIN}${path}`, { headers: { Origin: ORIGIN } });
-    const data = respond(withOrigin("/data/skillcards.json"), { url: `${ORIGIN}/data/skillcards.json`, method: "GET", navigate: false }, worker);
-    const sheet = respond(withOrigin(SHEET), { url: `${ORIGIN}${SHEET}`, method: "GET", navigate: false }, worker);
-    expect([await data?.then((r) => r.text()), await sheet?.then((r) => r.text())]).toEqual(["data 1", "sheet"]);
+    const withOrigin = (url: string) => respond(new Request(url, { headers: { Origin: ORIGIN } }), { url, method: "GET", navigate: false }, worker);
+    const texts = await Promise.all([POINTER, `${LIBRARY}${RELEASE_A}`, `${LIBRARY}${FACE}`, `${ORIGIN}${SHEET}`].map((url) => withOrigin(url)?.then((r) => r.text()) ?? Promise.resolve(null)));
+    expect(texts).toEqual([pointing(RELEASE_A, IDOLS), "release a", "face", "sheet"]);
   });
 
-  test("the data file comes from the network, and its last copy is kept for when there is none", async () => {
-    const { network, worker } = world();
-    expect(await ask(worker, "/data/skillcards.json")).toBe("data 1");
-    network.answers.set("/data/skillcards.json", "data 2");
-    expect(await ask(worker, "/data/skillcards.json")).toBe("data 2");
-    network.offline = true;
-    expect(await ask(worker, "/data/skillcards.json")).toBe("data 2");
-  });
-
-  test("an error status for the data file gives the copy kept, and is not kept itself", async () => {
+  test("the library's pointer comes from the network; once its releases are kept, it is the copy for when there is none (L5)", async () => {
     const { caches, network, worker } = world();
-    await ask(worker, "/data/skillcards.json");
-    network.answers.set("/data/skillcards.json", 502);
-    expect(await ask(worker, "/data/skillcards.json")).toBe("data 1");
-    expect(await caches.text("memomemo-data", "/data/skillcards.json")).toBe("data 1");
+    expect(await ask(worker, POINTER)).toBe(pointing(RELEASE_A, IDOLS));
+    expect(caches.kept()["memomemo-data"]).toEqual([]);
+    await loadData(worker, RELEASE_A, IDOLS);
+    network.offline = true;
+    expect(await ask(worker, POINTER)).toBe(pointing(RELEASE_A, IDOLS));
   });
 
-  test("an error status for the data file with nothing kept is passed on", async () => {
-    const { worker } = world({ ...ANSWERS, "/data/skillcards.json": 502 });
-    expect(await ask(worker, "/data/skillcards.json")).toBe(502);
+  test("a fresh pointer replaces the kept one only once its releases are kept: losing the network in between keeps the set before", async () => {
+    const { caches, network, worker } = world();
+    await loadData(worker, RELEASE_A, IDOLS);
+    network.answers.set("/data/latest.v1.json", pointing(RELEASE_B, IDOLS));
+    expect(await ask(worker, POINTER)).toBe(pointing(RELEASE_B, IDOLS));
+    network.offline = true;
+    expect([await ask(worker, POINTER), await ask(worker, `${LIBRARY}${RELEASE_A}`), await ask(worker, `${LIBRARY}${IDOLS}`)]).toEqual([pointing(RELEASE_A, IDOLS), "release a", "idols"]);
+    network.offline = false;
+    await ask(worker, `${LIBRARY}${RELEASE_B}`);
+    expect(caches.kept()["memomemo-data"]?.toSorted()).toEqual([`${LIBRARY}${IDOLS}`, `${LIBRARY}${RELEASE_B}`, POINTER].toSorted());
+    expect(caches.kept()["memomemo-data-next"]).toEqual([]);
+    network.offline = true;
+    expect(await ask(worker, POINTER)).toBe(pointing(RELEASE_B, IDOLS));
   });
 
-  test("offline, a data file never kept fails as it would without a worker", async () => {
+  test("a fresh pointer naming only releases already kept replaces the kept one at once", async () => {
+    const { caches, network, worker } = world();
+    await loadData(worker, RELEASE_A, IDOLS);
+    network.answers.set("/data/latest.v1.json", pointing(IDOLS));
+    await ask(worker, POINTER);
+    expect(caches.kept()["memomemo-data"]?.toSorted()).toEqual([`${LIBRARY}${IDOLS}`, POINTER].toSorted());
+    expect(await caches.text("memomemo-data", POINTER)).toBe(pointing(IDOLS));
+  });
+
+  test("a release named neither by the kept set nor by a pending pointer is not kept for long: the cache holds at most two sets", async () => {
+    const { caches, network, worker } = world();
+    await loadData(worker, RELEASE_A, IDOLS);
+    expect(await ask(worker, `${LIBRARY}${RELEASE_B}`)).toBe("release b");
+    expect(caches.kept()["memomemo-data"]?.toSorted()).toEqual([`${LIBRARY}${RELEASE_A}`, `${LIBRARY}${IDOLS}`, POINTER].toSorted());
+    network.answers.set("/data/latest.v1.json", pointing(RELEASE_B, IDOLS));
+    await ask(worker, POINTER);
+    network.answers.set(RELEASE_C, "release c");
+    network.answers.set("/data/latest.v1.json", pointing(RELEASE_C, IDOLS));
+    await ask(worker, POINTER);
+    await ask(worker, `${LIBRARY}${RELEASE_B}`);
+    expect(caches.kept()["memomemo-data"]?.toSorted()).toEqual([`${LIBRARY}${RELEASE_A}`, `${LIBRARY}${IDOLS}`, POINTER].toSorted());
+  });
+
+  test("an error status for the pointer gives the copy kept, and is not kept itself; with nothing kept it is passed on", async () => {
+    const { caches, network, worker } = world();
+    await loadData(worker, RELEASE_A, IDOLS);
+    network.answers.set("/data/latest.v1.json", 502);
+    expect(await ask(worker, POINTER)).toBe(pointing(RELEASE_A, IDOLS));
+    expect(await caches.text("memomemo-data", POINTER)).toBe(pointing(RELEASE_A, IDOLS));
+    expect(await ask(world({ ...ANSWERS, "/data/latest.v1.json": 502 }).worker, POINTER)).toBe(502);
+  });
+
+  test("offline, a pointer never kept fails as it would without a worker", async () => {
     const { network, worker } = world();
     network.offline = true;
-    expect(await ask(worker, "/data/skillcards.json").then(String, () => "failed")).toBe("failed");
+    expect(await ask(worker, POINTER).then(String, () => "failed")).toBe("failed");
   });
 
+  test("a pointer the worker cannot read drops nothing and replaces nothing", async () => {
+    const { caches, network, worker } = world();
+    await loadData(worker, RELEASE_A, IDOLS);
+    network.answers.set("/data/latest.v1.json", "not json");
+    await ask(worker, POINTER);
+    expect(caches.kept()["memomemo-data"]?.toSorted()).toEqual([`${LIBRARY}${RELEASE_A}`, `${LIBRARY}${IDOLS}`, POINTER].toSorted());
+    expect(caches.kept()["memomemo-data-next"]).toEqual([]);
+  });
+
+  test("a release is fetched once, then kept: offline it still comes", async () => {
+    const { network, worker } = world();
+    expect(await ask(worker, `${LIBRARY}${RELEASE_A}`)).toBe("release a");
+    network.offline = true;
+    expect(await ask(worker, `${LIBRARY}${RELEASE_A}`)).toBe("release a");
+    expect(network.fetched).toEqual([`${LIBRARY}${RELEASE_A}`]);
+  });
+
+  test("a face is fetched once, then kept in the faces' own cache: offline it is still drawn (L6)", async () => {
+    const { caches, network, worker } = world();
+    expect(await ask(worker, `${LIBRARY}${FACE}`)).toBe("face");
+    network.offline = true;
+    expect(await ask(worker, `${LIBRARY}${FACE}`)).toBe("face");
+    expect(network.fetched).toEqual([`${LIBRARY}${FACE}`]);
+    expect(caches.kept()["memomemo-faces"]).toEqual([`${LIBRARY}${FACE}`]);
+  });
+
+  test("a face not published yet is not kept, so it is asked again next time", async () => {
+    const { caches, network, worker } = world();
+    network.answers.delete(FACE);
+    expect(await ask(worker, `${LIBRARY}${FACE}`)).toBe(404);
+    expect(caches.kept()["memomemo-faces"]).toEqual([]);
+  });
+});
+
+describe("respond, the library's files when settlings overlap", () => {
+  test("two settlings at once leave a complete set, though one's write lands after the other has pruned", async () => {
+    let slow = false;
+    const network = fakeNetwork({ ...ANSWERS, [RELEASE_C]: "release c", "/data/latest.v1.json": pointing(RELEASE_B, RELEASE_C, IDOLS) });
+    const caches = fakeCaches(network, (name, url) => (slow && name === "memomemo-data" && url === POINTER ? ((slow = false), 20) : 0));
+    const worker: Worker = { caches, fetch: network.fetch, manifest: MANIFEST, origin: ORIGIN };
+    await loadData(worker, RELEASE_B, RELEASE_C, IDOLS);
+    network.answers.set("/data/latest.v1.json", pointing(RELEASE_B, IDOLS));
+    slow = true;
+    const first = ask(worker, POINTER);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    network.answers.set("/data/latest.v1.json", pointing(RELEASE_C, IDOLS));
+    await Promise.all([first, ask(worker, POINTER)]);
+    const pointer = JSON.parse((await caches.text("memomemo-data", POINTER)) ?? "{}");
+    const named: string[] = pointer.files.map((file: { path: string }) => `${LIBRARY}/${file.path}`);
+    expect(named.filter((url) => !(caches.kept()["memomemo-data"] ?? []).includes(url))).toEqual([]);
+  });
+
+
+  test("a fresh pointer arriving while another is being promoted stays pending, and is promoted once its releases are kept", async () => {
+    let slow = false;
+    const network = fakeNetwork({ ...ANSWERS, [RELEASE_C]: "release c", "/data/latest.v1.json": pointing(RELEASE_B, RELEASE_C, IDOLS) });
+    const caches = fakeCaches(network, (name, url) => (slow && name === "memomemo-data" && url === POINTER ? ((slow = false), 20) : 0));
+    const worker: Worker = { caches, fetch: network.fetch, manifest: MANIFEST, origin: ORIGIN };
+    await loadData(worker, RELEASE_B, RELEASE_C, IDOLS);
+    network.answers.set("/data/latest.v1.json", pointing(RELEASE_B, IDOLS));
+    slow = true;
+    const first = ask(worker, POINTER);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    network.answers.set("/data/latest.v1.json", pointing(RELEASE_A, IDOLS));
+    await Promise.all([first, ask(worker, POINTER)]);
+    expect(await caches.text("memomemo-data-next", POINTER)).toBe(pointing(RELEASE_A, IDOLS));
+    await ask(worker, `${LIBRARY}${RELEASE_A}`);
+    expect(await caches.text("memomemo-data", POINTER)).toBe(pointing(RELEASE_A, IDOLS));
+  });
+});
+
+describe("respond, when the caches cannot be written", () => {
+  test("the page still gets the pointer, a release, a face and a sheet from the network, and nothing is kept", async () => {
+    const network = fakeNetwork(ANSWERS);
+    const caches = fakeCaches(network, () => "fail");
+    const worker: Worker = { caches, fetch: network.fetch, manifest: MANIFEST, origin: ORIGIN };
+    const warned = spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const answers = [await ask(worker, POINTER), await ask(worker, `${LIBRARY}${RELEASE_A}`), await ask(worker, `${LIBRARY}${FACE}`), await ask(worker, SHEET)];
+      expect(answers).toEqual([pointing(RELEASE_A, IDOLS), "release a", "face", "sheet"]);
+      await keepLoaded([POINTER, `${LIBRARY}${IDOLS}`], worker);
+      expect(Object.values(caches.kept()).flat()).toEqual([]);
+      expect(warned).toHaveBeenCalled();
+    } finally {
+      warned.mockRestore();
+    }
+  });
+  test("the page still gets a fresh pointer when the pending pointer's cache cannot even be opened", async () => {
+    const network = fakeNetwork(ANSWERS);
+    const caches = fakeCaches(network);
+    const opening: Worker["caches"] = { ...caches, open: (name) => (name === "memomemo-data-next" ? Promise.reject(new DOMException("no", "UnknownError")) : caches.open(name)) };
+    const worker: Worker = { caches: opening, fetch: network.fetch, manifest: MANIFEST, origin: ORIGIN };
+    const warned = spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      expect(await ask(worker, POINTER)).toBe(pointing(RELEASE_A, IDOLS));
+    } finally {
+      warned.mockRestore();
+    }
+  });
+});
+
+describe("respond, the sheets, the font and the rest", () => {
   test("a sheet is fetched once, then kept: offline it is still shown", async () => {
     const { network, worker } = world();
     expect(await ask(worker, SHEET)).toBe("sheet");
@@ -186,16 +355,18 @@ describe("respond", () => {
 
   test("anything else is left to the browser", async () => {
     const { worker } = world();
-    expect([await ask(worker, "/sw.js"), await ask(worker, "/other.txt")]).toEqual([null, null]);
+    expect([await ask(worker, "/sw.js"), await ask(worker, "/other.txt"), await ask(worker, "/data/skillcards.json"), await ask(worker, `${LIBRARY}/formats/idols.v1.ts`)]).toEqual([null, null, null, null]);
   });
 });
 
 describe("keepLoaded", () => {
-  test("keeps the data file and the sheets a first visit loaded, from the network, which the HTTP cache answers", async () => {
+  test("keeps the library's pointer, releases and faces and the sheets a first visit loaded, from the network, which the HTTP cache answers", async () => {
     const { caches, worker } = world();
-    await keepLoaded([`${ORIGIN}/assets/index-abc.js`, `${ORIGIN}/data/skillcards.json`, `${ORIGIN}${SHEET}`, `${ORIGIN}${FONT}`], worker);
+    await keepLoaded([`${ORIGIN}/assets/index-abc.js`, POINTER, `${LIBRARY}${RELEASE_A}`, `${LIBRARY}${IDOLS}`, `${LIBRARY}${FACE}`, `${ORIGIN}${SHEET}`, `${ORIGIN}${FONT}`], worker);
     expect(caches.kept()).toEqual({
-      "memomemo-data": [`${ORIGIN}/data/skillcards.json`],
+      "memomemo-data-next": [],
+      "memomemo-data": [`${LIBRARY}${RELEASE_A}`, `${LIBRARY}${IDOLS}`, POINTER],
+      "memomemo-faces": [`${LIBRARY}${FACE}`],
       "memomemo-sheets": [`${ORIGIN}${SHEET}`],
       "memomemo-fonts": [`${ORIGIN}${FONT}`],
     });
@@ -212,10 +383,10 @@ describe("keepLoaded", () => {
   test("what does not come is left for the next visit", async () => {
     const { caches, network, worker } = world();
     network.offline = true;
-    await keepLoaded([`${ORIGIN}/data/skillcards.json`, `${ORIGIN}${SHEET}`], worker);
+    await keepLoaded([POINTER, `${ORIGIN}${SHEET}`], worker);
     network.offline = false;
-    network.answers.set("/data/skillcards.json", 502);
-    await keepLoaded([`${ORIGIN}/data/skillcards.json`], worker);
-    expect(caches.kept()).toEqual({ "memomemo-data": [], "memomemo-sheets": [] });
+    network.answers.set("/data/latest.v1.json", 502);
+    await keepLoaded([POINTER], worker);
+    expect(caches.kept()).toEqual({ "memomemo-data-next": [], "memomemo-sheets": [], "memomemo-data": [] });
   });
 });

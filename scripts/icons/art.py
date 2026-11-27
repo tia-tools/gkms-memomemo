@@ -9,6 +9,20 @@ from PIL import Image
 
 from geometry import ART_SIZE, ART_X0, ART_Y0, ICON
 
+# The skill card masters, synced from gkms-library into this ignored directory
+# (docs/plans/EXECPLAN_LIBRARY_DATA.md, Milestone 4), named `<asset>.webp`, or `<asset>-<idol id>.webp`
+# for art drawn per idol.
+MASTERS = Path(__file__).parent / "out" / "masters"
+# Run from the directory holding both checkouts; it needs the Wrangler login of the account holding tia.run.
+SYNC_MASTERS = "cd gkms-library && bun run sync-masters -- --dest ../gkms-memomemo/scripts/icons/out/masters --only '^img_general_skillcard_'"
+
+
+def require_masters(masters: Path) -> Path:
+    """`masters`, or an exit naming the command that syncs them from gkms-library when it holds none."""
+    if not masters.is_dir() or not any(masters.glob("*.webp")):
+        raise SystemExit(f"{masters}: no masters; sync them from gkms-library:\n    {SYNC_MASTERS}")
+    return masters
+
 
 @dataclass(frozen=True)
 class Card:

@@ -7,7 +7,7 @@
  * the Worker cannot accept what the page would never send.
  */
 
-import type { SkillCard, SkillCardDataFile } from "../../src/data/contract.ts";
+import type { PoolCard, Pool } from "../../src/data/pool.ts";
 import { makeCatalog } from "../../src/app/catalog.ts";
 import { customizationProblem } from "../../src/memo/build.ts";
 import { type ChosenStep, PLAN_IDS, planOf, SECTION_IDS, type SectionId } from "../../src/memo/types.ts";
@@ -80,13 +80,13 @@ export type CountRules = (event: ReadEvent) => CountRow[] | null;
  * own, within the card's limit and D39's cap of 2. It counts its card, its ability, and each
  * customization step, or `none` (D11).
  */
-export function countRules(data: SkillCardDataFile): CountRules {
+export function countRules(data: Pool): CountRules {
   const catalog = makeCatalog(data);
   const tabs = new Map(
     PLAN_IDS.map((plan) => [
       plan,
       {
-        cards: new Map<string, SkillCard>(catalog.tabCards(plan).map((c) => [cardCountId(c.id, c.upgrade), c])),
+        cards: new Map<string, PoolCard>(catalog.tabCards(plan).map((c) => [cardCountId(c.id, c.upgrade), c])),
         hifs: new Set(catalog.tabAbilities(plan).map((h) => h.ability.id)),
       },
     ]),

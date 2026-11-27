@@ -1,10 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { N_MEMORY_CARD } from "../../src/app/catalog.ts";
-import { parseSkillCardData } from "../../src/data/load.ts";
-import fixture from "../../src/data/fixtures/skillcards.v1.json";
+import { SKILL_CARDS } from "../../src/test-support/skillcards.ts";
 import { offeredCards } from "./offered.ts";
 
-const data = parseSkillCardData(fixture);
+const data = SKILL_CARDS;
 
 describe("offeredCards", () => {
   const out = offeredCards(data);

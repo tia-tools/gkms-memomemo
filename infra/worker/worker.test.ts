@@ -20,7 +20,6 @@ function runtime(): Runtime & { seen: string[] } {
   const seen: string[] = [];
   return {
     seen,
-    fetchUpstream: async (url) => (seen.push(`upstream ${url}`), new Response("{}")),
     rules: async () => (seen.push("rules"), null),
     cache: async () => ({ match: async () => undefined, put: async () => undefined }),
     waitUntil: () => undefined,
@@ -30,16 +29,14 @@ function runtime(): Runtime & { seen: string[] } {
 }
 
 describe("route", () => {
-  test("sends /img/* to R2, /data/skillcards.json upstream, and everything else to the assets", async () => {
+  test("sends /img/* to R2 and everything else to the assets, the old data route among them", async () => {
     const e = env(await fakeD1());
     const r = runtime();
     await route(new Request("https://example.tia.run/img/gkms-memomemo/sheet112/sense-hski-1a2b3c4d.webp"), e, r);
-    const data = await route(new Request("https://example.tia.run/data/skillcards.json"), e, r);
     await route(new Request("https://example.tia.run/?m=1"), e, r);
-    await route(new Request("https://example.tia.run/data/skillcards.v1.json"), e, r);
-    expect(e.seen).toEqual(["get gkms-memomemo/sheet112/sense-hski-1a2b3c4d.webp", "assets /", "assets /data/skillcards.v1.json"]);
-    expect(r.seen).toEqual(["upstream https://gakumas-supportcards.tia.run/data/skillcards.v1.json"]);
-    expect(await data.text()).toBe("{}");
+    await route(new Request("https://example.tia.run/data/skillcards.json"), e, r);
+    expect(e.seen).toEqual(["get gkms-memomemo/sheet112/sense-hski-1a2b3c4d.webp", "assets /", "assets /data/skillcards.json"]);
+    expect(r.seen).toEqual([]);
   });
 
   test("sends POST /count to the counting, with the salt and D1 of its Env", async () => {
@@ -62,7 +59,7 @@ describe("route", () => {
 
   test("a path next to a Worker route is the assets' to answer", async () => {
     const e = env(await fakeD1());
-    const paths = ["/img", "/imgx/a", "/data/skillcards.json/", "/data/skillcards.jsonx", "/count/", "/countx", "/counts/", "/counts.json"];
+    const paths = ["/img", "/imgx/a", "/count/", "/countx", "/counts/", "/counts.json"];
     for (const path of paths) await route(new Request(`https://example.tia.run${path}`), e, runtime());
     expect(e.seen).toEqual(paths.map((p) => `assets ${p}`));
   });

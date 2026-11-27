@@ -1,7 +1,7 @@
 [project]
 name = "gkms-memomemo-icons"
 version = "0.0.0"
-description = "Builds the game-style skill card icons from P図鑑 screenshots on gakumas-supportcards' art (docs/plans/EXECPLAN_GAME_STYLE_ICONS.md)."
+description = "Builds the game-style skill card icons from P図鑑 screenshots on the game's art, masters synced from gkms-library (docs/plans/EXECPLAN_GAME_STYLE_ICONS.md, docs/plans/EXECPLAN_LIBRARY_DATA.md)."
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "pillow",

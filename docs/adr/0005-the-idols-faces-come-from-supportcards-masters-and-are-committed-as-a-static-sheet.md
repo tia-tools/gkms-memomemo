@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded-by-0006
 ---
 
 # The idols' faces come from supportcards' local masters and are committed here as a static sheet
@@ -11,3 +11,5 @@ status: accepted
 The alternatives were a second extractor in this repository (a second copy of code that talks to the game's servers, to keep working when the game changes its format), and the bucket served through the Worker's `/img` route, which the memo plan's D20b ("fetched from the game ourselves and stored in R2") says literally (a Worker route, an upload step, and a Worker request per device). D20b's point, never taking images from a third party, holds either way. The cost of this choice is a game image in git history, replaced in full whenever the faces change, and a dependency on the sibling checkout to rebuild it. Decision T6 of the plan says the faces also go to supportcards' private `master/` prefix in the bucket; they do not, since supportcards' `upload.py` uploads only files with a served rendition.
 
 Source: the user's answers A to jobs #95 (supportcards extracts) and #96 (committed static sheet), and their choice of the SD faces over the round thumbnails, recorded in `docs/plans/EXECPLAN_IDOL_ICON_TABLE.md` § Decision Log (T5–T7); evidence level: user decision, built and verified on the live site after release #99 (the sheet served with its hash, 13 faces drawn); the supportcards side is tia-tools/gakumas-supportcards#83, whose upload path for faces was checked by test and by Codex review.
+
+Superseded by ADR 0006 (2026-11-27): the faces are loaded from gkms-library's address one image per idol, so the committed sheet, its index and `scripts/icons/idols.py` are gone.

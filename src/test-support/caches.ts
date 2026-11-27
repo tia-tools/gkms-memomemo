@@ -2,7 +2,9 @@
  * Stand-ins for the service worker's world in tests (src/sw/handlers.ts): caches over Maps, keyed by
  * absolute URL as the browser's are, and a network that answers from a table, or not at all while
  * offline. A cache hands out a copy of what it keeps, and honours an answer's `Vary` header unless
- * asked to ignore it, as the browser's does; the network can add one to every answer.
+ * asked to ignore it, as the browser's does; the network can add one to every answer. `putDelay`
+ * makes a `put` take that many milliseconds, as a browser's can, so a test can make two settlings
+ * interleave, or fail, as a full quota makes it.
  */
 
 import type { CacheLike, CachesLike } from "../sw/handlers.ts";
@@ -64,15 +66,22 @@ function varyMatches(entry: Entry, request: Request | string): boolean {
   return vary.split(",").every((name) => entry.headers.get(name.trim()) === incoming.get(name.trim()));
 }
 
-export function fakeCaches(network: FakeNetwork): FakeCaches {
+/** How long a `put` into the cache `name` of `url` takes, in milliseconds; `"fail"` makes it reject, as a full quota does. */
+export type PutDelay = (name: string, url: string) => number | "fail";
+
+export function fakeCaches(network: FakeNetwork, putDelay: PutDelay = () => 0): FakeCaches {
   const all = new Map<string, Map<string, Entry>>();
-  const cacheOf = (entries: Map<string, Entry>): CacheLike => ({
+  const cacheOf = (name: string, entries: Map<string, Entry>): CacheLike => ({
     match: (request, options) => {
       const entry = entries.get(keyOf(request));
       return Promise.resolve(entry !== undefined && (options.ignoreVary || varyMatches(entry, request)) ? entry.response.clone() : undefined);
     },
     put: async (request, response) => {
-      entries.set(keyOf(request), { response: response.clone(), headers: headersOf(request) });
+      const entry = { response: response.clone(), headers: headersOf(request) };
+      const delay = putDelay(name, keyOf(request));
+      if (delay === "fail") throw new DOMException("the quota is full", "QuotaExceededError");
+      if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
+      entries.set(keyOf(request), entry);
     },
     addAll: async (requests) => {
       const answers = await Promise.all(requests.map((r) => network.fetch(r)));
@@ -89,7 +98,7 @@ export function fakeCaches(network: FakeNetwork): FakeCaches {
     open: (name) => {
       const entries = all.get(name) ?? new Map<string, Entry>();
       all.set(name, entries);
-      return Promise.resolve(cacheOf(entries));
+      return Promise.resolve(cacheOf(name, entries));
     },
     keys: () => Promise.resolve([...all.keys()]),
     delete: (name) => Promise.resolve(all.delete(name)),

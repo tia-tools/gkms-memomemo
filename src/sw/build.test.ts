@@ -16,7 +16,8 @@ const TTMR = "/img/gkms-memomemo/sheet112/sense-ttmr-0000bbbb.webp";
 const HSKI = "/img/gkms-memomemo/sheet112/sense-hski-0000aaaa.webp";
 const SHEETS = [TTMR, HSKI];
 
-const manifestOf = (files = FILES) => swManifest(files, SHEETS, "/data/skillcards.json", "/img/");
+const LIBRARY = "https://gkms-library.tia.run";
+const manifestOf = (files = FILES) => swManifest(files, SHEETS, LIBRARY, "/data/latest.v1.json", "/img/");
 
 describe("swManifest", () => {
   test("keeps the page at /, its scripts, styles and static files, but not the worker, source maps, Vite's manifests or the font", () => {
@@ -33,9 +34,9 @@ describe("swManifest", () => {
     expect(manifestOf(other).version).toBe(manifestOf().version);
   });
 
-  test("carries the data route, the sheet prefix and the sheets, sorted", () => {
-    const { data, sheetPrefix, sheets } = manifestOf();
-    expect({ data, sheetPrefix, sheets }).toEqual({ data: "/data/skillcards.json", sheetPrefix: "/img/", sheets: [HSKI, TTMR] });
+  test("carries the library's origin and pointer, the sheet prefix and the sheets, sorted", () => {
+    const { library, pointer, sheetPrefix, sheets } = manifestOf();
+    expect({ library, pointer, sheetPrefix, sheets }).toEqual({ library: LIBRARY, pointer: "/data/latest.v1.json", sheetPrefix: "/img/", sheets: [HSKI, TTMR] });
   });
 
   test("the version is the same for the same files, whatever their order", () => {
@@ -61,7 +62,7 @@ describe("swManifest", () => {
   test("a file's bytes cannot be shifted into its neighbour's name to give the same version", () => {
     const a = [{ path: "a", bytes: "bc" }];
     const b = [{ path: "ab", bytes: "c" }];
-    expect(swManifest(a, [], "/d", "/img/").version).not.toBe(swManifest(b, [], "/d", "/img/").version);
+    expect(swManifest(a, [], "https://l", "/p", "/img/").version).not.toBe(swManifest(b, [], "https://l", "/p", "/img/").version);
   });
 
   test("nor can two files be merged into one that holds the next one's name", () => {
@@ -70,7 +71,7 @@ describe("swManifest", () => {
       { path: "b", bytes: "y" },
     ];
     const one = [{ path: "a", bytes: "x/b\0y" }];
-    expect(swManifest(two, [], "/d", "/img/").version).not.toBe(swManifest(one, [], "/d", "/img/").version);
+    expect(swManifest(two, [], "https://l", "/p", "/img/").version).not.toBe(swManifest(one, [], "https://l", "/p", "/img/").version);
   });
 });
 

@@ -89,8 +89,8 @@ describe("the workflows", () => {
 
 describe("the icons workflow", () => {
 
-  test("runs daily after gakumas-supportcards' data update, and by hand", () => {
-    expect(icons["on"]).toEqual({ schedule: [{ cron: "45 11 * * *" }], workflow_dispatch: null });
+  test("runs daily after gkms-library's 11:50 UTC data update, and by hand", () => {
+    expect(icons["on"]).toEqual({ schedule: [{ cron: "20 12 * * *" }], workflow_dispatch: null });
   });
 
   test("reads by default; only the check writes, and only issues; only the post asks for an OIDC token; no secret", () => {
