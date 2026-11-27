@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 import { fakeCaches, fakeNetwork, ORIGIN } from "../test-support/caches.ts";
 import { activate, install, keepLoaded, respond, type Worker } from "./handlers.ts";
 import type { SwManifest } from "./routes.ts";
@@ -295,6 +295,24 @@ describe("respond, the library's files when settlings overlap", () => {
     expect(await caches.text("memomemo-data-next", POINTER)).toBe(pointing(RELEASE_A, IDOLS));
     await ask(worker, `${LIBRARY}${RELEASE_A}`);
     expect(await caches.text("memomemo-data", POINTER)).toBe(pointing(RELEASE_A, IDOLS));
+  });
+});
+
+describe("respond, when the caches cannot be written", () => {
+  test("the page still gets the pointer, a release, a face and a sheet from the network, and nothing is kept", async () => {
+    const network = fakeNetwork(ANSWERS);
+    const caches = fakeCaches(network, () => "fail");
+    const worker: Worker = { caches, fetch: network.fetch, manifest: MANIFEST, origin: ORIGIN };
+    const warned = spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const answers = [await ask(worker, POINTER), await ask(worker, `${LIBRARY}${RELEASE_A}`), await ask(worker, `${LIBRARY}${FACE}`), await ask(worker, SHEET)];
+      expect(answers).toEqual([pointing(RELEASE_A, IDOLS), "release a", "face", "sheet"]);
+      await keepLoaded([POINTER, `${LIBRARY}${IDOLS}`], worker);
+      expect(Object.values(caches.kept()).flat()).toEqual([]);
+      expect(warned).toHaveBeenCalled();
+    } finally {
+      warned.mockRestore();
+    }
   });
 });
 

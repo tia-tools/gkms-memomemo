@@ -72,12 +72,17 @@ export async function activate(worker: Worker): Promise<void> {
   await dropStaleData(worker, await worker.caches.open(names.data), null);
 }
 
+/** Waits for a write to the caches without letting its failure (a full quota, say) cost the page an answer it already has. */
+async function quietly(write: Promise<void>, what: string): Promise<void> {
+  await write.catch((error: unknown) => console.warn(`the service worker could not keep ${what}:`, error));
+}
+
 /** From the cache; from the network otherwise, keeping a 200 when `keep` is given. */
 async function cacheFirst(worker: Worker, request: Request, cache: CacheLike, keep: boolean): Promise<Response> {
   const copy = await kept(cache, request);
   if (copy !== undefined) return copy;
   const answer = await worker.fetch(request);
-  if (keep && answer.status === 200) await cache.put(request, answer.clone());
+  if (keep && answer.status === 200) await quietly(cache.put(request, answer.clone()), request.url);
   return answer;
 }
 
@@ -154,14 +159,17 @@ async function pointer(worker: Worker, request: Request): Promise<Response> {
   if (!answer.ok) return (await kept(data, request.url)) ?? answer;
   const next = await worker.caches.open(names.next);
   const fresh = answer.clone();
-  await settleData(worker, () => next.put(request.url, fresh));
+  await quietly(
+    settleData(worker, () => next.put(request.url, fresh)),
+    request.url,
+  );
   return answer;
 }
 
 /** A release, from the cache once kept; a newly kept one may complete a pending pointer's set. */
 async function release(worker: Worker, request: Request, data: CacheLike): Promise<Response> {
   const answer = await cacheFirst(worker, request, data, true);
-  await settleData(worker);
+  await quietly(settleData(worker), "the library's data");
   return answer;
 }
 
@@ -220,9 +228,8 @@ export async function keepLoaded(urls: readonly unknown[], worker: Worker): Prom
       const answer = await worker.fetch(url).catch(() => null);
       if (answer?.status !== 200) return;
       // A pending pointer is written in a settling's turn (settleData); anything else at once.
-      if (route === "pointer") await settleData(worker, () => cache.put(url, answer));
-      else await cache.put(url, answer);
+      await quietly(route === "pointer" ? settleData(worker, () => cache.put(url, answer)) : cache.put(url, answer), url);
     }),
   );
-  await settleData(worker);
+  await quietly(settleData(worker), "the library's data");
 }
