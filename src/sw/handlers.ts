@@ -157,10 +157,9 @@ async function pointer(worker: Worker, request: Request): Promise<Response> {
     return copy;
   }
   if (!answer.ok) return (await kept(data, request.url)) ?? answer;
-  const next = await worker.caches.open(names.next);
   const fresh = answer.clone();
   await quietly(
-    settleData(worker, () => next.put(request.url, fresh)),
+    settleData(worker, async () => (await worker.caches.open(names.next)).put(request.url, fresh)),
     request.url,
   );
   return answer;

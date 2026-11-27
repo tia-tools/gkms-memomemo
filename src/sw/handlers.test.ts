@@ -314,6 +314,18 @@ describe("respond, when the caches cannot be written", () => {
       warned.mockRestore();
     }
   });
+  test("the page still gets a fresh pointer when the pending pointer's cache cannot even be opened", async () => {
+    const network = fakeNetwork(ANSWERS);
+    const caches = fakeCaches(network);
+    const opening: Worker["caches"] = { ...caches, open: (name) => (name === "memomemo-data-next" ? Promise.reject(new DOMException("no", "UnknownError")) : caches.open(name)) };
+    const worker: Worker = { caches: opening, fetch: network.fetch, manifest: MANIFEST, origin: ORIGIN };
+    const warned = spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      expect(await ask(worker, POINTER)).toBe(pointing(RELEASE_A, IDOLS));
+    } finally {
+      warned.mockRestore();
+    }
+  });
 });
 
 describe("respond, the sheets, the font and the rest", () => {
