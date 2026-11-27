@@ -57,9 +57,18 @@ async function fetchChecked<T>(get: Get, url: string, parse: (data: unknown) => 
   }
 }
 
-/** The pool of the library's newest releases; rejects with `LibraryError` at the first file that cannot be had or read. */
-export async function loadLibrary(get: Get, base: string = LIBRARY): Promise<Pool> {
-  const pointer = await fetchChecked(get, `${base}/${POINTER}`, parseLatest);
+/** The pointer, checked by its format; rejects with `LibraryError`. */
+export function fetchPointer(get: Get, base: string = LIBRARY): Promise<Latest> {
+  return fetchChecked(get, `${base}/${POINTER}`, parseLatest);
+}
+
+/** What names the pool a pointer leads to: the two release paths, so a caller can tell a new pool from the one it has. */
+export function poolKey(pointer: Latest): string {
+  return `${releasePath(pointer, "skill-cards")} ${releasePath(pointer, "idols")}`;
+}
+
+/** The pool of the releases `pointer` names; rejects with `LibraryError` at the first file that cannot be had or read. */
+export async function loadReleases(get: Get, pointer: Latest, base: string = LIBRARY): Promise<Pool> {
   const [skillCards, idols] = await Promise.all([
     fetchChecked(get, `${base}/${releasePath(pointer, "skill-cards")}`, parseSkillCards),
     fetchChecked(get, `${base}/${releasePath(pointer, "idols")}`, parseIdols),
@@ -69,4 +78,9 @@ export async function loadLibrary(get: Get, base: string = LIBRARY): Promise<Poo
   } catch (error) {
     throw new LibraryError(error instanceof Error ? error.message : String(error));
   }
+}
+
+/** The pool of the library's newest releases; rejects with `LibraryError` at the first file that cannot be had or read. */
+export async function loadLibrary(get: Get, base: string = LIBRARY): Promise<Pool> {
+  return loadReleases(get, await fetchPointer(get, base), base);
 }

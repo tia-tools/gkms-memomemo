@@ -9,7 +9,7 @@
 import { cleanCaps, type CountsCache, type CountsDb, handleCount, serveCounts } from "./count.ts";
 import { COUNT_ROUTE, COUNTS_ROUTE } from "./count-contract.ts";
 import type { CountRules } from "./count-event.ts";
-import { fetchRules, keptRules } from "./count-data.ts";
+import { keptRules, libraryUpstream } from "./count-data.ts";
 import { serveImage, type ImageBucket } from "./img.ts";
 
 export interface Env {
@@ -48,8 +48,8 @@ export function route(request: Request, env: Env, runtime: Runtime): Promise<Res
   return serveImage(request, env.IMAGES);
 }
 
-/** Kept by the isolate across the requests it serves, an hour at a time; see count-data.ts. */
-const rules = keptRules(() => fetchRules((url) => fetch(url)), () => Date.now());
+/** Kept by the isolate across the requests it serves, renewed when the library's pointer names new releases; see count-data.ts. */
+const rules = keptRules(libraryUpstream((url) => fetch(url)), () => Date.now());
 
 interface Context {
   waitUntil(promise: Promise<unknown>): void;

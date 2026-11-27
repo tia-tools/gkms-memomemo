@@ -69,7 +69,7 @@ Both are `WITHOUT ROWID`, so a new row is one row written, not two.
 4. 400 for a body that is not such an event;
 5. 503 while `HASH_SALT` is unset, so nothing is counted unsalted;
 6. 400 without `CF-Connecting-IP`;
-7. 503 when the card pool cannot be had, and 400 for an event naming anything the section's tab does not offer (`count-event.ts`, checked against the pool `count-data.ts` reads from gkms-library through the page's own `src/data/library.ts` and keeps in the isolate for an hour);
+7. 503 when the card pool cannot be had, and 400 for an event naming anything the section's tab does not offer (`count-event.ts`, checked against the pool `count-data.ts` reads from gkms-library through the page's own `src/data/library.ts`: the pointer asked at most every five minutes, the releases read again only when it names new ones);
 8. 429 when the player's cap row for the day has reached 200 events. The cap is one upsert whose `n` rises only under the cap, so it is exact, and a refused event writes nothing;
 9. otherwise 200, after one batch of upserts adds 1 to each count. A D1 failure is a 503. One in that batch, after the cap has taken its place, leaves the place taken with nothing counted; the page does not retry, so nothing is ever counted twice (D63).
 
