@@ -153,4 +153,4 @@ In `src/data/library.ts` (Milestone 2):
 
 Rejects with an error naming the URL and the HTTP status, or the place of the first bad value (the format's own message).
 
-Revision note (2026-11-27 13:34Z): the times of the Progress entries and of three pieces of evidence were first typed without reading the clock and were up to 34 minutes off; they were corrected from the commits' times and the scratch files' modification times.
+Revision note (2026-11-27 13:32Z): the times of the Progress entries and of three pieces of evidence were first typed without reading the clock and were up to 34 minutes off; they were corrected from the commits' times and the scratch files' modification times.
