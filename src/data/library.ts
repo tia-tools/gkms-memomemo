@@ -17,6 +17,12 @@ import { type Pool, pool } from "./pool.ts";
 export const LIBRARY = "https://gkms-library.tia.run";
 /** The pointer, relative to the address: the one file that changes under its name, kept five minutes. */
 export const POINTER = "data/latest.v1.json";
+/**
+ * Where the releases this page reads are, relative to the address: of the formats the pointer names
+ * (idols, items, skill-cards, support-cards), only these two. The service worker counts only these
+ * as the pointer's set (#116).
+ */
+export const RELEASE_DIRS = ["data/skill-cards/v1/", "data/idols/v1/"] as const;
 
 /** A file could not be had or does not have its format's shape; the message names the file and where. */
 export class LibraryError extends Error {

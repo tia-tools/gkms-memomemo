@@ -19,6 +19,12 @@ export interface SwManifest {
   library: string;
   /** The library's pointer, by its path there: `/data/latest.v1.json`. */
   pointer: string;
+  /**
+   * The directories of the releases the page reads, by their paths there (`/data/skill-cards/v1/`,
+   * `/data/idols/v1/`). The pointer also names releases of formats the page never fetches, which
+   * must not count toward its set (#116).
+   */
+  releaseDirs: readonly string[];
   /** Where the sprite sheets are (infra/worker/img.ts). */
   sheetPrefix: string;
   /** Every sheet the bundled index names (src/icons/index.v1.json); a kept sheet it no longer names is dropped. */
@@ -56,10 +62,15 @@ const RELEASE = /^\/data\/[a-z-]+\/v\d+\/[^/]+\.json$/;
 /** An idol's face at the library: `img/w112/img_sd_<idol id>_face-00.webp`. */
 const FACE = /^\/img\/w112\/img_sd_[a-z0-9]{4}_face-00\.webp$/;
 
+/** Whether a path at the library is a release of a format the page reads. */
+function isRelease(pathname: string, manifest: SwManifest): boolean {
+  return RELEASE.test(pathname) && manifest.releaseDirs.some((dir) => pathname.startsWith(dir));
+}
+
 /** The route of a GET to the library's origin with no query; anything else there is left to the browser. */
 function libraryRoute(pathname: string, manifest: SwManifest): Route {
   if (pathname === manifest.pointer) return "pointer";
-  if (RELEASE.test(pathname)) return "release";
+  if (isRelease(pathname, manifest)) return "release";
   return FACE.test(pathname) ? "face" : "network";
 }
 
@@ -120,18 +131,19 @@ export function cacheOf(route: Route, names: CacheNames): string | null {
 }
 
 /**
- * The release paths a kept pointer names, read loosely: the page checks the pointer whole with its
- * format, which the worker cannot import. Null when it has no list of paths, so nothing is dropped
- * on its word.
+ * The paths of the releases the page reads that a kept pointer names, read loosely: the page checks
+ * the pointer whole with its format, which the worker cannot import. The releases of other formats
+ * it names are left out, since the page never fetches them (#116). Null when it has no list of
+ * paths, so nothing is dropped on its word.
  */
-export function pointedReleases(json: unknown): string[] | null {
+export function pointedReleases(json: unknown, manifest: SwManifest): string[] | null {
   if (typeof json !== "object" || json === null || !("files" in json) || !Array.isArray(json.files)) return null;
   const paths: string[] = [];
   for (const file of json.files) {
     if (typeof file !== "object" || file === null || !("path" in file) || typeof file.path !== "string") return null;
     paths.push(`/${file.path}`);
   }
-  return paths;
+  return paths.filter((path) => isRelease(path, manifest));
 }
 
 /** The releases of `named` (paths at the library) that `kept` (absolute URLs) does not hold yet. */
@@ -150,7 +162,7 @@ export function staleData(kept: readonly string[], named: readonly string[] | nu
     const at = new URL(url);
     if (at.origin !== manifest.library || at.search !== "") return true;
     if (at.pathname === manifest.pointer) return false;
-    if (!RELEASE.test(at.pathname)) return true;
+    if (!isRelease(at.pathname, manifest)) return true;
     return named !== null && !named.includes(at.pathname);
   });
 }
