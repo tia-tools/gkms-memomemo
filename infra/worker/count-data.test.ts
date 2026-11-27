@@ -2,30 +2,40 @@ import { describe, expect, test } from "bun:test";
 import { cardNamed, SKILL_CARDS } from "../../src/test-support/skillcards.ts";
 import type { CountRules } from "./count-event.ts";
 import { fetchRules, keptRules, RULES_TTL_MS } from "./count-data.ts";
-import { SKILLCARDS_SOURCE } from "./data.ts";
+import { LIBRARY, POINTER } from "../../src/data/library.ts";
 
-const FILE = await Bun.file(new URL("../../src/data/fixtures/skillcards.v1.json", import.meta.url)).text();
+const text = (name: string): Promise<string> => Bun.file(new URL(`../../src/data/fixtures/${name}`, import.meta.url)).text();
+/** The library's address on 2026-11-27, path by path (src/data/library.test.ts). */
+const FILES: Record<string, string> = {
+  [POINTER]: await text("latest.v1.20261127T1126Z.json"),
+  "data/skill-cards/v1/20261127T1126Z-a09c6f2a.json": await text("skill-cards.v1.20261127T1126Z-a09c6f2a.json"),
+  "data/idols/v1/20261116T1124Z-5122c626.json": await text("idols.v1.20261116T1124Z-5122c626.json"),
+};
+const serve = (files: Record<string, string>, status = 200) => async (url: string) => {
+  const body = files[url.slice(LIBRARY.length + 1)];
+  return body === undefined ? new Response("not found", { status: 404 }) : new Response(body, { status });
+};
 const JOJU = cardNamed("成就+");
 const HIF = SKILL_CARDS.hifAbilities.find((h) => SKILL_CARDS.cards.find((c) => c.id === h.card)?.plan === "sense")?.id ?? "";
 
 describe("fetchRules", () => {
-  test("reads the sibling's file into the rules of its cards", async () => {
+  test("reads the library's pool into the rules of its cards", async () => {
     const asked: string[] = [];
-    const rules = await fetchRules(async (url) => (asked.push(url), new Response(FILE)));
-    expect(asked).toEqual([SKILLCARDS_SOURCE]);
+    const rules = await fetchRules(async (url) => (asked.push(url), serve(FILES)(url)));
+    expect(asked[0]).toBe(`${LIBRARY}/${POINTER}`);
     const event = { section: "sense.kocho" as const, card: JOJU.id, upgrade: 1, hif: HIF, steps: [] };
     expect(rules?.(event)?.length).toBe(3);
   });
 
-  test("is null when the file cannot be fetched, answers an error, is not JSON or breaks the contract", async () => {
-    const answers: (() => Promise<Response>)[] = [
+  test("is null when a file cannot be fetched, answers an error, is not JSON or breaks its format", async () => {
+    const answers: ((url: string) => Promise<Response>)[] = [
       async () => {
         throw new Error("offline");
       },
-      async () => new Response(FILE, { status: 502 }),
-      async () => new Response("{"),
-      async () => new Response(JSON.stringify({ formatVersion: 2 })),
-      async () => new Response(JSON.stringify({ ...JSON.parse(FILE), cards: [] })),
+      serve(FILES, 502),
+      serve({ ...FILES, [POINTER]: "{" }),
+      serve({ ...FILES, [POINTER]: JSON.stringify({ pointerVersion: 2 }) }),
+      serve({ ...FILES, "data/skill-cards/v1/20261127T1126Z-a09c6f2a.json": JSON.stringify({ formatVersion: 1, cards: [], memoryAbilities: [] }) }),
     ];
     for (const answer of answers) expect(await fetchRules(answer)).toBeNull();
   });

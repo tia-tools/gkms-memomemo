@@ -1,24 +1,20 @@
 /**
- * The count rules of the current skill card file, for `POST /count` (docs/plans/EXECPLAN_MEMORY_MEMO.md,
- * D30): the file the Worker passes through at /data/skillcards.json (data.ts), fetched from the
- * sibling and checked whole by the page's own reader (src/data/load.ts). The rules are kept in the
- * Worker's isolate for an hour, as long as the file's own cache, so most events reuse them instead
- * of reading 190 KB of JSON again.
+ * The count rules of the current pool, for `POST /count` (docs/plans/EXECPLAN_MEMORY_MEMO.md, D30):
+ * the pool the page itself reads, cut from gkms-library's newest releases by the page's own code
+ * (src/data/library.ts, docs/plans/EXECPLAN_LIBRARY_DATA.md). The rules are kept in the Worker's
+ * isolate for an hour, so most events reuse them instead of reading the library's files again.
  */
 
-import { parseSkillCardData } from "../../src/data/load.ts";
+import { loadLibrary } from "../../src/data/library.ts";
 import { countRules, type CountRules } from "./count-event.ts";
-import { SKILLCARDS_SOURCE } from "./data.ts";
 
 /** How long the rules of one file are used before the file is fetched again. */
 export const RULES_TTL_MS = 3_600_000;
 
-/** The rules of the file upstream, or null when it cannot be fetched or does not match the contract. */
+/** The rules of the library's pool, or null when a file cannot be fetched or does not have its format's shape. */
 export async function fetchRules(fetchUpstream: (url: string) => Promise<Response>): Promise<CountRules | null> {
   try {
-    const response = await fetchUpstream(SKILLCARDS_SOURCE);
-    if (!response.ok) return null;
-    return countRules(parseSkillCardData(await response.json()));
+    return countRules(await loadLibrary(fetchUpstream));
   } catch {
     return null;
   }
